@@ -1,0 +1,9 @@
+.app-shell {
+  min-height: 100vh;
+}
+
+.page-container {
+  padding: 2rem;
+  max-width: 1100px;
+  margin: 0 auto;
+}
