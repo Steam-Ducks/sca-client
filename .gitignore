@@ -36,5 +36,4 @@ playwright-report/
 playwright/.cache/
 
 # SonarQube
-sonar-project.properties
 .scannerwork
