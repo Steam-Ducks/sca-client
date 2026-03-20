@@ -11,6 +11,7 @@ node_modules
 dist
 dist-ssr
 *.local
+package.json
 
 # Editor directories and files
 .vscode/*
@@ -36,5 +37,4 @@ playwright-report/
 playwright/.cache/
 
 # SonarQube
-sonar-project.properties
 .scannerwork

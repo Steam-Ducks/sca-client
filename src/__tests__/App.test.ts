@@ -43,4 +43,18 @@ describe('App.vue', () => {
     expect(wrapper.findComponent({ name: 'AppHeader' }).exists()).toBe(true)
     expect(wrapper.find('.page-container').exists()).toBe(true)
   })
+
+
+it('renders without crashing', async () => {
+  router.push('/')
+  await router.isReady()
+
+  const wrapper = mount(App, {
+    global: {
+      plugins: [router],
+    },
+  })
+
+  expect(wrapper.exists()).toBe(true)
+})
 })
