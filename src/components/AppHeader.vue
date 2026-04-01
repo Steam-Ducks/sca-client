@@ -17,6 +17,9 @@
       <RouterLink to="/about">
         Sobre
       </RouterLink>
+      <RouterLink to="/technical-hours">
+        Horas Técnicas  
+      </RouterLink>
     </nav>
   </header>
 </template>

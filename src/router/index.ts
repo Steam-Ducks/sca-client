@@ -22,6 +22,11 @@ const router = createRouter({
       name: 'dashboard',
       component: () => import('@/views/DashboardView.vue'),
     },
+    {
+      path: '/technical-hours',        // ← adicionar isso
+      name: 'technical-hours',
+      component: () => import('@/views/TechnicalHoursView.vue'),
+    },
   ],
 })
 
