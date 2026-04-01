@@ -1,16 +1,15 @@
 import type { User } from '@/types/api'
-
-const apiBaseUrl = import.meta.env.VITE_API_BASE_URL
+import { CONFIG } from '@/utils/config'
 
 export const userService = {
   async fetchUsers(): Promise<User[]> {
-    const response = await fetch(`${apiBaseUrl}/users/`)
+    const response = await fetch(`${CONFIG.API_BASE_URL}/users/`)
     if (!response.ok) throw new Error('Erro ao buscar usuários')
     return response.json()
   },
 
   async createUser(userData: Omit<User, 'id' | 'date_joined'>): Promise<User> {
-    const response = await fetch(`${apiBaseUrl}/users/`, {
+    const response = await fetch(`${CONFIG.API_BASE_URL}/users/`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
