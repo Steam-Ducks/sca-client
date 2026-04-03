@@ -115,6 +115,15 @@
               </tr>
             </thead>
             <tbody>
+              <tr v-if="tableLoading">
+                <td colspan="9" class="table-feedback muted">Carregando materiais...</td>
+              </tr>
+              <tr v-else-if="tableError">
+                <td colspan="9" class="table-feedback error">{{ tableError }}</td>
+              </tr>
+              <tr v-else-if="pagedData.length === 0">
+                <td colspan="9" class="table-feedback muted">Nenhum material encontrado.</td>
+              </tr>
               <tr v-for="row in pagedData" :key="row.id">
                 <td class="material-name">{{ row.material }}</td>
                 <td class="muted">{{ row.projeto }}</td>
@@ -156,10 +165,28 @@ import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import { RAW } from '@/data/materiais'
 import { useCharts } from '@/composables/useCharts'
 import type { Filters, SortKey, SortDir } from '@/types/materiais'
+import type { Material, Categoria, Status } from '@/types/materiais'
+import { CONFIG } from '@/utils/config'
 
 const PER_PAGE = 8
 
+interface MaterialsApiRow {
+  id: number
+  material: string
+  projeto: string
+  programa: string
+  quantidade: number
+  valor_unitario: number
+  valor_total: number
+  periodo: string | null
+  fornecedor: string
+  categoria: string
+}
+
 // ─── State ────────────────────────────────────────────────────────────────────
+const tableData = ref<Material[]>([])
+const tableLoading = ref(false)
+const tableError = ref('')
 const filters = ref<Filters>({
   periodo: '', programa: '', projeto: '',
   categoria: '', status: '', area: '', search: '',
@@ -179,7 +206,7 @@ const areas     = [...new Set(RAW.map(r => r.area))].sort()
 // ─── Computed ─────────────────────────────────────────────────────────────────
 const filteredData = computed(() => {
   const f = filters.value
-  let d = RAW.filter(r => {
+  let d = tableData.value.filter(r => {
     if (f.periodo   && r.periodo   !== f.periodo)   return false
     if (f.programa  && r.programa  !== f.programa)  return false
     if (f.projeto   && r.projeto   !== f.projeto)   return false
@@ -260,9 +287,56 @@ function exportCSV() {
 }
 
 // ─── Charts ───────────────────────────────────────────────────────────────────
+
+function normalizeCategoria(value: string): Categoria {
+  const allowed: Categoria[] = ['Hardware', 'Storage', 'Cloud', 'Seguran?a', 'Software', 'Rede']
+  return allowed.includes(value as Categoria) ? (value as Categoria) : 'Hardware'
+}
+
+function mapApiRow(row: MaterialsApiRow): Material {
+  return {
+    id: row.id,
+    material: row.material,
+    projeto: row.projeto,
+    programa: row.programa,
+    quantidade: row.quantidade,
+    valorUnitario: row.valor_unitario,
+    valorTotal: row.valor_total,
+    periodo: row.periodo ?? '',
+    fornecedor: row.fornecedor,
+    categoria: normalizeCategoria(row.categoria),
+    status: 'Ativo' as Status,
+    area: 'Materiais',
+  }
+}
+
+async function loadTableData() {
+  tableLoading.value = true
+  tableError.value = ''
+
+  try {
+    const response = await fetch(`${CONFIG.API_BASE_URL}/compras/`)
+    if (!response.ok) {
+      throw new Error('N?o foi poss?vel carregar a tabela de materiais.')
+    }
+
+    const data = (await response.json()) as MaterialsApiRow[]
+    tableData.value = data.map(mapApiRow)
+  } catch (error) {
+    console.error(error)
+    tableError.value = 'N?o foi poss?vel carregar a tabela de materiais.'
+    tableData.value = []
+  } finally {
+    tableLoading.value = false
+  }
+}
+
 const { buildCharts, updateCharts, destroyCharts } = useCharts()
 
-onMounted(() => nextTick(() => buildCharts(RAW)))
+onMounted(async () => {
+  await loadTableData()
+  nextTick(() => buildCharts(RAW))
+})
 onUnmounted(destroyCharts)
 </script>
 
@@ -509,6 +583,8 @@ td.muted          { color: var(--text2); }
 td.mono           { font-family: 'IBM Plex Mono', monospace; font-size: 12px; }
 td.right          { text-align: right; }
 td.total          { font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 600; color: var(--green); }
+.table-feedback   { text-align: center; padding: 24px 16px; }
+.table-feedback.error { color: var(--red); }
 
 /* ── Badges ───────────────────────────────────────────────────────────────── */
 .badge    { display: inline-block; padding: 3px 9px; border-radius: 5px; font-size: 11px; font-weight: 500; }
