@@ -1,7 +1,8 @@
-import { describe, it, expect, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { nextTick } from 'vue'
 import GestaoMateriais from '@/views/GestaoMateriais.vue'
+import { RAW } from '@/data/materiais'
 import type { Filters, SortKey } from '@/types/materiais'
 
 // Mock useCharts composable
@@ -21,7 +22,31 @@ vi.mock('chart.js', () => ({
   })),
 }))
 
+const apiRows = RAW.map(row => ({
+  id: row.id,
+  material: row.material,
+  projeto: row.projeto,
+  programa: row.programa,
+  quantidade: row.quantidade,
+  valor_unitario: row.valorUnitario,
+  valor_total: row.valorTotal,
+  periodo: row.periodo,
+  fornecedor: row.fornecedor,
+  categoria: row.categoria,
+}))
+
 describe('GestaoMateriais.vue', () => {
+  beforeEach(() => {
+    vi.restoreAllMocks()
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => apiRows,
+      })
+    )
+  })
+
   const getVm = (wrapper: ReturnType<typeof mount>) =>
     wrapper.vm as unknown as {
       filters: Filters
@@ -32,34 +57,39 @@ describe('GestaoMateriais.vue', () => {
   it('renders the materials management page', async () => {
     const wrapper = mount(GestaoMateriais)
     await nextTick()
+    await nextTick()
 
     expect(wrapper.find('.filters-title').text()).toContain('Filtros')
     expect(wrapper.find('.filters-card').exists()).toBe(true)
   })
 
-  it('displays filter options', () => {
+  it('displays filter options', async () => {
     const wrapper = mount(GestaoMateriais)
+    await nextTick()
 
     const selects = wrapper.findAll('select')
     expect(selects.length).toBeGreaterThanOrEqual(4)
   })
 
-  it('renders the data table with headers', () => {
+  it('renders the data table with headers', async () => {
     const wrapper = mount(GestaoMateriais)
+    await nextTick()
 
     const headers = wrapper.findAll('th')
     expect(headers.length).toBeGreaterThan(0)
   })
 
-  it('displays pagination controls', () => {
+  it('displays pagination controls', async () => {
     const wrapper = mount(GestaoMateriais)
+    await nextTick()
 
     const pagination = wrapper.find('.pagination')
     expect(pagination.exists()).toBe(true)
   })
 
-  it('shows charts section', () => {
+  it('shows charts section', async () => {
     const wrapper = mount(GestaoMateriais)
+    await nextTick()
 
     const charts = wrapper.findAll('.chart-card')
     expect(charts.length).toBeGreaterThan(0)
@@ -67,6 +97,7 @@ describe('GestaoMateriais.vue', () => {
 
   it('CT01: filters data by period', async () => {
     const wrapper = mount(GestaoMateriais)
+    await nextTick()
 
     const selects = wrapper.findAll('select')
     if (selects.length > 0) {
@@ -77,6 +108,7 @@ describe('GestaoMateriais.vue', () => {
 
   it('CT02: filters data by program', async () => {
     const wrapper = mount(GestaoMateriais)
+    await nextTick()
 
     const selects = wrapper.findAll('select')
     if (selects.length > 1) {
@@ -87,6 +119,7 @@ describe('GestaoMateriais.vue', () => {
 
   it('CT03: searches materials by text', async () => {
     const wrapper = mount(GestaoMateriais)
+    await nextTick()
 
     const searchInput = wrapper.find('.search-input')
     if (searchInput.exists()) {
@@ -97,6 +130,7 @@ describe('GestaoMateriais.vue', () => {
 
   it('CT04: sorts table by material column', async () => {
     const wrapper = mount(GestaoMateriais)
+    await nextTick()
 
     const materialHeader = wrapper.find('th')
     if (materialHeader.exists()) {
@@ -107,6 +141,8 @@ describe('GestaoMateriais.vue', () => {
 
   it('CT05: changes page in pagination', async () => {
     const wrapper = mount(GestaoMateriais)
+    await nextTick()
+    await nextTick()
 
     const pageButton = wrapper.findAll('.pg-btn').find(btn => btn.text() === '2')
     if (pageButton && pageButton.exists()) {
