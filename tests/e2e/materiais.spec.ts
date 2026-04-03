@@ -1,14 +1,13 @@
 import { test, expect } from '@playwright/test'
 
 test.describe('Gestão de Materiais', () => {
-
   test.beforeEach(async ({ page }) => {
     await page.goto('http://localhost:5173')
   })
 
   test('CT01: should display materials management page', async ({ page }) => {
-    await expect(page.locator('h1')).toContainText('Gestão de Materiais')
-    await expect(page.locator('.filters')).toBeVisible()
+    await expect(page.locator('.filters-title')).toContainText('Filtros')
+    await expect(page.locator('.filters-card')).toBeVisible()
     await expect(page.locator('.table-card')).toBeVisible()
   })
 
@@ -29,7 +28,7 @@ test.describe('Gestão de Materiais', () => {
   })
 
   test('CT04: should search materials', async ({ page }) => {
-    await page.fill('input[type="text"]', 'Dell')
+    await page.locator('.search-input').fill('Dell')
 
     // Verificar se a busca funcionou
     await expect(page.locator('tbody tr')).toHaveCount(await page.locator('tbody tr').count())
@@ -52,8 +51,7 @@ test.describe('Gestão de Materiais', () => {
   })
 
   test('CT07: should display charts', async ({ page }) => {
-    await expect(page.locator('.chart-card')).toBeVisible()
-    await expect(page.locator('.chart-title')).toContainText('Evolução Temporal')
+    await expect(page.locator('.chart-card').first()).toBeVisible()
+    await expect(page.locator('.chart-title').last()).toContainText('Evolução Temporal')
   })
-
 })
