@@ -1,7 +1,8 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { nextTick } from 'vue'
 import GestaoMateriais from '@/views/GestaoMateriais.vue'
+import type { Filters, SortKey } from '@/types/materiais'
 
 // Mock useCharts composable
 vi.mock('@/composables/useCharts', () => ({
@@ -21,6 +22,13 @@ vi.mock('chart.js', () => ({
 }))
 
 describe('GestaoMateriais.vue', () => {
+  const getVm = (wrapper: ReturnType<typeof mount>) =>
+    wrapper.vm as unknown as {
+      filters: Filters
+      sortKey: SortKey
+      page: number
+    }
+
   it('renders the materials management page', async () => {
     const wrapper = mount(GestaoMateriais)
     await nextTick()
@@ -63,7 +71,7 @@ describe('GestaoMateriais.vue', () => {
     const selects = wrapper.findAll('select')
     if (selects.length > 0) {
       await selects[0].setValue('2024-01')
-      expect((wrapper.vm as any).filters.periodo).toBe('2024-01')
+      expect(getVm(wrapper).filters.periodo).toBe('2024-01')
     }
   })
 
@@ -73,7 +81,7 @@ describe('GestaoMateriais.vue', () => {
     const selects = wrapper.findAll('select')
     if (selects.length > 1) {
       await selects[1].setValue('Infraestrutura')
-      expect((wrapper.vm as any).filters.programa).toBe('Infraestrutura')
+      expect(getVm(wrapper).filters.programa).toBe('Infraestrutura')
     }
   })
 
@@ -83,7 +91,7 @@ describe('GestaoMateriais.vue', () => {
     const searchInput = wrapper.find('.search-input')
     if (searchInput.exists()) {
       await searchInput.setValue('Dell')
-      expect((wrapper.vm as any).filters.search).toBe('Dell')
+      expect(getVm(wrapper).filters.search).toBe('Dell')
     }
   })
 
@@ -93,7 +101,7 @@ describe('GestaoMateriais.vue', () => {
     const materialHeader = wrapper.find('th')
     if (materialHeader.exists()) {
       await materialHeader.trigger('click')
-      expect((wrapper.vm as any).sortKey).toBe('material')
+      expect(getVm(wrapper).sortKey).toBe('material')
     }
   })
 
@@ -103,7 +111,7 @@ describe('GestaoMateriais.vue', () => {
     const pageButton = wrapper.findAll('.pg-btn').find(btn => btn.text() === '2')
     if (pageButton && pageButton.exists()) {
       await pageButton.trigger('click')
-      expect((wrapper.vm as any).page).toBe(2)
+      expect(getVm(wrapper).page).toBe(2)
     }
   })
 })

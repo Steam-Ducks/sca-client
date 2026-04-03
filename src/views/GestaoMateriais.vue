@@ -160,8 +160,6 @@ import type { Filters, SortKey, SortDir } from '@/types/materiais'
 const PER_PAGE = 8
 
 // ─── State ────────────────────────────────────────────────────────────────────
-const activeTab = ref<'dashboard' | 'materials' | 'horas' | 'consolidado' | 'auditoria'>('materials')
-
 const filters = ref<Filters>({
   periodo: '', programa: '', projeto: '',
   categoria: '', status: '', area: '', search: '',
