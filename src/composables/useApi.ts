@@ -21,7 +21,12 @@ export const useApi = () => {
   }
 
   const healthCheck = async (): Promise<boolean> => {
-    return await apiService.health.check()
+    try {
+      return await apiService.health.check()
+    } catch (error) {
+      console.error(error)
+      return false
+    }
   }
 
   return { fetchUsers, createUser, healthCheck }
