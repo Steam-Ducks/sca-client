@@ -9,13 +9,12 @@ const router = createRouter({
   routes: [
     {
       path: '/',
-      name: 'home',
-      component: () => import('@/views/HomeView.vue'),
+      redirect: '/materiais',
     },
     {
-      path: '/about',
-      name: 'about',
-      component: () => import('@/views/AboutView.vue'),
+      path: '/materiais',
+      name: 'materiais',
+      component: () => import('@/views/GestaoMateriais.vue'),
     },
     {
       path: '/dashboard',
@@ -23,12 +22,23 @@ const router = createRouter({
       component: () => import('@/views/DashboardView.vue'),
     },
     {
-      path: '/technical-hours',        
-      name: 'technical-hours',
-      component: () => import('@/views/TechnicalHoursView.vue'),
+      path: '/horas',
+      name: 'horas',
+      component: () => import('@/views/HorasTecnicas.vue'),
+    },
+    {
+      path: '/consolidado',
+      name: 'consolidado',
+      component: () => import('@/views/Consolidado.vue'),
+    },
+    {
+      path: '/auditoria',
+      name: 'auditoria',
+      component: () => import('@/views/Auditoria.vue'),
     },
   ],
 })
+
 
 router.beforeEach((to, from, next) => {
   startTime = performance.now()
