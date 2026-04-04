@@ -23,7 +23,7 @@ const router = createRouter({
       component: () => import('@/views/DashboardView.vue'),
     },
     {
-      path: '/technical-hours',        // ← adicionar isso
+      path: '/technical-hours',        
       name: 'technical-hours',
       component: () => import('@/views/TechnicalHoursView.vue'),
     },
