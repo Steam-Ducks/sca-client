@@ -1,31 +1,42 @@
 .api-test {
   margin-top: 2rem;
-  padding: 1rem;
-  border: 1px solid #ccc;
-  border-radius: 8px;
+  padding: 1.5rem;
+  background: #0f172a;
+  border: 1px solid #1e293b;
+  border-radius: 12px;
+  color: #e2e8f0;
 }
 
+/* BOTÕES */
 button {
   margin-right: 1rem;
-  padding: 0.5rem 1rem;
-  background: #007bff;
+  padding: 0.6rem 1.2rem;
+  background: #2563eb;
   color: white;
   border: none;
-  border-radius: 4px;
+  border-radius: 6px;
   cursor: pointer;
+  transition: 0.2s;
+}
+
+button:hover {
+  background: #1d4ed8;
 }
 
 button:disabled {
-  background: #ccc;
+  background: #334155;
   cursor: not-allowed;
 }
 
+/* LISTA */
 ul {
   list-style: none;
   padding: 0;
+  margin-top: 1rem;
 }
 
 li {
-  padding: 0.5rem 0;
-  border-bottom: 1px solid #eee;
+  padding: 0.7rem 0;
+  border-bottom: 1px solid #1e293b;
+  color: #cbd5f5;
 }

@@ -1,6 +1,7 @@
 import type { User } from '@/types/api'
+import { CONFIG } from '@/utils/config'
 
-const apiBaseUrl = import.meta.env.VITE_API_BASE_URL
+const apiBaseUrl = CONFIG.API_BASE_URL
 
 export const userService = {
   async fetchUsers(): Promise<User[]> {
