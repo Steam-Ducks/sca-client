@@ -20,6 +20,7 @@ export default defineConfig({
       '.git',
       '.cache',
       'coverage',
+      'tests/**',
       'tests/e2e/**',
     ],
   },
