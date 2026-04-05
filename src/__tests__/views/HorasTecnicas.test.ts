@@ -6,14 +6,15 @@ describe('HorasTecnicas.vue', () => {
   it('renders the technical hours page', () => {
     const wrapper = mount(HorasTecnicas)
 
-    expect(wrapper.find('h1').text()).toBe('Horas Técnicas')
-    expect(wrapper.find('.page-content').exists()).toBe(true)
+    expect(wrapper.text()).toContain('Horas Técnicas')
+    expect(wrapper.find('.table-card').exists()).toBe(true)
   })
 
-  it('displays development message', () => {
+  it('displays metric cards and filters', () => {
     const wrapper = mount(HorasTecnicas)
 
-    expect(wrapper.text()).toContain('Horas Técnicas')
-    expect(wrapper.text()).toContain('desenvolvimento')
+    expect(wrapper.text()).toContain('Custo Total - Horas')
+    expect(wrapper.text()).toContain('Total de Horas')
+    expect(wrapper.text()).toContain('Filtros')
   })
 })
