@@ -1,25 +1,25 @@
 <template>
   <div class="app">
     <main class="main">
-      <h1 class="sr-only">Dashboard Principal</h1>
+      <h1 class="sr-only">Auditoria</h1>
 
       <!-- METRICS -->
       <div class="metrics">
         <div class="metric-card">
-          <div class="metric-label">Custo Total Geral</div>
-          <div class="metric-value blue">{{ fmt(kpis.custoTotal) }}</div>
+          <div class="metric-label">Total de Registros</div>
+          <div class="metric-value blue">{{ filteredData.length }}</div>
         </div>
         <div class="metric-card">
-          <div class="metric-label">Custo Materiais</div>
-          <div class="metric-value">{{ fmt(kpis.custoMateriais) }}</div>
+          <div class="metric-label">Aprovados</div>
+          <div class="metric-value green">{{ kpis.aprovados }}</div>
         </div>
         <div class="metric-card">
-          <div class="metric-label">Custo Horas Técnicas</div>
-          <div class="metric-value green">{{ fmt(kpis.custoHoras) }}</div>
+          <div class="metric-label">Pendentes</div>
+          <div class="metric-value amber">{{ kpis.pendentes }}</div>
         </div>
         <div class="metric-card">
-          <div class="metric-label">Total de Projetos</div>
-          <div class="metric-value">{{ kpis.totalProjetos }}</div>
+          <div class="metric-label">Rejeitados</div>
+          <div class="metric-value red">{{ kpis.rejeitados }}</div>
         </div>
       </div>
 
@@ -32,17 +32,25 @@
           Filtros
         </div>
         <div class="filters-row">
-          <select class="filter-select" v-model="filters.periodo">
-            <option value="">Todos os Períodos</option>
-            <option v-for="p in uniquePeriodos" :key="p" :value="p">{{ p }}</option>
+          <select class="filter-select" v-model="filters.tipo">
+            <option value="">Todos os Tipos</option>
+            <option v-for="t in uniqueTipos" :key="t" :value="t">{{ t }}</option>
           </select>
-          <select class="filter-select" v-model="filters.programa">
-            <option value="">Todos os Programas</option>
-            <option v-for="p in uniqueProgramas" :key="p" :value="p">{{ p }}</option>
+          <select class="filter-select" v-model="filters.status">
+            <option value="">Todos os Status</option>
+            <option v-for="s in uniqueStatuses" :key="s" :value="s">{{ s }}</option>
           </select>
           <select class="filter-select" v-model="filters.projeto">
             <option value="">Todos os Projetos</option>
             <option v-for="p in uniqueProjetos" :key="p" :value="p">{{ p }}</option>
+          </select>
+          <select class="filter-select" v-model="filters.responsavel">
+            <option value="">Todos os Responsáveis</option>
+            <option v-for="r in uniqueResponsaveis" :key="r" :value="r">{{ r }}</option>
+          </select>
+          <select class="filter-select" v-model="filters.programa">
+            <option value="">Todos os Programas</option>
+            <option v-for="p in uniqueProgramas" :key="p" :value="p">{{ p }}</option>
           </select>
           <button class="export-btn" @click="exportCSV">
             <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -57,55 +65,61 @@
       <!-- TOP CHARTS -->
       <div class="charts-row">
         <div class="chart-card">
-          <div class="chart-title">Custo Total por Programa</div>
-          <div class="chart-wrap tall"><canvas id="chartCustoPrograma"></canvas></div>
+          <div class="chart-title">Registros por Status</div>
+          <div class="chart-wrap tall"><canvas id="chartStatusPeriodo"></canvas></div>
         </div>
         <div class="chart-card">
-          <div class="chart-title">Comparativo: Materiais vs Horas Técnicas</div>
-          <div class="chart-wrap tall"><canvas id="chartComparativo"></canvas></div>
+          <div class="chart-title">Registros por Tipo</div>
+          <div class="chart-wrap tall"><canvas id="chartPorTipo"></canvas></div>
         </div>
       </div>
 
       <!-- BOTTOM CHARTS -->
       <div class="charts-row">
         <div class="chart-card">
-          <div class="chart-title">Top 10 – Projetos por Custo Total</div>
-          <div class="chart-wrap tall"><canvas id="chartTopProjetos"></canvas></div>
+          <div class="chart-title">Registros por Responsável</div>
+          <div class="chart-wrap tall"><canvas id="chartPorResponsavel"></canvas></div>
         </div>
         <div class="chart-card">
-          <div class="chart-title">Evolução Temporal do Custo</div>
-          <div class="chart-wrap tall"><canvas id="chartTemporalDash"></canvas></div>
+          <div class="chart-title">Evolução de Auditorias</div>
+          <div class="chart-wrap tall"><canvas id="chartTemporalAud"></canvas></div>
         </div>
       </div>
 
       <!-- TABLE -->
       <div class="table-card">
         <div class="table-header">
-          <h2>Resumo por Projeto</h2>
+          <h2>Registros de Auditoria</h2>
         </div>
         <div class="table-wrap">
           <table>
             <thead>
               <tr>
+                <th class="sort-col" @click="sortBy('tipo')">Tipo {{ sortIcon('tipo') }}</th>
+                <th class="sort-col" @click="sortBy('descricao')">Descrição {{ sortIcon('descricao') }}</th>
                 <th class="sort-col" @click="sortBy('projeto')">Projeto {{ sortIcon('projeto') }}</th>
                 <th class="sort-col" @click="sortBy('programa')">Programa {{ sortIcon('programa') }}</th>
-                <th class="sort-col" @click="sortBy('custoMateriais')">Custo Materiais {{ sortIcon('custoMateriais') }}</th>
-                <th class="sort-col" @click="sortBy('custoHoras')">Custo Horas {{ sortIcon('custoHoras') }}</th>
-                <th class="sort-col" @click="sortBy('custoTotal')">Custo Total {{ sortIcon('custoTotal') }}</th>
-                <th class="sort-col" @click="sortBy('periodo')">Período {{ sortIcon('periodo') }}</th>
+                <th class="sort-col" @click="sortBy('responsavel')">Responsável {{ sortIcon('responsavel') }}</th>
+                <th class="sort-col" @click="sortBy('dataRegistro')">Data Registro {{ sortIcon('dataRegistro') }}</th>
+                <th class="sort-col" @click="sortBy('dataRevisao')">Data Revisão {{ sortIcon('dataRevisao') }}</th>
+                <th class="sort-col" @click="sortBy('valorImpacto')">Valor Impacto {{ sortIcon('valorImpacto') }}</th>
+                <th>Status</th>
               </tr>
             </thead>
             <tbody>
               <tr v-if="pagedData.length === 0">
-                <td colspan="6" class="table-feedback muted">Nenhum registro encontrado.</td>
+                <td colspan="9" class="table-feedback muted">Nenhum registro encontrado.</td>
               </tr>
-              <tr v-for="row in pagedData" :key="row.projeto + row.periodo">
-                <td class="material-name">{{ row.projeto }}</td>
+              <tr v-for="row in pagedData" :key="row.id">
+                <td><span :class="tipoClass(row.tipo)">{{ row.tipo }}</span></td>
+                <td class="material-name">{{ row.descricao }}</td>
+                <td class="muted">{{ row.projeto }}</td>
                 <td class="muted">{{ row.programa }}</td>
-                <td class="mono">{{ fmt(row.custoMateriais) }}</td>
-                <td class="mono">{{ fmt(row.custoHoras) }}</td>
-                <td class="total">{{ fmt(row.custoTotal) }}</td>
-                <td class="mono">{{ row.periodo }}</td>
+                <td class="muted">{{ row.responsavel }}</td>
+                <td class="mono">{{ row.dataRegistro }}</td>
+                <td class="mono">{{ row.dataRevisao }}</td>
+                <td class="mono">{{ fmt(row.valorImpacto) }}</td>
+                <td><span :class="statusClass(row.status)">{{ row.status }}</span></td>
               </tr>
             </tbody>
           </table>
@@ -132,47 +146,55 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
-import { useChartsDashboard } from '@/composables/useChartsDashboard'
-import type { DashboardRow } from '@/composables/useChartsDashboard'
+import { useChartsAuditoria } from '@/composables/useChartsAuditoria'
+import type { AuditoriaRow } from '@/composables/useChartsAuditoria'
 
 const PER_PAGE = 8
 
 // ─── Mock data ───────────────────────────────────────────────────────────────
-const MOCK: DashboardRow[] = [
-  { projeto: 'Data Center Regional',     programa: 'Infraestrutura',  custoMateriais: 245000, custoHoras: 217400, custoTotal: 462400, periodo: '2024-01' },
-  { projeto: 'Storage Upgrade',          programa: 'Infraestrutura',  custoMateriais: 189000, custoHoras: 95000,  custoTotal: 284000, periodo: '2024-01' },
-  { projeto: 'Migração AWS',             programa: 'Cloud',           custoMateriais: 156000, custoHoras: 282000, custoTotal: 438000, periodo: '2024-01' },
-  { projeto: 'SOC Implementation',       programa: 'Segurança',       custoMateriais: 178000, custoHoras: 216200, custoTotal: 394200, periodo: '2024-03' },
-  { projeto: 'Modernização de Rede',     programa: 'Infraestrutura',  custoMateriais: 134500, custoHoras: 95700,  custoTotal: 230200, periodo: '2024-03' },
-  { projeto: 'Sistema ERP',              programa: 'Desenvolvimento', custoMateriais: 67000,  custoHoras: 441200, custoTotal: 508200, periodo: '2024-02' },
-  { projeto: 'Portal Web',              programa: 'Desenvolvimento', custoMateriais: 52000,  custoHoras: 328800, custoTotal: 380800, periodo: '2024-01' },
-  { projeto: 'Container Platform',       programa: 'Cloud',           custoMateriais: 98000,  custoHoras: 145000, custoTotal: 243000, periodo: '2024-02' },
-  { projeto: 'App Mobile',              programa: 'Desenvolvimento', custoMateriais: 34000,  custoHoras: 132400, custoTotal: 166400, periodo: '2024-02' },
-  { projeto: 'DevOps Pipeline',          programa: 'Desenvolvimento', custoMateriais: 87000,  custoHoras: 110000, custoTotal: 197000, periodo: '2024-03' },
-  { projeto: 'Firewall Corporativo',     programa: 'Segurança',       custoMateriais: 142000, custoHoras: 78000,  custoTotal: 220000, periodo: '2024-02' },
-  { projeto: 'CRM Customizado',          programa: 'Desenvolvimento', custoMateriais: 45000,  custoHoras: 165000, custoTotal: 210000, periodo: '2024-03' },
+const MOCK: AuditoriaRow[] = [
+  { id: 1,  tipo: 'Compra de Material',  descricao: 'Aquisição de servidores Dell PowerEdge',      projeto: 'Data Center Regional',   programa: 'Infraestrutura',  responsavel: 'João Silva',      dataRegistro: '2024-01-15', dataRevisao: '2024-01-20', status: 'Aprovado',   valorImpacto: 185000, observacao: '' },
+  { id: 2,  tipo: 'Horas Técnicas',      descricao: 'Consultoria em arquitetura cloud',            projeto: 'Migração AWS',           programa: 'Cloud',           responsavel: 'Lucas Martins',   dataRegistro: '2024-01-18', dataRevisao: '2024-01-25', status: 'Aprovado',   valorImpacto: 168000, observacao: '' },
+  { id: 3,  tipo: 'Compra de Material',  descricao: 'Licenças VMware vSphere Enterprise',          projeto: 'Container Platform',     programa: 'Cloud',           responsavel: 'Beatriz Rocha',   dataRegistro: '2024-02-05', dataRevisao: '2024-02-12', status: 'Aprovado',   valorImpacto: 98000,  observacao: '' },
+  { id: 4,  tipo: 'Contrato',            descricao: 'Contrato de suporte AWS Enterprise',          projeto: 'Migração AWS',           programa: 'Cloud',           responsavel: 'Lucas Martins',   dataRegistro: '2024-02-10', dataRevisao: '',           status: 'Pendente',   valorImpacto: 240000, observacao: 'Aguardando aprovação diretoria' },
+  { id: 5,  tipo: 'Horas Técnicas',      descricao: 'Desenvolvimento módulo financeiro ERP',       projeto: 'Sistema ERP',            programa: 'Desenvolvimento', responsavel: 'Juliana Lima',    dataRegistro: '2024-02-14', dataRevisao: '2024-02-20', status: 'Aprovado',   valorImpacto: 155800, observacao: '' },
+  { id: 6,  tipo: 'Compra de Material',  descricao: 'Switches Cisco Catalyst 9300',                projeto: 'Modernização de Rede',   programa: 'Infraestrutura',  responsavel: 'Diego Castillo',  dataRegistro: '2024-02-20', dataRevisao: '2024-03-01', status: 'Rejeitado',  valorImpacto: 134500, observacao: 'Orçamento excedido' },
+  { id: 7,  tipo: 'Ajuste Orçamentário', descricao: 'Remanejamento verba infraestrutura → cloud',  projeto: 'Storage Upgrade',        programa: 'Infraestrutura',  responsavel: 'João Silva',      dataRegistro: '2024-03-01', dataRevisao: '2024-03-05', status: 'Aprovado',   valorImpacto: 89000,  observacao: '' },
+  { id: 8,  tipo: 'Horas Técnicas',      descricao: 'Implementação regras SOC/SIEM',               projeto: 'SOC Implementation',     programa: 'Segurança',       responsavel: 'Roberto Alves',   dataRegistro: '2024-03-05', dataRevisao: '',           status: 'Em Análise', valorImpacto: 120000, observacao: 'Em revisão pelo comitê' },
+  { id: 9,  tipo: 'Compra de Material',  descricao: 'Firewalls Palo Alto PA-5200',                 projeto: 'Firewall Corporativo',   programa: 'Segurança',       responsavel: 'Roberto Alves',   dataRegistro: '2024-03-08', dataRevisao: '2024-03-15', status: 'Aprovado',   valorImpacto: 142000, observacao: '' },
+  { id: 10, tipo: 'Contrato',            descricao: 'Renovação licenças Microsoft 365',            projeto: 'Sistema ERP',            programa: 'Desenvolvimento', responsavel: 'Fernanda Torres', dataRegistro: '2024-03-10', dataRevisao: '',           status: 'Pendente',   valorImpacto: 67000,  observacao: 'Análise de custo-benefício' },
+  { id: 11, tipo: 'Horas Técnicas',      descricao: 'Design UX portal institucional',              projeto: 'Portal Web',             programa: 'Desenvolvimento', responsavel: 'Camila Nunes',    dataRegistro: '2024-01-22', dataRevisao: '2024-01-28', status: 'Aprovado',   valorImpacto: 72800,  observacao: '' },
+  { id: 12, tipo: 'Ajuste Orçamentário', descricao: 'Aumento de verba para segurança',             projeto: 'SOC Implementation',     programa: 'Segurança',       responsavel: 'Marcos Pereira',  dataRegistro: '2024-03-12', dataRevisao: '',           status: 'Pendente',   valorImpacto: 95000,  observacao: 'Pendente aprovação financeiro' },
+  { id: 13, tipo: 'Compra de Material',  descricao: 'Storage NetApp AFF A400',                     projeto: 'Storage Upgrade',        programa: 'Infraestrutura',  responsavel: 'Ricardo Souza',   dataRegistro: '2024-01-10', dataRevisao: '2024-01-18', status: 'Aprovado',   valorImpacto: 189000, observacao: '' },
+  { id: 14, tipo: 'Horas Técnicas',      descricao: 'Configuração pipeline CI/CD',                 projeto: 'DevOps Pipeline',        programa: 'Desenvolvimento', responsavel: 'Pedro Costa',     dataRegistro: '2024-03-15', dataRevisao: '2024-03-20', status: 'Aprovado',   valorImpacto: 87000,  observacao: '' },
+  { id: 15, tipo: 'Contrato',            descricao: 'SLA suporte Palo Alto Networks',              projeto: 'Firewall Corporativo',   programa: 'Segurança',       responsavel: 'Roberto Alves',   dataRegistro: '2024-02-25', dataRevisao: '2024-03-02', status: 'Rejeitado',  valorImpacto: 56000,  observacao: 'SLA inadequado' },
+  { id: 16, tipo: 'Compra de Material',  descricao: 'Módulos de memória para CRM',                 projeto: 'CRM Customizado',        programa: 'Desenvolvimento', responsavel: 'Thiago Ramos',    dataRegistro: '2024-03-18', dataRevisao: '',           status: 'Em Análise', valorImpacto: 45000,  observacao: 'Verificando compatibilidade' },
 ]
 
 // ─── State ───────────────────────────────────────────────────────────────────
-const tableData = ref<DashboardRow[]>([])
-const filters = ref({ periodo: '', programa: '', projeto: '' })
-const sortKey = ref<keyof DashboardRow>('custoTotal')
+const tableData = ref<AuditoriaRow[]>([])
+const filters = ref({ tipo: '', status: '', projeto: '', responsavel: '', programa: '' })
+const sortKey = ref<keyof AuditoriaRow>('dataRegistro')
 const sortDir = ref<1 | -1>(-1)
 const page    = ref(1)
 
 // ─── Filter options ──────────────────────────────────────────────────────────
-const uniquePeriodos  = computed(() => [...new Set(tableData.value.map(r => r.periodo))].sort())
-const uniqueProgramas = computed(() => [...new Set(tableData.value.map(r => r.programa))].sort())
-const uniqueProjetos  = computed(() => [...new Set(tableData.value.map(r => r.projeto))].sort())
+const uniqueTipos        = computed(() => [...new Set(tableData.value.map(r => r.tipo))].sort())
+const uniqueStatuses     = computed(() => [...new Set(tableData.value.map(r => r.status))].sort())
+const uniqueProjetos     = computed(() => [...new Set(tableData.value.map(r => r.projeto))].sort())
+const uniqueResponsaveis = computed(() => [...new Set(tableData.value.map(r => r.responsavel))].sort())
+const uniqueProgramas    = computed(() => [...new Set(tableData.value.map(r => r.programa))].sort())
 
 // ─── Computed ────────────────────────────────────────────────────────────────
 const filteredData = computed(() => {
   const f = filters.value
   return tableData.value
     .filter(r =>
-      (!f.periodo  || r.periodo  === f.periodo)  &&
-      (!f.programa || r.programa === f.programa) &&
-      (!f.projeto  || r.projeto  === f.projeto)
+      (!f.tipo        || r.tipo        === f.tipo)        &&
+      (!f.status      || r.status      === f.status)      &&
+      (!f.projeto     || r.projeto     === f.projeto)     &&
+      (!f.responsavel || r.responsavel === f.responsavel) &&
+      (!f.programa    || r.programa    === f.programa)
     )
     .sort((a, b) => {
       const av = a[sortKey.value], bv = b[sortKey.value]
@@ -185,10 +207,9 @@ const filteredData = computed(() => {
 const kpis = computed(() => {
   const d = filteredData.value
   return {
-    custoTotal:     d.reduce((s, r) => s + r.custoTotal, 0),
-    custoMateriais: d.reduce((s, r) => s + r.custoMateriais, 0),
-    custoHoras:     d.reduce((s, r) => s + r.custoHoras, 0),
-    totalProjetos:  new Set(d.map(r => r.projeto)).size,
+    aprovados:  d.filter(r => r.status === 'Aprovado').length,
+    pendentes:  d.filter(r => r.status === 'Pendente' || r.status === 'Em Análise').length,
+    rejeitados: d.filter(r => r.status === 'Rejeitado').length,
   }
 })
 
@@ -209,27 +230,47 @@ watch(filteredData, val => {
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 const fmt = (v: number) => 'R$ ' + v.toLocaleString('pt-BR', { minimumFractionDigits: 2 })
 
-function sortBy(k: keyof DashboardRow) {
+function sortBy(k: keyof AuditoriaRow) {
   if (sortKey.value === k) sortDir.value = (sortDir.value * -1) as 1 | -1
   else { sortKey.value = k; sortDir.value = -1 }
 }
-const sortIcon = (k: keyof DashboardRow) =>
+const sortIcon = (k: keyof AuditoriaRow) =>
   sortKey.value !== k ? '↕' : sortDir.value > 0 ? '↑' : '↓'
 
+function statusClass(s: string) {
+  const map: Record<string, string> = {
+    'Aprovado':   'badge badge-st',
+    'Pendente':   'badge badge-sg',
+    'Em Análise': 'badge badge-hw',
+    'Rejeitado':  'badge badge-rd',
+  }
+  return map[s] ?? 'badge badge-hw'
+}
+
+function tipoClass(t: string) {
+  const map: Record<string, string> = {
+    'Compra de Material':  'badge badge-hw',
+    'Horas Técnicas':      'badge badge-cl',
+    'Contrato':            'badge badge-sg',
+    'Ajuste Orçamentário': 'badge badge-sw',
+  }
+  return map[t] ?? 'badge badge-hw'
+}
+
 function exportCSV() {
-  const header = 'Projeto,Programa,Custo Materiais,Custo Horas,Custo Total,Período'
+  const header = 'Tipo,Descrição,Projeto,Programa,Responsável,Data Registro,Data Revisão,Valor Impacto,Status'
   const rows = filteredData.value.map(r =>
-    [r.projeto, r.programa, r.custoMateriais, r.custoHoras, r.custoTotal, r.periodo].join(',')
+    [r.tipo, r.descricao, r.projeto, r.programa, r.responsavel, r.dataRegistro, r.dataRevisao, r.valorImpacto, r.status].join(',')
   )
   const csv = [header, ...rows].join('\n')
   const a = document.createElement('a')
   a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv)
-  a.download = 'dashboard-geral.csv'
+  a.download = 'auditoria.csv'
   a.click()
 }
 
 // ─── Charts ──────────────────────────────────────────────────────────────────
-const { buildCharts, updateCharts, destroyCharts } = useChartsDashboard()
+const { buildCharts, updateCharts, destroyCharts } = useChartsAuditoria()
 
 onMounted(() => {
   tableData.value = MOCK
@@ -297,6 +338,8 @@ onUnmounted(destroyCharts)
 }
 .metric-value.blue  { color: var(--blue); }
 .metric-value.green { color: var(--green); }
+.metric-value.amber { color: var(--amber); }
+.metric-value.red   { color: var(--red); }
 
 /* ── Filters ──────────────────────────────────────────────────────────────── */
 .filters-card {
@@ -361,7 +404,7 @@ onUnmounted(destroyCharts)
 .table-header h2  { font-size: 14px; font-weight: 500; }
 .table-wrap       { overflow-x: auto; }
 
-table             { width: 100%; min-width: 760px; border-collapse: collapse; }
+table             { width: 100%; min-width: 1200px; border-collapse: collapse; }
 thead tr          { border-bottom: 1px solid var(--border); }
 th {
   padding: 11px 16px; text-align: left;
@@ -374,12 +417,21 @@ tbody tr          { border-bottom: 1px solid var(--border); transition: backgrou
 tbody tr:hover    { background: var(--bg3); }
 tbody tr:last-child { border-bottom: none; }
 td                { padding: 13px 16px; font-size: 13px; color: var(--text); white-space: nowrap; }
-td.material-name  { font-weight: 500; color: #fff; }
+td.material-name  { font-weight: 500; color: #fff; max-width: 280px; overflow: hidden; text-overflow: ellipsis; }
 td.muted          { color: var(--text2); }
 td.mono           { font-family: 'IBM Plex Mono', monospace; font-size: 12px; }
 td.total          { font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 600; color: var(--green); }
 .table-feedback   { text-align: center; padding: 24px 16px; }
 .table-feedback.muted { color: var(--text3); }
+
+/* ── Badges ───────────────────────────────────────────────────────────────── */
+.badge    { display: inline-block; padding: 3px 9px; border-radius: 5px; font-size: 11px; font-weight: 500; }
+.badge-hw { background: rgba(77,143,255,.15);  color: var(--blue); }
+.badge-st { background: rgba(45,212,160,.12);  color: var(--green); }
+.badge-cl { background: rgba(155,127,255,.12); color: var(--purple); }
+.badge-sg { background: rgba(245,166,35,.12);  color: var(--amber); }
+.badge-sw { background: rgba(245,166,35,.12);  color: var(--amber); }
+.badge-rd { background: rgba(245,90,90,.12);   color: var(--red); }
 
 /* ── Pagination ───────────────────────────────────────────────────────────── */
 .pagination {

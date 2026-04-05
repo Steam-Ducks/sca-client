@@ -1,12 +1,12 @@
 <template>
   <div class="app">
     <main class="main">
-      <h1 class="sr-only">Dashboard Principal</h1>
+      <h1 class="sr-only">Consolidado</h1>
 
       <!-- METRICS -->
       <div class="metrics">
         <div class="metric-card">
-          <div class="metric-label">Custo Total Geral</div>
+          <div class="metric-label">Custo Total Consolidado</div>
           <div class="metric-value blue">{{ fmt(kpis.custoTotal) }}</div>
         </div>
         <div class="metric-card">
@@ -44,6 +44,10 @@
             <option value="">Todos os Projetos</option>
             <option v-for="p in uniqueProjetos" :key="p" :value="p">{{ p }}</option>
           </select>
+          <select class="filter-select" v-model="filters.status">
+            <option value="">Todos os Status</option>
+            <option v-for="s in uniqueStatuses" :key="s" :value="s">{{ s }}</option>
+          </select>
           <button class="export-btn" @click="exportCSV">
             <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path d="M12 16l-4-4h3V4h2v8h3l-4 4z" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
@@ -57,31 +61,31 @@
       <!-- TOP CHARTS -->
       <div class="charts-row">
         <div class="chart-card">
-          <div class="chart-title">Custo Total por Programa</div>
-          <div class="chart-wrap tall"><canvas id="chartCustoPrograma"></canvas></div>
+          <div class="chart-title">Distribuição de Custos por Projeto (Materiais vs Horas)</div>
+          <div class="chart-wrap tall"><canvas id="chartDistribuicao"></canvas></div>
         </div>
         <div class="chart-card">
-          <div class="chart-title">Comparativo: Materiais vs Horas Técnicas</div>
-          <div class="chart-wrap tall"><canvas id="chartComparativo"></canvas></div>
+          <div class="chart-title">Custo Total por Programa</div>
+          <div class="chart-wrap tall"><canvas id="chartPorPrograma"></canvas></div>
         </div>
       </div>
 
       <!-- BOTTOM CHARTS -->
       <div class="charts-row">
         <div class="chart-card">
-          <div class="chart-title">Top 10 – Projetos por Custo Total</div>
-          <div class="chart-wrap tall"><canvas id="chartTopProjetos"></canvas></div>
+          <div class="chart-title">Top 10 – Maior Custo Total</div>
+          <div class="chart-wrap tall"><canvas id="chartTopCustos"></canvas></div>
         </div>
         <div class="chart-card">
-          <div class="chart-title">Evolução Temporal do Custo</div>
-          <div class="chart-wrap tall"><canvas id="chartTemporalDash"></canvas></div>
+          <div class="chart-title">Evolução Mensal Consolidada</div>
+          <div class="chart-wrap tall"><canvas id="chartTemporalCons"></canvas></div>
         </div>
       </div>
 
       <!-- TABLE -->
       <div class="table-card">
         <div class="table-header">
-          <h2>Resumo por Projeto</h2>
+          <h2>Tabela Consolidada por Projeto</h2>
         </div>
         <div class="table-wrap">
           <table>
@@ -92,20 +96,26 @@
                 <th class="sort-col" @click="sortBy('custoMateriais')">Custo Materiais {{ sortIcon('custoMateriais') }}</th>
                 <th class="sort-col" @click="sortBy('custoHoras')">Custo Horas {{ sortIcon('custoHoras') }}</th>
                 <th class="sort-col" @click="sortBy('custoTotal')">Custo Total {{ sortIcon('custoTotal') }}</th>
+                <th class="sort-col" @click="sortBy('qtdMateriais')">Qtd Materiais {{ sortIcon('qtdMateriais') }}</th>
+                <th class="sort-col" @click="sortBy('totalHoras')">Total Horas {{ sortIcon('totalHoras') }}</th>
                 <th class="sort-col" @click="sortBy('periodo')">Período {{ sortIcon('periodo') }}</th>
+                <th>Status</th>
               </tr>
             </thead>
             <tbody>
               <tr v-if="pagedData.length === 0">
-                <td colspan="6" class="table-feedback muted">Nenhum registro encontrado.</td>
+                <td colspan="9" class="table-feedback muted">Nenhum registro encontrado.</td>
               </tr>
-              <tr v-for="row in pagedData" :key="row.projeto + row.periodo">
+              <tr v-for="row in pagedData" :key="row.id">
                 <td class="material-name">{{ row.projeto }}</td>
                 <td class="muted">{{ row.programa }}</td>
                 <td class="mono">{{ fmt(row.custoMateriais) }}</td>
                 <td class="mono">{{ fmt(row.custoHoras) }}</td>
                 <td class="total">{{ fmt(row.custoTotal) }}</td>
+                <td class="mono right">{{ row.qtdMateriais }}</td>
+                <td class="mono right">{{ row.totalHoras }}h</td>
                 <td class="mono">{{ row.periodo }}</td>
+                <td><span :class="statusClass(row.status)">{{ row.status }}</span></td>
               </tr>
             </tbody>
           </table>
@@ -132,31 +142,31 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
-import { useChartsDashboard } from '@/composables/useChartsDashboard'
-import type { DashboardRow } from '@/composables/useChartsDashboard'
+import { useChartsConsolidado } from '@/composables/useChartsConsolidado'
+import type { ConsolidadoRow } from '@/composables/useChartsConsolidado'
 
 const PER_PAGE = 8
 
 // ─── Mock data ───────────────────────────────────────────────────────────────
-const MOCK: DashboardRow[] = [
-  { projeto: 'Data Center Regional',     programa: 'Infraestrutura',  custoMateriais: 245000, custoHoras: 217400, custoTotal: 462400, periodo: '2024-01' },
-  { projeto: 'Storage Upgrade',          programa: 'Infraestrutura',  custoMateriais: 189000, custoHoras: 95000,  custoTotal: 284000, periodo: '2024-01' },
-  { projeto: 'Migração AWS',             programa: 'Cloud',           custoMateriais: 156000, custoHoras: 282000, custoTotal: 438000, periodo: '2024-01' },
-  { projeto: 'SOC Implementation',       programa: 'Segurança',       custoMateriais: 178000, custoHoras: 216200, custoTotal: 394200, periodo: '2024-03' },
-  { projeto: 'Modernização de Rede',     programa: 'Infraestrutura',  custoMateriais: 134500, custoHoras: 95700,  custoTotal: 230200, periodo: '2024-03' },
-  { projeto: 'Sistema ERP',              programa: 'Desenvolvimento', custoMateriais: 67000,  custoHoras: 441200, custoTotal: 508200, periodo: '2024-02' },
-  { projeto: 'Portal Web',              programa: 'Desenvolvimento', custoMateriais: 52000,  custoHoras: 328800, custoTotal: 380800, periodo: '2024-01' },
-  { projeto: 'Container Platform',       programa: 'Cloud',           custoMateriais: 98000,  custoHoras: 145000, custoTotal: 243000, periodo: '2024-02' },
-  { projeto: 'App Mobile',              programa: 'Desenvolvimento', custoMateriais: 34000,  custoHoras: 132400, custoTotal: 166400, periodo: '2024-02' },
-  { projeto: 'DevOps Pipeline',          programa: 'Desenvolvimento', custoMateriais: 87000,  custoHoras: 110000, custoTotal: 197000, periodo: '2024-03' },
-  { projeto: 'Firewall Corporativo',     programa: 'Segurança',       custoMateriais: 142000, custoHoras: 78000,  custoTotal: 220000, periodo: '2024-02' },
-  { projeto: 'CRM Customizado',          programa: 'Desenvolvimento', custoMateriais: 45000,  custoHoras: 165000, custoTotal: 210000, periodo: '2024-03' },
+const MOCK: ConsolidadoRow[] = [
+  { id: 1,  projeto: 'Data Center Regional',     programa: 'Infraestrutura',  custoMateriais: 245000, custoHoras: 217400, custoTotal: 462400, qtdMateriais: 48, totalHoras: 660,  periodo: '2024-01', status: 'Concluído' },
+  { id: 2,  projeto: 'Storage Upgrade',          programa: 'Infraestrutura',  custoMateriais: 189000, custoHoras: 95000,  custoTotal: 284000, qtdMateriais: 35, totalHoras: 320,  periodo: '2024-01', status: 'Concluído' },
+  { id: 3,  projeto: 'Migração AWS',             programa: 'Cloud',           custoMateriais: 156000, custoHoras: 282000, custoTotal: 438000, qtdMateriais: 28, totalHoras: 780,  periodo: '2024-01', status: 'Em Andamento' },
+  { id: 4,  projeto: 'SOC Implementation',       programa: 'Segurança',       custoMateriais: 178000, custoHoras: 216200, custoTotal: 394200, qtdMateriais: 42, totalHoras: 560,  periodo: '2024-03', status: 'Em Andamento' },
+  { id: 5,  projeto: 'Modernização de Rede',     programa: 'Infraestrutura',  custoMateriais: 134500, custoHoras: 95700,  custoTotal: 230200, qtdMateriais: 30, totalHoras: 290,  periodo: '2024-03', status: 'Concluído' },
+  { id: 6,  projeto: 'Sistema ERP',              programa: 'Desenvolvimento', custoMateriais: 67000,  custoHoras: 441200, custoTotal: 508200, qtdMateriais: 15, totalHoras: 1370, periodo: '2024-02', status: 'Em Andamento' },
+  { id: 7,  projeto: 'Portal Web',              programa: 'Desenvolvimento', custoMateriais: 52000,  custoHoras: 328800, custoTotal: 380800, qtdMateriais: 12, totalHoras: 1250, periodo: '2024-01', status: 'Concluído' },
+  { id: 8,  projeto: 'Container Platform',       programa: 'Cloud',           custoMateriais: 98000,  custoHoras: 145000, custoTotal: 243000, qtdMateriais: 22, totalHoras: 450,  periodo: '2024-02', status: 'Em Andamento' },
+  { id: 9,  projeto: 'App Mobile',              programa: 'Desenvolvimento', custoMateriais: 34000,  custoHoras: 132400, custoTotal: 166400, qtdMateriais: 8,  totalHoras: 510,  periodo: '2024-02', status: 'Planejado' },
+  { id: 10, projeto: 'DevOps Pipeline',          programa: 'Desenvolvimento', custoMateriais: 87000,  custoHoras: 110000, custoTotal: 197000, qtdMateriais: 20, totalHoras: 380,  periodo: '2024-03', status: 'Concluído' },
+  { id: 11, projeto: 'Firewall Corporativo',     programa: 'Segurança',       custoMateriais: 142000, custoHoras: 78000,  custoTotal: 220000, qtdMateriais: 38, totalHoras: 240,  periodo: '2024-02', status: 'Concluído' },
+  { id: 12, projeto: 'CRM Customizado',          programa: 'Desenvolvimento', custoMateriais: 45000,  custoHoras: 165000, custoTotal: 210000, qtdMateriais: 10, totalHoras: 580,  periodo: '2024-03', status: 'Planejado' },
 ]
 
 // ─── State ───────────────────────────────────────────────────────────────────
-const tableData = ref<DashboardRow[]>([])
-const filters = ref({ periodo: '', programa: '', projeto: '' })
-const sortKey = ref<keyof DashboardRow>('custoTotal')
+const tableData = ref<ConsolidadoRow[]>([])
+const filters = ref({ periodo: '', programa: '', projeto: '', status: '' })
+const sortKey = ref<keyof ConsolidadoRow>('custoTotal')
 const sortDir = ref<1 | -1>(-1)
 const page    = ref(1)
 
@@ -164,6 +174,7 @@ const page    = ref(1)
 const uniquePeriodos  = computed(() => [...new Set(tableData.value.map(r => r.periodo))].sort())
 const uniqueProgramas = computed(() => [...new Set(tableData.value.map(r => r.programa))].sort())
 const uniqueProjetos  = computed(() => [...new Set(tableData.value.map(r => r.projeto))].sort())
+const uniqueStatuses  = computed(() => [...new Set(tableData.value.map(r => r.status))].sort())
 
 // ─── Computed ────────────────────────────────────────────────────────────────
 const filteredData = computed(() => {
@@ -172,7 +183,8 @@ const filteredData = computed(() => {
     .filter(r =>
       (!f.periodo  || r.periodo  === f.periodo)  &&
       (!f.programa || r.programa === f.programa) &&
-      (!f.projeto  || r.projeto  === f.projeto)
+      (!f.projeto  || r.projeto  === f.projeto)  &&
+      (!f.status   || r.status   === f.status)
     )
     .sort((a, b) => {
       const av = a[sortKey.value], bv = b[sortKey.value]
@@ -209,27 +221,37 @@ watch(filteredData, val => {
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 const fmt = (v: number) => 'R$ ' + v.toLocaleString('pt-BR', { minimumFractionDigits: 2 })
 
-function sortBy(k: keyof DashboardRow) {
+function sortBy(k: keyof ConsolidadoRow) {
   if (sortKey.value === k) sortDir.value = (sortDir.value * -1) as 1 | -1
   else { sortKey.value = k; sortDir.value = -1 }
 }
-const sortIcon = (k: keyof DashboardRow) =>
+const sortIcon = (k: keyof ConsolidadoRow) =>
   sortKey.value !== k ? '↕' : sortDir.value > 0 ? '↑' : '↓'
 
+function statusClass(s: string) {
+  const map: Record<string, string> = {
+    'Concluído':    'badge badge-st',
+    'Em Andamento': 'badge badge-hw',
+    'Planejado':    'badge badge-sg',
+    'Cancelado':    'badge badge-rd',
+  }
+  return map[s] ?? 'badge badge-hw'
+}
+
 function exportCSV() {
-  const header = 'Projeto,Programa,Custo Materiais,Custo Horas,Custo Total,Período'
+  const header = 'Projeto,Programa,Custo Materiais,Custo Horas,Custo Total,Qtd Materiais,Total Horas,Período,Status'
   const rows = filteredData.value.map(r =>
-    [r.projeto, r.programa, r.custoMateriais, r.custoHoras, r.custoTotal, r.periodo].join(',')
+    [r.projeto, r.programa, r.custoMateriais, r.custoHoras, r.custoTotal, r.qtdMateriais, r.totalHoras, r.periodo, r.status].join(',')
   )
   const csv = [header, ...rows].join('\n')
   const a = document.createElement('a')
   a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv)
-  a.download = 'dashboard-geral.csv'
+  a.download = 'consolidado.csv'
   a.click()
 }
 
 // ─── Charts ──────────────────────────────────────────────────────────────────
-const { buildCharts, updateCharts, destroyCharts } = useChartsDashboard()
+const { buildCharts, updateCharts, destroyCharts } = useChartsConsolidado()
 
 onMounted(() => {
   tableData.value = MOCK
@@ -361,7 +383,7 @@ onUnmounted(destroyCharts)
 .table-header h2  { font-size: 14px; font-weight: 500; }
 .table-wrap       { overflow-x: auto; }
 
-table             { width: 100%; min-width: 760px; border-collapse: collapse; }
+table             { width: 100%; min-width: 1060px; border-collapse: collapse; }
 thead tr          { border-bottom: 1px solid var(--border); }
 th {
   padding: 11px 16px; text-align: left;
@@ -377,9 +399,19 @@ td                { padding: 13px 16px; font-size: 13px; color: var(--text); whi
 td.material-name  { font-weight: 500; color: #fff; }
 td.muted          { color: var(--text2); }
 td.mono           { font-family: 'IBM Plex Mono', monospace; font-size: 12px; }
+td.right          { text-align: right; }
 td.total          { font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 600; color: var(--green); }
 .table-feedback   { text-align: center; padding: 24px 16px; }
 .table-feedback.muted { color: var(--text3); }
+
+/* ── Badges ───────────────────────────────────────────────────────────────── */
+.badge    { display: inline-block; padding: 3px 9px; border-radius: 5px; font-size: 11px; font-weight: 500; }
+.badge-hw { background: rgba(77,143,255,.15);  color: var(--blue); }
+.badge-st { background: rgba(45,212,160,.12);  color: var(--green); }
+.badge-cl { background: rgba(155,127,255,.12); color: var(--purple); }
+.badge-sg { background: rgba(245,166,35,.12);  color: var(--amber); }
+.badge-sw { background: rgba(245,166,35,.12);  color: var(--amber); }
+.badge-rd { background: rgba(245,90,90,.12);   color: var(--red); }
 
 /* ── Pagination ───────────────────────────────────────────────────────────── */
 .pagination {
