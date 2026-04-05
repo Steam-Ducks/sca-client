@@ -65,31 +65,27 @@
         </div>
       </div>
 
-      <!-- TOP CHARTS -->
+      <!-- TOP CHARTS: Horas e Custo por Projeto -->
       <div class="charts-row">
         <div class="chart-card">
           <div class="chart-title">Total de Horas por Projeto</div>
-          <div class="bar-chart">
-            <div v-for="item in horasPorProjeto" :key="item.projeto" class="bar-row">
-              <span class="bar-label" :title="item.projeto">{{ item.projeto }}</span>
-              <div class="bar-track">
-                <div class="bar-fill blue-bar" :style="{ width: item.pct + '%' }"></div>
-              </div>
-              <span class="bar-val">{{ item.horas }}h</span>
-            </div>
-          </div>
+          <div class="chart-wrap tall"><canvas id="chartHorasProjeto"></canvas></div>
         </div>
         <div class="chart-card">
           <div class="chart-title">Custo de Horas por Projeto</div>
-          <div class="bar-chart">
-            <div v-for="item in custoPorProjeto" :key="item.projeto" class="bar-row">
-              <span class="bar-label" :title="item.projeto">{{ item.projeto }}</span>
-              <div class="bar-track">
-                <div class="bar-fill green-bar" :style="{ width: item.pct + '%' }"></div>
-              </div>
-              <span class="bar-val">{{ fmtShort(item.custo) }}</span>
-            </div>
-          </div>
+          <div class="chart-wrap tall"><canvas id="chartCustoProjeto"></canvas></div>
+        </div>
+      </div>
+
+      <!-- BOTTOM CHARTS: Custo por Colaborador + Temporal -->
+      <div class="charts-row">
+        <div class="chart-card">
+          <div class="chart-title">Top 10 - Custo por Colaborador</div>
+          <div class="chart-wrap tall"><canvas id="chartCustoColaborador"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">Evolução Temporal das Horas</div>
+          <div class="chart-wrap tall"><canvas id="chartTemporal"></canvas></div>
         </div>
       </div>
 
@@ -114,7 +110,13 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-if="pagedData.length === 0">
+              <tr v-if="tableLoading">
+                <td colspan="9" class="table-feedback muted">Carregando dados...</td>
+              </tr>
+              <tr v-else-if="tableError">
+                <td colspan="9" class="table-feedback error">{{ tableError }}</td>
+              </tr>
+              <tr v-else-if="pagedData.length === 0">
                 <td colspan="9" class="table-feedback muted">Nenhum registro encontrado.</td>
               </tr>
               <tr v-for="row in pagedData" :key="row.id" :data-testid="`row-${row.id}`">
@@ -152,7 +154,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
+import { useChartsTechnical } from '@/composables/useChartsTechnical'
+import { CONFIG } from '@/utils/config'
+
+const PER_PAGE = 8
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface Row {
@@ -168,35 +174,57 @@ interface Row {
   tarefa: string
 }
 
-type SortKey = keyof Row
-type SortDir = 1 | -1
+// Interface para dados vindos da API
+interface ApiRow {
+  id: number
+  colaborador: string
+  funcao: string
+  projeto: string
+  programa: string
+  horas: number
+  custo_por_hora: number
+  custo_total: number
+  periodo: string | null
+  tarefa: string
+}
 
-// ─── Mock data (substituir por fetch da API quando disponível) ────────────────
-const RAW: Row[] = [
-  { id: 1,  colaborador: 'Lucas Martins',   funcao: 'Cloud Architect',           projeto: 'Migração AWS',         programa: 'Cloud',           horas: 400, custoPorHora: 420, custoTotal: 168000, periodo: '2024-03', tarefa: 'Arquitetura Cloud' },
-  { id: 2,  colaborador: 'Juliana Lima',    funcao: 'Tech Lead',                 projeto: 'Sistema ERP',          programa: 'Desenvolvimento', horas: 410, custoPorHora: 380, custoTotal: 155800, periodo: '2024-02', tarefa: 'Liderança Técnica' },
-  { id: 3,  colaborador: 'Ana Oliveira',    funcao: 'Desenvolvedora Full Stack', projeto: 'Portal Web',           programa: 'Desenvolvimento', horas: 520, custoPorHora: 250, custoTotal: 130000, periodo: '2024-01', tarefa: 'Desenvolvimento' },
-  { id: 4,  colaborador: 'Pedro Costa',     funcao: 'DevOps Engineer',           projeto: 'Portal Web',           programa: 'Desenvolvimento', horas: 450, custoPorHora: 280, custoTotal: 126000, periodo: '2024-01', tarefa: 'Desenvolvimento' },
-  { id: 5,  colaborador: 'Carlos Ferreira', funcao: 'DBA',                       projeto: 'Sistema ERP',          programa: 'Desenvolvimento', horas: 380, custoPorHora: 320, custoTotal: 121600, periodo: '2024-02', tarefa: 'Banco de Dados' },
-  { id: 6,  colaborador: 'Roberto Alves',   funcao: 'Especialista em Segurança', projeto: 'SOC Implementation',  programa: 'Segurança',       horas: 300, custoPorHora: 400, custoTotal: 120000, periodo: '2024-03', tarefa: 'Configuração' },
-  { id: 7,  colaborador: 'Beatriz Rocha',   funcao: 'DevOps Engineer',           projeto: 'Migração AWS',         programa: 'Cloud',           horas: 380, custoPorHora: 300, custoTotal: 114000, periodo: '2024-03', tarefa: 'Migração' },
-  { id: 8,  colaborador: 'João Silva',      funcao: 'Arquiteto de Soluções',     projeto: 'Data Center Regional', programa: 'Infraestrutura',  horas: 320, custoPorHora: 350, custoTotal: 112000, periodo: '2024-01', tarefa: 'Arquitetura' },
-  { id: 9,  colaborador: 'Fernanda Torres', funcao: 'Analista de Sistemas',      projeto: 'Sistema ERP',          programa: 'Desenvolvimento', horas: 360, custoPorHora: 290, custoTotal: 104400, periodo: '2024-02', tarefa: 'Desenvolvimento' },
-  { id: 10, colaborador: 'Ricardo Souza',   funcao: 'Network Engineer',          projeto: 'Data Center Regional', programa: 'Infraestrutura',  horas: 340, custoPorHora: 310, custoTotal: 105400, periodo: '2024-01', tarefa: 'Configuração' },
-  { id: 11, colaborador: 'Camila Nunes',    funcao: 'UX Designer',               projeto: 'Portal Web',           programa: 'Desenvolvimento', horas: 280, custoPorHora: 260, custoTotal: 72800,  periodo: '2024-01', tarefa: 'Design' },
-  { id: 12, colaborador: 'Marcos Pereira',  funcao: 'Analista de Segurança',     projeto: 'SOC Implementation',  programa: 'Segurança',       horas: 260, custoPorHora: 370, custoTotal: 96200,  periodo: '2024-03', tarefa: 'Configuração' },
+// ─── Mock / fallback data (usado se API indisponível) ─────────────────────────
+const MOCK: Row[] = [
+  { id: 1,  colaborador: 'Lucas Martins',   funcao: 'Cloud Architect',           projeto: 'Migração AWS',              programa: 'Cloud',           horas: 400, custoPorHora: 420, custoTotal: 168000, periodo: '2024-01', tarefa: 'Arquitetura Cloud' },
+  { id: 2,  colaborador: 'Juliana Lima',    funcao: 'Tech Lead',                 projeto: 'Sistema ERP',               programa: 'Desenvolvimento', horas: 410, custoPorHora: 380, custoTotal: 155800, periodo: '2024-02', tarefa: 'Liderança Técnica' },
+  { id: 3,  colaborador: 'Ana Oliveira',    funcao: 'Desenvolvedora Full Stack', projeto: 'Portal Web',                programa: 'Desenvolvimento', horas: 520, custoPorHora: 250, custoTotal: 130000, periodo: '2024-01', tarefa: 'Desenvolvimento' },
+  { id: 4,  colaborador: 'Pedro Costa',     funcao: 'DevOps Engineer',           projeto: 'Portal Web',                programa: 'Desenvolvimento', horas: 450, custoPorHora: 280, custoTotal: 126000, periodo: '2024-01', tarefa: 'Desenvolvimento' },
+  { id: 5,  colaborador: 'Carlos Ferreira', funcao: 'DBA',                       projeto: 'Sistema ERP',               programa: 'Desenvolvimento', horas: 380, custoPorHora: 320, custoTotal: 121600, periodo: '2024-02', tarefa: 'Banco de Dados' },
+  { id: 6,  colaborador: 'Roberto Alves',   funcao: 'Especialista em Segurança', projeto: 'SOC Implementation',       programa: 'Segurança',       horas: 300, custoPorHora: 400, custoTotal: 120000, periodo: '2024-03', tarefa: 'Configuração' },
+  { id: 7,  colaborador: 'Beatriz Rocha',   funcao: 'DevOps Engineer',           projeto: 'Migração AWS',              programa: 'Cloud',           horas: 380, custoPorHora: 300, custoTotal: 114000, periodo: '2024-03', tarefa: 'Migração' },
+  { id: 8,  colaborador: 'João Silva',      funcao: 'Arquiteto de Soluções',     projeto: 'Data Center Regional',     programa: 'Infraestrutura',  horas: 320, custoPorHora: 350, custoTotal: 112000, periodo: '2024-01', tarefa: 'Arquitetura' },
+  { id: 9,  colaborador: 'Fernanda Torres', funcao: 'Analista de Sistemas',      projeto: 'Sistema ERP',               programa: 'Desenvolvimento', horas: 360, custoPorHora: 290, custoTotal: 104400, periodo: '2024-02', tarefa: 'Desenvolvimento' },
+  { id: 10, colaborador: 'Ricardo Souza',   funcao: 'Network Engineer',          projeto: 'Data Center Regional',     programa: 'Infraestrutura',  horas: 340, custoPorHora: 310, custoTotal: 105400, periodo: '2024-01', tarefa: 'Configuração' },
+  { id: 11, colaborador: 'Camila Nunes',    funcao: 'UX Designer',               projeto: 'Portal Web',                programa: 'Desenvolvimento', horas: 280, custoPorHora: 260, custoTotal: 72800,  periodo: '2024-01', tarefa: 'Design' },
+  { id: 12, colaborador: 'Marcos Pereira',  funcao: 'Analista de Segurança',     projeto: 'SOC Implementation',       programa: 'Segurança',       horas: 260, custoPorHora: 370, custoTotal: 96200,  periodo: '2024-03', tarefa: 'Configuração' },
+  { id: 13, colaborador: 'Thiago Ramos',    funcao: 'Mobile Developer',          projeto: 'App Mobile',               programa: 'Desenvolvimento', horas: 310, custoPorHora: 240, custoTotal: 74400,  periodo: '2024-02', tarefa: 'Desenvolvimento' },
+  { id: 14, colaborador: 'Paula Mendes',    funcao: 'Scrum Master',              projeto: 'App Mobile',               programa: 'Desenvolvimento', horas: 200, custoPorHora: 290, custoTotal: 58000,  periodo: '2024-02', tarefa: 'Liderança Técnica' },
+  { id: 15, colaborador: 'Diego Castillo',  funcao: 'Network Engineer',          projeto: 'Modernização de Rede',     programa: 'Infraestrutura',  horas: 290, custoPorHora: 330, custoTotal: 95700,  periodo: '2024-03', tarefa: 'Configuração' },
+  { id: 16, colaborador: 'Renata Fontes',   funcao: 'Analista de Dados',         projeto: 'Sistema ERP',               programa: 'Desenvolvimento', horas: 220, custoPorHora: 270, custoTotal: 59400,  periodo: '2024-03', tarefa: 'Desenvolvimento' },
 ]
 
-const PER_PAGE = 8
-
 // ─── State ────────────────────────────────────────────────────────────────────
-const filters = ref({ periodo: '', programa: '', projeto: '', colaborador: '', funcao: '', tarefa: '' })
-const sortKey = ref<SortKey>('custoTotal')
-const sortDir = ref<SortDir>(-1)
+const tableData    = ref<Row[]>([])
+const tableLoading = ref(false)
+const tableError   = ref('')
+
+const filters = ref({
+  periodo: '', programa: '', projeto: '',
+  colaborador: '', funcao: '', tarefa: '',
+})
+const sortKey = ref<keyof Row>('custoTotal')
+const sortDir = ref<1 | -1>(-1)
 const page    = ref(1)
 
-// ─── Filter options ───────────────────────────────────────────────────────────
-const uniq = (key: keyof Row) => [...new Set(RAW.map(r => r[key]))].sort() as string[]
+// ─── Filter options (derived from tableData) ──────────────────────────────────
+const uniq = (key: keyof Row) =>
+  computed(() => [...new Set(tableData.value.map(r => String(r[key])))].sort())
+
 const uniquePeriodos      = uniq('periodo')
 const uniqueProgramas     = uniq('programa')
 const uniqueProjetos      = uniq('projeto')
@@ -207,7 +235,7 @@ const uniqueTarefas       = uniq('tarefa')
 // ─── Computed ─────────────────────────────────────────────────────────────────
 const filteredData = computed(() => {
   const f = filters.value
-  return RAW
+  return tableData.value
     .filter(r =>
       (!f.periodo     || r.periodo     === f.periodo)     &&
       (!f.programa    || r.programa    === f.programa)    &&
@@ -234,43 +262,55 @@ const totalPages   = computed(() => Math.max(1, Math.ceil(filteredData.value.len
 const pagedData    = computed(() => filteredData.value.slice((page.value - 1) * PER_PAGE, page.value * PER_PAGE))
 const visiblePages = computed(() => {
   const p = page.value, t = totalPages.value
-  const start = Math.max(1, p - 2), end = Math.min(t, p + 2)
-  return Array.from({ length: end - start + 1 }, (_, i) => start + i)
-})
-
-const horasPorProjeto = computed(() => {
-  const map: Record<string, number> = {}
-  filteredData.value.forEach(r => { map[r.projeto] = (map[r.projeto] || 0) + r.horas })
-  const max = Math.max(...Object.values(map), 1)
-  return Object.entries(map).sort((a, b) => b[1] - a[1]).slice(0, 5)
-    .map(([projeto, horas]) => ({ projeto, horas, pct: (horas / max) * 100 }))
-})
-
-const custoPorProjeto = computed(() => {
-  const map: Record<string, number> = {}
-  filteredData.value.forEach(r => { map[r.projeto] = (map[r.projeto] || 0) + r.custoTotal })
-  const max = Math.max(...Object.values(map), 1)
-  return Object.entries(map).sort((a, b) => b[1] - a[1]).slice(0, 5)
-    .map(([projeto, custo]) => ({ projeto, custo, pct: (custo / max) * 100 }))
+  const s = Math.max(1, p - 2), e = Math.min(t, p + 2)
+  return Array.from({ length: e - s + 1 }, (_, i) => s + i)
 })
 
 // ─── Watchers ─────────────────────────────────────────────────────────────────
-watch(filteredData, () => { page.value = 1 })
+watch(filteredData, () => {
+  page.value = 1
+})
+
+// ─── API load ─────────────────────────────────────────────────────────────────
+function mapApiRow(r: ApiRow): Row {
+  return {
+    id:          r.id,
+    colaborador: r.colaborador,
+    funcao:      r.funcao,
+    projeto:     r.projeto,
+    programa:    r.programa,
+    horas:       r.horas,
+    custoPorHora: r.custo_por_hora,
+    custoTotal:  r.custo_total,
+    periodo:     r.periodo ?? '',
+    tarefa:      r.tarefa,
+  }
+}
+
+async function loadData() {
+  tableLoading.value = true
+  tableError.value = ''
+  try {
+    const res = await fetch(`${CONFIG.API_BASE_URL}/horas-tecnicas/`)
+    if (!res.ok) throw new Error()
+    const data = (await res.json()) as ApiRow[]
+    tableData.value = data.map(mapApiRow)
+  } catch {
+    // fallback para dados mock se API indisponível
+    tableData.value = MOCK
+  } finally {
+    tableLoading.value = false
+  }
+}
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const fmt = (v: number) => 'R$ ' + v.toLocaleString('pt-BR', { minimumFractionDigits: 2 })
-const fmtShort = (v: number) => {
-  if (v >= 1_000_000) return `R$ ${(v / 1_000_000).toFixed(1)}M`
-  if (v >= 1_000)     return `R$ ${(v / 1_000).toFixed(0)}k`
-  return fmt(v)
-}
 
-function sortBy(k: SortKey) {
-  if (sortKey.value === k) sortDir.value = (sortDir.value * -1) as SortDir
+function sortBy(k: keyof Row) {
+  if (sortKey.value === k) sortDir.value = (sortDir.value * -1) as 1 | -1
   else { sortKey.value = k; sortDir.value = -1 }
 }
-
-const sortIcon = (k: SortKey) =>
+const sortIcon = (k: keyof Row) =>
   sortKey.value !== k ? '↕' : sortDir.value > 0 ? '↑' : '↓'
 
 function tagClass(t: string) {
@@ -299,6 +339,15 @@ function exportCSV() {
   a.download = 'horas-tecnicas.csv'
   a.click()
 }
+
+// ─── Charts ───────────────────────────────────────────────────────────────────
+const { buildCharts, destroyCharts } = useChartsTechnical()
+
+onMounted(async () => {
+  await loadData()
+  nextTick(() => buildCharts(MOCK))
+})
+onUnmounted(destroyCharts)
 </script>
 
 <style scoped>
@@ -386,7 +435,7 @@ function exportCSV() {
   font-family: inherit;
   appearance: none;
   cursor: pointer;
-  min-width: 155px;   /* wide enough to show full placeholder text */
+  min-width: 155px;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%238b92aa'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 10px center;
@@ -412,19 +461,9 @@ function exportCSV() {
   border-radius: 10px; padding: 18px 20px;
   animation: fadeIn .35s ease both;
 }
-.chart-title {
-  font-size: 13px; font-weight: 500; color: var(--text2); margin-bottom: 20px;
-}
-
-/* Bar chart — same visual weight as Chart.js bars in Materiais */
-.bar-chart { display: flex; flex-direction: column; gap: 14px; }
-.bar-row   { display: grid; grid-template-columns: 175px 1fr 80px; align-items: center; gap: 12px; }
-.bar-label { font-size: 12px; color: var(--text2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.bar-track { height: 8px; background: var(--bg4); border-radius: 99px; overflow: hidden; }
-.bar-fill  { height: 100%; border-radius: 99px; transition: width .5s cubic-bezier(.4,0,.2,1); }
-.blue-bar  { background: var(--blue); }
-.green-bar { background: var(--green); }
-.bar-val   { font-size: 12px; color: var(--text); text-align: right; font-family: 'IBM Plex Mono', monospace; }
+.chart-title { font-size: 13px; font-weight: 500; color: var(--text2); margin-bottom: 16px; }
+.chart-wrap      { position: relative; height: 220px; }
+.chart-wrap.tall { height: 360px; }
 
 /* ── Table ────────────────────────────────────────────────────────────────── */
 .table-card {
@@ -432,12 +471,12 @@ function exportCSV() {
   border-radius: 10px; overflow: hidden;
   animation: fadeIn .35s ease both;
 }
-.table-header    { padding: 16px 20px; border-bottom: 1px solid var(--border); }
-.table-header h2 { font-size: 14px; font-weight: 500; }
-.table-wrap      { overflow-x: auto; }
+.table-header     { padding: 16px 20px; border-bottom: 1px solid var(--border); }
+.table-header h2  { font-size: 14px; font-weight: 500; }
+.table-wrap       { overflow-x: auto; }
 
-table        { width: 100%; min-width: 960px; border-collapse: collapse; }
-thead tr     { border-bottom: 1px solid var(--border); }
+table             { width: 100%; min-width: 960px; border-collapse: collapse; }
+thead tr          { border-bottom: 1px solid var(--border); }
 th {
   padding: 11px 16px; text-align: left;
   font-size: 11px; font-weight: 500; color: var(--text3);
@@ -448,16 +487,15 @@ th.sort-col:hover { color: var(--text2); }
 tbody tr          { border-bottom: 1px solid var(--border); transition: background .15s; }
 tbody tr:hover    { background: var(--bg3); }
 tbody tr:last-child { border-bottom: none; }
-td {
-  padding: 13px 16px; font-size: 13px;
-  color: var(--text); white-space: nowrap;
-}
-td.material-name { font-weight: 500; color: #fff; }
-td.muted         { color: var(--text2); }
-td.mono          { font-family: 'IBM Plex Mono', monospace; font-size: 12px; }
-td.right         { text-align: right; }
-td.total         { font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 600; color: var(--green); }
-.table-feedback  { text-align: center; padding: 24px 16px; color: var(--text3); }
+td                { padding: 13px 16px; font-size: 13px; color: var(--text); white-space: nowrap; }
+td.material-name  { font-weight: 500; color: #fff; }
+td.muted          { color: var(--text2); }
+td.mono           { font-family: 'IBM Plex Mono', monospace; font-size: 12px; }
+td.right          { text-align: right; }
+td.total          { font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 600; color: var(--green); }
+.table-feedback   { text-align: center; padding: 24px 16px; }
+.table-feedback.muted { color: var(--text3); }
+.table-feedback.error { color: var(--red); }
 
 /* ── Badges ───────────────────────────────────────────────────────────────── */
 .badge    { display: inline-block; padding: 3px 9px; border-radius: 5px; font-size: 11px; font-weight: 500; }
@@ -475,7 +513,7 @@ td.total         { font-family: 'IBM Plex Mono', monospace; font-size: 12px; fon
   font-size: 12px; color: var(--text3);
 }
 .pg-btns { display: flex; gap: 4px; }
-.pg-btn {
+.pg-btn  {
   background: var(--bg3); border: 1px solid var(--border);
   color: var(--text2); border-radius: 5px;
   padding: 5px 10px; cursor: pointer; font-size: 12px; transition: all .15s;
