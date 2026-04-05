@@ -1,6 +1,7 @@
 <template>
   <div class="app">
     <main class="main">
+      <h1 class="sr-only">Horas Técnicas</h1>
 
       <!-- METRICS -->
       <div class="metrics">
@@ -521,6 +522,13 @@ td.total          { font-family: 'IBM Plex Mono', monospace; font-size: 12px; fo
 .pg-btn:hover    { border-color: var(--blue2); color: var(--blue); }
 .pg-btn.active   { background: var(--blue2); border-color: var(--blue2); color: #fff; }
 .pg-btn:disabled { opacity: .3; cursor: not-allowed; }
+
+/* ── Accessibility ────────────────────────────────────────────────────────── */
+.sr-only {
+  position: absolute; width: 1px; height: 1px;
+  padding: 0; margin: -1px; overflow: hidden;
+  clip: rect(0,0,0,0); white-space: nowrap; border: 0;
+}
 
 /* ── Animation ────────────────────────────────────────────────────────────── */
 @keyframes fadeIn {
