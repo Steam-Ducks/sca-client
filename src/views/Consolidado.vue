@@ -144,6 +144,7 @@
 import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import { useChartsConsolidado } from '@/composables/useChartsConsolidado'
 import type { ConsolidadoRow } from '@/composables/useChartsConsolidado'
+import { apiService } from '@/services/apiService'
 
 const PER_PAGE = 8
 
@@ -253,9 +254,19 @@ function exportCSV() {
 // ─── Charts ──────────────────────────────────────────────────────────────────
 const { buildCharts, updateCharts, destroyCharts } = useChartsConsolidado()
 
+async function loadConsolidado() {
+  try {
+    tableData.value = await apiService.consolidated.fetchConsolidated()
+  } catch (error) {
+    console.error(error)
+    tableData.value = MOCK
+  }
+
+  nextTick(() => buildCharts(tableData.value))
+}
+
 onMounted(() => {
-  tableData.value = MOCK
-  nextTick(() => buildCharts(MOCK))
+  void loadConsolidado()
 })
 onUnmounted(destroyCharts)
 </script>
