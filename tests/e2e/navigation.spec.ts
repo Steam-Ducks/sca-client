@@ -13,7 +13,8 @@ test.describe('Navigation', () => {
   test('CT02: should navigate to dashboard', async ({ page }) => {
     await page.getByRole('link', { name: 'Dashboard' }).click()
     await expect(page).toHaveURL(/\/dashboard$/)
-    await expect(page.locator('h2')).toContainText('Dashboard')
+    await expect(page.locator('.metrics')).toBeVisible()
+    await expect(page.locator('.filters-title')).toContainText('Filtros')
   })
 
   test('CT03: should navigate to horas técnicas page', async ({ page }) => {
