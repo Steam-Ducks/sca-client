@@ -8,7 +8,6 @@ Chart.register(...registerables)
 export interface HoraRow {
   id: number
   colaborador: string
-  funcao: string
   projeto: string
   programa: string
   horas: number

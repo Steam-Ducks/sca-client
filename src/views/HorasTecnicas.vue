@@ -48,10 +48,6 @@
             <option value="">Todos os Colaboradores</option>
             <option v-for="c in uniqueColaboradores" :key="c" :value="c">{{ c }}</option>
           </select>
-          <select class="filter-select" v-model="filters.funcao" data-testid="filter-funcao">
-            <option value="">Todas as Funções</option>
-            <option v-for="f in uniqueFuncoes" :key="f" :value="f">{{ f }}</option>
-          </select>
           <select class="filter-select" v-model="filters.tarefa" data-testid="filter-tarefa">
             <option value="">Todas as Tarefas</option>
             <option v-for="t in uniqueTarefas" :key="t" :value="t">{{ t }}</option>
@@ -100,7 +96,6 @@
             <thead>
               <tr>
                 <th class="sort-col" @click="sortBy('colaborador')">Colaborador {{ sortIcon('colaborador') }}</th>
-                <th class="sort-col" @click="sortBy('funcao')">Função {{ sortIcon('funcao') }}</th>
                 <th class="sort-col" @click="sortBy('projeto')">Projeto {{ sortIcon('projeto') }}</th>
                 <th class="sort-col" @click="sortBy('programa')">Programa {{ sortIcon('programa') }}</th>
                 <th class="sort-col" @click="sortBy('horas')">Horas {{ sortIcon('horas') }}</th>
@@ -112,17 +107,16 @@
             </thead>
             <tbody>
               <tr v-if="tableLoading">
-                <td colspan="9" class="table-feedback muted">Carregando dados...</td>
+                <td colspan="8" class="table-feedback muted">Carregando dados...</td>
               </tr>
               <tr v-else-if="tableError">
-                <td colspan="9" class="table-feedback error">{{ tableError }}</td>
+                <td colspan="8" class="table-feedback error">{{ tableError }}</td>
               </tr>
               <tr v-else-if="pagedData.length === 0">
-                <td colspan="9" class="table-feedback muted">Nenhum registro encontrado.</td>
+                <td colspan="8" class="table-feedback muted">Nenhum registro encontrado.</td>
               </tr>
               <tr v-for="row in pagedData" :key="row.id" :data-testid="`row-${row.id}`">
                 <td class="material-name">{{ row.colaborador }}</td>
-                <td class="muted">{{ row.funcao }}</td>
                 <td class="muted">{{ row.projeto }}</td>
                 <td class="muted">{{ row.programa }}</td>
                 <td class="mono right">{{ row.horas }}h</td>
@@ -165,7 +159,6 @@ const PER_PAGE = 8
 interface Row {
   id: number
   colaborador: string
-  funcao: string
   projeto: string
   programa: string
   horas: number
@@ -179,10 +172,9 @@ interface Row {
 interface ApiRow {
   id: number
   colaborador: string
-  funcao: string
   projeto: string
   programa: string
-  horas: number
+  horas_trabalhadas: number
   custo_por_hora: number
   custo_total: number
   periodo: string | null
@@ -191,22 +183,22 @@ interface ApiRow {
 
 // ─── Mock / fallback data (usado se API indisponível) ─────────────────────────
 const MOCK: Row[] = [
-  { id: 1,  colaborador: 'Lucas Martins',   funcao: 'Cloud Architect',           projeto: 'Migração AWS',              programa: 'Cloud',           horas: 400, custoPorHora: 420, custoTotal: 168000, periodo: '2024-01', tarefa: 'Arquitetura Cloud' },
-  { id: 2,  colaborador: 'Juliana Lima',    funcao: 'Tech Lead',                 projeto: 'Sistema ERP',               programa: 'Desenvolvimento', horas: 410, custoPorHora: 380, custoTotal: 155800, periodo: '2024-02', tarefa: 'Liderança Técnica' },
-  { id: 3,  colaborador: 'Ana Oliveira',    funcao: 'Desenvolvedora Full Stack', projeto: 'Portal Web',                programa: 'Desenvolvimento', horas: 520, custoPorHora: 250, custoTotal: 130000, periodo: '2024-01', tarefa: 'Desenvolvimento' },
-  { id: 4,  colaborador: 'Pedro Costa',     funcao: 'DevOps Engineer',           projeto: 'Portal Web',                programa: 'Desenvolvimento', horas: 450, custoPorHora: 280, custoTotal: 126000, periodo: '2024-01', tarefa: 'Desenvolvimento' },
-  { id: 5,  colaborador: 'Carlos Ferreira', funcao: 'DBA',                       projeto: 'Sistema ERP',               programa: 'Desenvolvimento', horas: 380, custoPorHora: 320, custoTotal: 121600, periodo: '2024-02', tarefa: 'Banco de Dados' },
-  { id: 6,  colaborador: 'Roberto Alves',   funcao: 'Especialista em Segurança', projeto: 'SOC Implementation',       programa: 'Segurança',       horas: 300, custoPorHora: 400, custoTotal: 120000, periodo: '2024-03', tarefa: 'Configuração' },
-  { id: 7,  colaborador: 'Beatriz Rocha',   funcao: 'DevOps Engineer',           projeto: 'Migração AWS',              programa: 'Cloud',           horas: 380, custoPorHora: 300, custoTotal: 114000, periodo: '2024-03', tarefa: 'Migração' },
-  { id: 8,  colaborador: 'João Silva',      funcao: 'Arquiteto de Soluções',     projeto: 'Data Center Regional',     programa: 'Infraestrutura',  horas: 320, custoPorHora: 350, custoTotal: 112000, periodo: '2024-01', tarefa: 'Arquitetura' },
-  { id: 9,  colaborador: 'Fernanda Torres', funcao: 'Analista de Sistemas',      projeto: 'Sistema ERP',               programa: 'Desenvolvimento', horas: 360, custoPorHora: 290, custoTotal: 104400, periodo: '2024-02', tarefa: 'Desenvolvimento' },
-  { id: 10, colaborador: 'Ricardo Souza',   funcao: 'Network Engineer',          projeto: 'Data Center Regional',     programa: 'Infraestrutura',  horas: 340, custoPorHora: 310, custoTotal: 105400, periodo: '2024-01', tarefa: 'Configuração' },
-  { id: 11, colaborador: 'Camila Nunes',    funcao: 'UX Designer',               projeto: 'Portal Web',                programa: 'Desenvolvimento', horas: 280, custoPorHora: 260, custoTotal: 72800,  periodo: '2024-01', tarefa: 'Design' },
-  { id: 12, colaborador: 'Marcos Pereira',  funcao: 'Analista de Segurança',     projeto: 'SOC Implementation',       programa: 'Segurança',       horas: 260, custoPorHora: 370, custoTotal: 96200,  periodo: '2024-03', tarefa: 'Configuração' },
-  { id: 13, colaborador: 'Thiago Ramos',    funcao: 'Mobile Developer',          projeto: 'App Mobile',               programa: 'Desenvolvimento', horas: 310, custoPorHora: 240, custoTotal: 74400,  periodo: '2024-02', tarefa: 'Desenvolvimento' },
-  { id: 14, colaborador: 'Paula Mendes',    funcao: 'Scrum Master',              projeto: 'App Mobile',               programa: 'Desenvolvimento', horas: 200, custoPorHora: 290, custoTotal: 58000,  periodo: '2024-02', tarefa: 'Liderança Técnica' },
-  { id: 15, colaborador: 'Diego Castillo',  funcao: 'Network Engineer',          projeto: 'Modernização de Rede',     programa: 'Infraestrutura',  horas: 290, custoPorHora: 330, custoTotal: 95700,  periodo: '2024-03', tarefa: 'Configuração' },
-  { id: 16, colaborador: 'Renata Fontes',   funcao: 'Analista de Dados',         projeto: 'Sistema ERP',               programa: 'Desenvolvimento', horas: 220, custoPorHora: 270, custoTotal: 59400,  periodo: '2024-03', tarefa: 'Desenvolvimento' },
+  { id: 1,  colaborador: 'Lucas Martins',   projeto: 'Migração AWS',          programa: 'Cloud',           horas: 400, custoPorHora: 420, custoTotal: 168000, periodo: '2024-01', tarefa: 'Arquitetura Cloud' },
+  { id: 2,  colaborador: 'Juliana Lima',    projeto: 'Sistema ERP',           programa: 'Desenvolvimento', horas: 410, custoPorHora: 380, custoTotal: 155800, periodo: '2024-02', tarefa: 'Liderança Técnica' },
+  { id: 3,  colaborador: 'Ana Oliveira',    projeto: 'Portal Web',            programa: 'Desenvolvimento', horas: 520, custoPorHora: 250, custoTotal: 130000, periodo: '2024-01', tarefa: 'Desenvolvimento' },
+  { id: 4,  colaborador: 'Pedro Costa',     projeto: 'Portal Web',            programa: 'Desenvolvimento', horas: 450, custoPorHora: 280, custoTotal: 126000, periodo: '2024-01', tarefa: 'Desenvolvimento' },
+  { id: 5,  colaborador: 'Carlos Ferreira', projeto: 'Sistema ERP',           programa: 'Desenvolvimento', horas: 380, custoPorHora: 320, custoTotal: 121600, periodo: '2024-02', tarefa: 'Banco de Dados' },
+  { id: 6,  colaborador: 'Roberto Alves',   projeto: 'SOC Implementation',   programa: 'Segurança',       horas: 300, custoPorHora: 400, custoTotal: 120000, periodo: '2024-03', tarefa: 'Configuração' },
+  { id: 7,  colaborador: 'Beatriz Rocha',   projeto: 'Migração AWS',          programa: 'Cloud',           horas: 380, custoPorHora: 300, custoTotal: 114000, periodo: '2024-03', tarefa: 'Migração' },
+  { id: 8,  colaborador: 'João Silva',      projeto: 'Data Center Regional', programa: 'Infraestrutura',  horas: 320, custoPorHora: 350, custoTotal: 112000, periodo: '2024-01', tarefa: 'Arquitetura' },
+  { id: 9,  colaborador: 'Fernanda Torres', projeto: 'Sistema ERP',           programa: 'Desenvolvimento', horas: 360, custoPorHora: 290, custoTotal: 104400, periodo: '2024-02', tarefa: 'Desenvolvimento' },
+  { id: 10, colaborador: 'Ricardo Souza',   projeto: 'Data Center Regional', programa: 'Infraestrutura',  horas: 340, custoPorHora: 310, custoTotal: 105400, periodo: '2024-01', tarefa: 'Configuração' },
+  { id: 11, colaborador: 'Camila Nunes',    projeto: 'Portal Web',            programa: 'Desenvolvimento', horas: 280, custoPorHora: 260, custoTotal: 72800,  periodo: '2024-01', tarefa: 'Design' },
+  { id: 12, colaborador: 'Marcos Pereira',  projeto: 'SOC Implementation',   programa: 'Segurança',       horas: 260, custoPorHora: 370, custoTotal: 96200,  periodo: '2024-03', tarefa: 'Configuração' },
+  { id: 13, colaborador: 'Thiago Ramos',    projeto: 'App Mobile',            programa: 'Desenvolvimento', horas: 310, custoPorHora: 240, custoTotal: 74400,  periodo: '2024-02', tarefa: 'Desenvolvimento' },
+  { id: 14, colaborador: 'Paula Mendes',    projeto: 'App Mobile',            programa: 'Desenvolvimento', horas: 200, custoPorHora: 290, custoTotal: 58000,  periodo: '2024-02', tarefa: 'Liderança Técnica' },
+  { id: 15, colaborador: 'Diego Castillo',  projeto: 'Modernização de Rede', programa: 'Infraestrutura',  horas: 290, custoPorHora: 330, custoTotal: 95700,  periodo: '2024-03', tarefa: 'Configuração' },
+  { id: 16, colaborador: 'Renata Fontes',   projeto: 'Sistema ERP',           programa: 'Desenvolvimento', horas: 220, custoPorHora: 270, custoTotal: 59400,  periodo: '2024-03', tarefa: 'Desenvolvimento' },
 ]
 
 // ─── State ────────────────────────────────────────────────────────────────────
@@ -216,7 +208,7 @@ const tableError   = ref('')
 
 const filters = ref({
   periodo: '', programa: '', projeto: '',
-  colaborador: '', funcao: '', tarefa: '',
+  colaborador: '', tarefa: '',
 })
 const sortKey = ref<keyof Row>('custoTotal')
 const sortDir = ref<1 | -1>(-1)
@@ -230,7 +222,6 @@ const uniquePeriodos      = uniq('periodo')
 const uniqueProgramas     = uniq('programa')
 const uniqueProjetos      = uniq('projeto')
 const uniqueColaboradores = uniq('colaborador')
-const uniqueFuncoes       = uniq('funcao')
 const uniqueTarefas       = uniq('tarefa')
 
 // ─── Computed ─────────────────────────────────────────────────────────────────
@@ -242,7 +233,6 @@ const filteredData = computed(() => {
       (!f.programa    || r.programa    === f.programa)    &&
       (!f.projeto     || r.projeto     === f.projeto)     &&
       (!f.colaborador || r.colaborador === f.colaborador) &&
-      (!f.funcao      || r.funcao      === f.funcao)      &&
       (!f.tarefa      || r.tarefa      === f.tarefa)
     )
     .sort((a, b) => {
@@ -277,10 +267,9 @@ function mapApiRow(r: ApiRow): Row {
   return {
     id:          r.id,
     colaborador: r.colaborador,
-    funcao:      r.funcao,
     projeto:     r.projeto,
     programa:    r.programa,
-    horas:       r.horas,
+    horas:       r.horas_trabalhadas,
     custoPorHora: r.custo_por_hora,
     custoTotal:  r.custo_total,
     periodo:     r.periodo ?? '',
@@ -329,9 +318,9 @@ function tagClass(t: string) {
 }
 
 function exportCSV() {
-  const header = 'Colaborador,Função,Projeto,Programa,Horas,Custo/Hora,Custo Total,Período,Tarefa'
+  const header = 'Colaborador,Projeto,Programa,Horas,Custo/Hora,Custo Total,Período,Tarefa'
   const rows = filteredData.value.map(r =>
-    [r.colaborador, r.funcao, r.projeto, r.programa, r.horas,
+    [r.colaborador, r.projeto, r.programa, r.horas,
      r.custoPorHora, r.custoTotal, r.periodo, r.tarefa].join(',')
   )
   const csv = [header, ...rows].join('\n')
