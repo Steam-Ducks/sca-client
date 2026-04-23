@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { nextTick } from 'vue'
 import DashboardView from '@/views/DashboardView.vue'
+import { apiService } from '@/services/apiService'
 
 // Mock useChartsDashboard composable
 vi.mock('@/composables/useChartsDashboard', () => ({
@@ -21,9 +22,24 @@ vi.mock('chart.js', () => ({
   registerables: [],
 }))
 
+vi.mock('@/services/apiService', () => ({
+  apiService: {
+    consolidated: {
+      fetchConsolidated: vi.fn(),
+    },
+  },
+}))
+
+const consolidatedRows = [
+  { id: 1, projeto: 'Data Center Regional', programa: 'Infraestrutura', custoMateriais: 245000, custoHoras: 217400, custoTotal: 462400, qtdMateriais: 48, totalHoras: 660, periodo: '2024-01', status: 'Concluído' },
+  { id: 2, projeto: 'Storage Upgrade', programa: 'Infraestrutura', custoMateriais: 189000, custoHoras: 95000, custoTotal: 284000, qtdMateriais: 35, totalHoras: 320, periodo: '2024-01', status: 'Concluído' },
+  { id: 3, projeto: 'Sistema ERP', programa: 'Desenvolvimento', custoMateriais: 67000, custoHoras: 441200, custoTotal: 508200, qtdMateriais: 15, totalHoras: 1370, periodo: '2024-02', status: 'Em Andamento' },
+]
+
 describe('DashboardView.vue', () => {
   beforeEach(() => {
     vi.restoreAllMocks()
+    vi.mocked(apiService.consolidated.fetchConsolidated).mockResolvedValue(consolidatedRows)
   })
 
   const getVm = (wrapper: ReturnType<typeof mount>) =>

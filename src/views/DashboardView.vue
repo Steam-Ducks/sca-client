@@ -134,6 +134,7 @@
 import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import { useChartsDashboard } from '@/composables/useChartsDashboard'
 import type { DashboardRow } from '@/composables/useChartsDashboard'
+import { apiService } from '@/services/apiService'
 
 const PER_PAGE = 8
 
@@ -231,9 +232,27 @@ function exportCSV() {
 // ─── Charts ──────────────────────────────────────────────────────────────────
 const { buildCharts, updateCharts, destroyCharts } = useChartsDashboard()
 
+async function loadDashboard() {
+  try {
+    const consolidatedRows = await apiService.consolidated.fetchConsolidated()
+    tableData.value = consolidatedRows.map(({ projeto, programa, custoMateriais, custoHoras, custoTotal, periodo }) => ({
+      projeto,
+      programa,
+      custoMateriais,
+      custoHoras,
+      custoTotal,
+      periodo,
+    }))
+  } catch (error) {
+    console.error(error)
+    tableData.value = MOCK
+  }
+
+  nextTick(() => buildCharts(tableData.value))
+}
+
 onMounted(() => {
-  tableData.value = MOCK
-  nextTick(() => buildCharts(MOCK))
+  void loadDashboard()
 })
 onUnmounted(destroyCharts)
 </script>
