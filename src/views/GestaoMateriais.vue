@@ -10,7 +10,7 @@
         </div>
         <div class="metric-card">
           <div class="metric-label">Total de Itens</div>
-          <div class="metric-value">{{ filteredData.length }}</div>
+          <div class="metric-value">{{ sortedData.length }}</div>
         </div>
         <div class="metric-card">
           <div class="metric-label">Custo Médio por Item</div>
@@ -40,16 +40,12 @@
             <option v-for="p in projetos" :key="p" :value="p">{{ p }}</option>
           </select>
           <select class="filter-select" v-model="filters.categoria">
-            <option value="">Todos os Materiais</option>
+            <option value="">Todas as Categorias</option>
             <option v-for="c in categorias" :key="c" :value="c">{{ c }}</option>
           </select>
-          <select class="filter-select" v-model="filters.status">
-            <option value="">Todos</option>
-            <option v-for="s in statuses" :key="s" :value="s">{{ s }}</option>
-          </select>
-          <select class="filter-select" v-model="filters.area">
-            <option value="">Todas</option>
-            <option v-for="a in areas" :key="a" :value="a">{{ a }}</option>
+          <select class="filter-select" v-model="filters.fornecedor">
+            <option value="">Todos os Fornecedores</option>
+            <option v-for="f in fornecedores" :key="f" :value="f">{{ f }}</option>
           </select>
         </div>
         <div class="filters-row" style="margin-top: 10px">
@@ -139,7 +135,7 @@
           </table>
         </div>
         <div class="pagination">
-          <span>{{ filteredData.length }} registros · página {{ page }} de {{ totalPages }}</span>
+          <span>{{ sortedData.length }} registros · página {{ page }} de {{ totalPages }}</span>
           <div class="pg-btns">
             <button class="pg-btn" @click="page = 1" :disabled="page === 1">«</button>
             <button class="pg-btn" @click="page--" :disabled="page === 1">‹</button>
@@ -164,90 +160,139 @@
 import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import { RAW } from '@/data/materiais'
 import { useCharts } from '@/composables/useCharts'
-import type { Filters, SortKey, SortDir } from '@/types/materiais'
-import type { Material, Categoria, Status } from '@/types/materiais'
-import { CONFIG } from '@/utils/config'
+import { materiaisService } from '@/services/materiaisService'
+import type { MaterialsApiRow } from '@/services/materiaisService'
+import type { Filters, SortKey, SortDir, Material, Categoria, Status } from '@/types/materiais'
 
 const PER_PAGE = 8
 
-interface MaterialsApiRow {
-  id: number
-  material: string
-  projeto: string
-  programa: string
-  quantidade: number
-  valor_unitario: number
-  valor_total: number
-  periodo: string | null
-  fornecedor: string
-  categoria: string
-}
-
 // ─── State ────────────────────────────────────────────────────────────────────
-const tableData = ref<Material[]>([])
+const tableData    = ref<Material[]>([])
 const tableLoading = ref(false)
-const tableError = ref('')
+const tableError   = ref('')
 const filters = ref<Filters>({
   periodo: '', programa: '', projeto: '',
-  categoria: '', status: '', area: '', search: '',
+  categoria: '', fornecedor: '', status: '', area: '', search: '',
 })
 const sortKey = ref<SortKey>('valorTotal')
 const sortDir = ref<SortDir>(-1)
 const page    = ref(1)
 
-// ─── Filter option lists ──────────────────────────────────────────────────────
-const periodos  = [...new Set(RAW.map(r => r.periodo))].sort()
-const programas = [...new Set(RAW.map(r => r.programa))].sort()
-const projetos  = [...new Set(RAW.map(r => r.projeto))].sort()
-const categorias= [...new Set(RAW.map(r => r.categoria))].sort()
-const statuses  = [...new Set(RAW.map(r => r.status))].sort()
-const areas     = [...new Set(RAW.map(r => r.area))].sort()
+// ─── Filter option lists (from static RAW for dropdown population) ────────────
+const periodos   = [...new Set(RAW.map(r => r.periodo))].sort()
+const programas  = [...new Set(RAW.map(r => r.programa))].sort()
+const projetos   = [...new Set(RAW.map(r => r.projeto))].sort()
+const categorias = [...new Set(RAW.map(r => r.categoria))].sort()
+const fornecedores = [...new Set(RAW.map(r => r.fornecedor))].sort()
+
+// ─── Data mapping ─────────────────────────────────────────────────────────────
+function normalizeCategoria(value: string): Categoria {
+  const allowed: Categoria[] = ['Hardware', 'Storage', 'Cloud', 'Segurança', 'Software', 'Rede']
+  return allowed.includes(value as Categoria) ? (value as Categoria) : 'Hardware'
+}
+
+function mapApiRow(row: MaterialsApiRow): Material {
+  return {
+    id: row.id,
+    material: row.material,
+    projeto: row.projeto,
+    programa: row.programa,
+    quantidade: row.quantidade,
+    valorUnitario: row.valor_unitario,
+    valorTotal: row.valor_total,
+    periodo: row.periodo ?? '',
+    fornecedor: row.fornecedor,
+    categoria: normalizeCategoria(row.categoria),
+    status: 'Ativo' as Status,
+    area: 'Materiais',
+  }
+}
+
+// ─── API call ──────────────────────────────────────────────────────────────────
+async function loadTableData() {
+  tableLoading.value = true
+  tableError.value = ''
+
+  try {
+    const data = await materiaisService.fetchMateriais(filters.value)
+    tableData.value = data.map(mapApiRow)
+  } catch (error) {
+    console.error(error)
+    tableError.value = 'Não foi possível carregar a tabela de materiais.'
+    tableData.value = []
+  } finally {
+    tableLoading.value = false
+  }
+}
+
+function createDebouncedFn<T extends (...args: never[]) => void>(fn: T, delay: number) {
+  let timeoutId: ReturnType<typeof setTimeout> | null = null
+
+  const debounced = ((...args: Parameters<T>) => {
+    if (timeoutId) clearTimeout(timeoutId)
+    timeoutId = setTimeout(() => {
+      timeoutId = null
+      fn(...args)
+    }, delay)
+  }) as T & { cancel: () => void }
+
+  debounced.cancel = () => {
+    if (timeoutId) {
+      clearTimeout(timeoutId)
+      timeoutId = null
+    }
+  }
+
+  return debounced
+}
+
+// Debounce para o campo de busca livre (evita chamada a cada tecla)
+const debouncedLoad = createDebouncedFn(loadTableData, 400)
 
 // ─── Computed ─────────────────────────────────────────────────────────────────
-const filteredData = computed(() => {
-  const f = filters.value
-  let d = tableData.value.filter(r => {
-    if (f.periodo   && r.periodo   !== f.periodo)   return false
-    if (f.programa  && r.programa  !== f.programa)  return false
-    if (f.projeto   && r.projeto   !== f.projeto)   return false
-    if (f.categoria && r.categoria !== f.categoria) return false
-    if (f.status    && r.status    !== f.status)    return false
-    if (f.area      && r.area      !== f.area)      return false
-    if (f.search) {
-      const s = f.search.toLowerCase()
-      if (
-        !r.material.toLowerCase().includes(s) &&
-        !r.projeto.toLowerCase().includes(s) &&
-        !r.fornecedor.toLowerCase().includes(s)
-      ) return false
-    }
-    return true
-  })
-
-  return d.sort((a, b) => {
+const sortedData = computed(() =>
+  [...tableData.value].sort((a, b) => {
     const av = a[sortKey.value]
     const bv = b[sortKey.value]
     return typeof av === 'string'
       ? av.localeCompare(bv as string) * sortDir.value
       : ((av as number) - (bv as number)) * sortDir.value
   })
-})
+)
 
-const totalCusto   = computed(() => filteredData.value.reduce((s, r) => s + r.valorTotal, 0))
-const custoMedio   = computed(() => filteredData.value.length ? totalCusto.value / filteredData.value.length : 0)
-const totalPages   = computed(() => Math.max(1, Math.ceil(filteredData.value.length / PER_PAGE)))
-const pagedData    = computed(() => filteredData.value.slice((page.value - 1) * PER_PAGE, page.value * PER_PAGE))
+const totalCusto   = computed(() => sortedData.value.reduce((s, r) => s + r.valorTotal, 0))
+const custoMedio   = computed(() => sortedData.value.length ? totalCusto.value / sortedData.value.length : 0)
+const totalPages   = computed(() => Math.max(1, Math.ceil(sortedData.value.length / PER_PAGE)))
+const pagedData    = computed(() => sortedData.value.slice((page.value - 1) * PER_PAGE, page.value * PER_PAGE))
 const visiblePages = computed(() => {
   const p = page.value, t = totalPages.value
   const start = Math.max(1, p - 2), end = Math.min(t, p + 2)
   return Array.from({ length: end - start + 1 }, (_, i) => start + i)
 })
 
-// ─── Watchers ─────────────────────────────────────────────────────────────────
-watch(filteredData, val => {
+// ─── Watchers — re-fetch quando filtros de select mudam ──────────────────────
+watch(
+  () => [
+    filters.value.periodo,
+    filters.value.programa,
+    filters.value.projeto,
+    filters.value.categoria,
+    filters.value.fornecedor,
+  ],
+  () => {
+    page.value = 1
+    loadTableData()
+  }
+)
+
+// Busca livre com debounce
+watch(() => filters.value.search, () => {
   page.value = 1
-  nextTick(() => updateCharts(val))
+  debouncedLoad()
 })
+
+// Atualiza charts quando dados mudam
+watch(sortedData, val => nextTick(() => updateCharts(val)))
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const fmt = (v: number) =>
@@ -274,10 +319,10 @@ function badgeClass(c: string) {
 }
 
 function exportCSV() {
-  const header = 'Material,Projeto,Programa,Quantidade,Valor Unitário,Valor Total,Período,Fornecedor,Categoria,Status,Área'
-  const rows = filteredData.value.map(r =>
+  const header = 'Material,Projeto,Programa,Quantidade,Valor Unitário,Valor Total,Período,Fornecedor,Categoria'
+  const rows = sortedData.value.map(r =>
     [r.material, r.projeto, r.programa, r.quantidade, r.valorUnitario,
-     r.valorTotal, r.periodo, r.fornecedor, r.categoria, r.status, r.area].join(',')
+     r.valorTotal, r.periodo, r.fornecedor, r.categoria].join(',')
   )
   const csv = [header, ...rows].join('\n')
   const a = document.createElement('a')
@@ -287,57 +332,16 @@ function exportCSV() {
 }
 
 // ─── Charts ───────────────────────────────────────────────────────────────────
-
-function normalizeCategoria(value: string): Categoria {
-  const allowed: Categoria[] = ['Hardware', 'Storage', 'Cloud', 'Seguran?a', 'Software', 'Rede']
-  return allowed.includes(value as Categoria) ? (value as Categoria) : 'Hardware'
-}
-
-function mapApiRow(row: MaterialsApiRow): Material {
-  return {
-    id: row.id,
-    material: row.material,
-    projeto: row.projeto,
-    programa: row.programa,
-    quantidade: row.quantidade,
-    valorUnitario: row.valor_unitario,
-    valorTotal: row.valor_total,
-    periodo: row.periodo ?? '',
-    fornecedor: row.fornecedor,
-    categoria: normalizeCategoria(row.categoria),
-    status: 'Ativo' as Status,
-    area: 'Materiais',
-  }
-}
-
-async function loadTableData() {
-  tableLoading.value = true
-  tableError.value = ''
-
-  try {
-    const response = await fetch(`${CONFIG.API_BASE_URL}/compras/`)
-    if (!response.ok) {
-      throw new Error('N?o foi poss?vel carregar a tabela de materiais.')
-    }
-
-    const data = (await response.json()) as MaterialsApiRow[]
-    tableData.value = data.map(mapApiRow)
-  } catch (error) {
-    console.error(error)
-    tableError.value = 'N?o foi poss?vel carregar a tabela de materiais.'
-    tableData.value = []
-  } finally {
-    tableLoading.value = false
-  }
-}
-
 const { buildCharts, updateCharts, destroyCharts } = useCharts()
 
 onMounted(async () => {
   await loadTableData()
   nextTick(() => buildCharts(RAW))
 })
-onUnmounted(destroyCharts)
+onUnmounted(() => {
+  debouncedLoad.cancel()
+  destroyCharts()
+})
 </script>
 
 <style scoped>
@@ -372,95 +376,6 @@ onUnmounted(destroyCharts)
 ::-webkit-scrollbar       { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: var(--bg2); }
 ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
-
-/* ── Navbar ───────────────────────────────────────────────────────────────── */
-.navbar {
-  background: var(--bg2);
-  border-bottom: 1px solid var(--border);
-  padding: 0 20px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  height: 48px;
-  flex-shrink: 0;
-}
-
-.nav-logo {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-right: 8px;
-}
-.nav-logo-icon {
-  width: 16px; height: 16px;
-  color: var(--text3);
-  flex-shrink: 0;
-}
-.nav-logo-text {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text);
-  white-space: nowrap;
-}
-
-.nav-tabs {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  flex: 1;
-}
-.nav-tab {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
-  border-radius: 7px;
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--text2);
-  cursor: pointer;
-  text-decoration: none;
-  transition: all .15s;
-  white-space: nowrap;
-  user-select: none;
-}
-.nav-tab.router-link-active {
-  color: var(--primary);
-  border-bottom: 2px solid var(--primary);
-}
-
-.nav-right {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  margin-left: auto;
-}
-.nav-user {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 12px;
-  color: var(--text2);
-  padding: 5px 10px;
-}
-.nav-user svg { width: 13px; height: 13px; }
-
-.nav-logout {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  background: transparent;
-  border: none;
-  color: var(--text3);
-  font-size: 12px;
-  font-family: inherit;
-  cursor: pointer;
-  padding: 5px 10px;
-  border-radius: 6px;
-  transition: all .15s;
-}
-.nav-logout:hover { color: var(--red); background: rgba(245,90,90,.08); }
-.nav-logout svg { width: 13px; height: 13px; }
 
 /* ── Main ─────────────────────────────────────────────────────────────────── */
 .main { padding: 24px 28px; flex: 1; display: flex; flex-direction: column; gap: 20px; }

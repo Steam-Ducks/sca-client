@@ -1,0 +1,42 @@
+import type { Filters } from '@/types/materiais'
+import { CONFIG } from '@/utils/config'
+
+export interface MaterialsApiRow {
+  id: number
+  material: string
+  projeto: string
+  programa: string
+  quantidade: number
+  valor_unitario: number
+  valor_total: number
+  periodo: string | null
+  fornecedor: string
+  categoria: string
+}
+
+function buildQueryParams(filters: Filters): string {
+  const params = new URLSearchParams()
+
+  if (filters.periodo)   params.set('periodo',    filters.periodo)
+  if (filters.programa)  params.set('programa',   filters.programa)
+  if (filters.projeto)   params.set('projeto',    filters.projeto)
+  if (filters.categoria) params.set('categoria',  filters.categoria)
+  if (filters.fornecedor) params.set('fornecedor', filters.fornecedor)
+  if (filters.search)    params.set('material',   filters.search)
+
+  const qs = params.toString()
+  return qs ? `?${qs}` : ''
+}
+
+export const materiaisService = {
+  async fetchMateriais(filters: Filters): Promise<MaterialsApiRow[]> {
+    const qs = buildQueryParams(filters)
+    const response = await fetch(`${CONFIG.API_BASE_URL}/compras/${qs}`)
+
+    if (!response.ok) {
+      throw new Error('Não foi possível carregar a tabela de materiais.')
+    }
+
+    return response.json() as Promise<MaterialsApiRow[]>
+  },
+}
