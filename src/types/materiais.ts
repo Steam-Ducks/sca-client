@@ -22,6 +22,7 @@ export interface Filters {
   programa: string
   projeto: string
   categoria: string
+  fornecedor: string
   status: string
   area: string
   search: string
