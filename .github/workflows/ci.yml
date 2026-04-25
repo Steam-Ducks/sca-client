@@ -84,7 +84,6 @@ jobs:
           name: playwright-report
           path: playwright-report/
 
-
   auto-merge:
     name: Auto Merge PR
     runs-on: ubuntu-latest

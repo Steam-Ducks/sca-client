@@ -1,71 +1,73 @@
-import { Chart, registerables } from 'chart.js'
-import type { TooltipItem } from 'chart.js'
-import type { ProjetoFinanceiro, SaudeStatus } from '@/data/orcamento'
+import { Chart, registerables } from "chart.js";
+import type { TooltipItem } from "chart.js";
+import type { ProjetoFinanceiro, SaudeStatus } from "@/data/orcamento";
 
-Chart.register(...registerables)
+Chart.register(...registerables);
 
-const FONT = "'IBM Plex Sans', sans-serif"
-const MONO = "'IBM Plex Mono', monospace"
-const gridColor  = 'rgba(42,47,69,0.8)'
-const textColor  = '#555d7a'
-const text2Color = '#8b92aa'
+const FONT = "'IBM Plex Sans', sans-serif";
+const MONO = "'IBM Plex Mono', monospace";
+const gridColor = "rgba(42,47,69,0.8)";
+const textColor = "#555d7a";
+const text2Color = "#8b92aa";
 
 const SAUDE_COLORS: Record<SaudeStatus, string> = {
-  'Saudável': 'rgba(45,212,160,0.85)',
-  'Atenção':  'rgba(245,166,35,0.85)',
-  'Crítico':  'rgba(245,90,90,0.85)',
-}
+  Saudável: "rgba(45,212,160,0.85)",
+  Atenção: "rgba(245,166,35,0.85)",
+  Crítico: "rgba(245,90,90,0.85)",
+};
 
 const tooltipBase = {
-  backgroundColor: '#1c2030',
-  borderColor: '#2a2f45',
+  backgroundColor: "#1c2030",
+  borderColor: "#2a2f45",
   borderWidth: 1,
-  titleColor: '#e2e6f0',
-  bodyColor: '#8b92aa',
+  titleColor: "#e2e6f0",
+  bodyColor: "#8b92aa",
   titleFont: { family: FONT, size: 12 },
-  bodyFont:  { family: MONO, size: 12 },
+  bodyFont: { family: MONO, size: 12 },
   padding: 10,
-}
+};
 
 function fmtBRL(v: number): string {
-  if (v >= 1_000_000) return `R$ ${(v / 1_000_000).toFixed(1)}M`
-  if (v >= 1_000)     return `R$ ${(v / 1_000).toFixed(0)}K`
-  return `R$ ${v.toLocaleString('pt-BR')}`
+  if (v >= 1_000_000) return `R$ ${(v / 1_000_000).toFixed(1)}M`;
+  if (v >= 1_000) return `R$ ${(v / 1_000).toFixed(0)}K`;
+  return `R$ ${v.toLocaleString("pt-BR")}`;
 }
 
-let chartBudget:       Chart | null = null
-let chartDesvio:       Chart | null = null
-let chartDistribuicao: Chart | null = null
+let chartBudget: Chart | null = null;
+let chartDesvio: Chart | null = null;
+let chartDistribuicao: Chart | null = null;
 
 function destroyAll() {
-  ;[chartBudget, chartDesvio, chartDistribuicao].forEach(c => c?.destroy())
-  chartBudget = chartDesvio = chartDistribuicao = null
+  [chartBudget, chartDesvio, chartDistribuicao].forEach((c) => c?.destroy());
+  chartBudget = chartDesvio = chartDistribuicao = null;
 }
 
 function buildChartsOrcamento(data: ProjetoFinanceiro[]) {
-  destroyAll()
+  destroyAll();
 
-  const labels = data.map(p => p.projeto)
+  const labels = data.map((p) => p.projeto);
 
   // 1. Budget vs Custo Real — grouped bar
-  const ctxB = (document.getElementById('chartBudgetVsCusto') as HTMLCanvasElement)?.getContext('2d')
+  const ctxB = (
+    document.getElementById("chartBudgetVsCusto") as HTMLCanvasElement
+  )?.getContext("2d");
   if (ctxB) {
     chartBudget = new Chart(ctxB, {
-      type: 'bar',
+      type: "bar",
       data: {
         labels,
         datasets: [
           {
-            label: 'Budget',
-            data: data.map(p => p.budget),
-            backgroundColor: 'rgba(77,143,255,0.85)',
+            label: "Budget",
+            data: data.map((p) => p.budget),
+            backgroundColor: "rgba(77,143,255,0.85)",
             borderRadius: 3,
             borderSkipped: false,
           },
           {
-            label: 'Custo Real',
-            data: data.map(p => p.custoReal),
-            backgroundColor: 'rgba(45,212,160,0.85)',
+            label: "Custo Real",
+            data: data.map((p) => p.custoReal),
+            backgroundColor: "rgba(45,212,160,0.85)",
             borderRadius: 3,
             borderSkipped: false,
           },
@@ -74,11 +76,11 @@ function buildChartsOrcamento(data: ProjetoFinanceiro[]) {
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        animation: { duration: 500, easing: 'easeOutQuart' },
+        animation: { duration: 500, easing: "easeOutQuart" },
         plugins: {
           legend: {
             display: true,
-            position: 'bottom',
+            position: "bottom",
             labels: {
               color: text2Color,
               font: { family: FONT, size: 11 },
@@ -89,7 +91,8 @@ function buildChartsOrcamento(data: ProjetoFinanceiro[]) {
           tooltip: {
             ...tooltipBase,
             callbacks: {
-              label: (ctx: TooltipItem<'bar'>) => ` ${fmtBRL(ctx.parsed.y ?? 0)}`,
+              label: (ctx: TooltipItem<"bar">) =>
+                ` ${fmtBRL(ctx.parsed.y ?? 0)}`,
             },
           },
         },
@@ -110,33 +113,38 @@ function buildChartsOrcamento(data: ProjetoFinanceiro[]) {
           },
         },
       },
-    })
+    });
   }
 
   // 2. Desvio Percentual — bar, colored by health
-  const ctxD = (document.getElementById('chartDesvioPercentual') as HTMLCanvasElement)?.getContext('2d')
+  const ctxD = (
+    document.getElementById("chartDesvioPercentual") as HTMLCanvasElement
+  )?.getContext("2d");
   if (ctxD) {
     chartDesvio = new Chart(ctxD, {
-      type: 'bar',
+      type: "bar",
       data: {
         labels,
-        datasets: [{
-          data: data.map(p => p.desvioPercent),
-          backgroundColor: data.map(p => SAUDE_COLORS[p.saude]),
-          borderRadius: 3,
-          borderSkipped: false,
-        }],
+        datasets: [
+          {
+            data: data.map((p) => p.desvioPercent),
+            backgroundColor: data.map((p) => SAUDE_COLORS[p.saude]),
+            borderRadius: 3,
+            borderSkipped: false,
+          },
+        ],
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        animation: { duration: 500, easing: 'easeOutQuart' },
+        animation: { duration: 500, easing: "easeOutQuart" },
         plugins: {
           legend: { display: false },
           tooltip: {
             ...tooltipBase,
             callbacks: {
-              label: (ctx: TooltipItem<'bar'>) => ` ${(ctx.parsed.y ?? 0).toFixed(1)}%`,
+              label: (ctx: TooltipItem<"bar">) =>
+                ` ${(ctx.parsed.y ?? 0).toFixed(1)}%`,
             },
           },
         },
@@ -159,41 +167,49 @@ function buildChartsOrcamento(data: ProjetoFinanceiro[]) {
           },
         },
       },
-    })
+    });
   }
 
   // 3. Distribuição por Status de Saúde — doughnut
-  const saudavelCount = data.filter(p => p.saude === 'Saudável').length
-  const atencaoCount  = data.filter(p => p.saude === 'Atenção').length
-  const criticoCount  = data.filter(p => p.saude === 'Crítico').length
+  const saudavelCount = data.filter((p) => p.saude === "Saudável").length;
+  const atencaoCount = data.filter((p) => p.saude === "Atenção").length;
+  const criticoCount = data.filter((p) => p.saude === "Crítico").length;
 
-  const ctxDist = (document.getElementById('chartDistribuicao') as HTMLCanvasElement)?.getContext('2d')
+  const ctxDist = (
+    document.getElementById("chartDistribuicao") as HTMLCanvasElement
+  )?.getContext("2d");
   if (ctxDist) {
     chartDistribuicao = new Chart(ctxDist, {
-      type: 'doughnut',
+      type: "doughnut",
       data: {
-        labels: [`Saudável: ${saudavelCount}`, `Atenção: ${atencaoCount}`, `Crítico: ${criticoCount}`],
-        datasets: [{
-          data: [saudavelCount, atencaoCount, criticoCount],
-          backgroundColor: [
-            'rgba(45,212,160,0.9)',
-            'rgba(245,166,35,0.9)',
-            'rgba(245,90,90,0.9)',
-          ],
-          borderColor: '#141720',
-          borderWidth: 3,
-          hoverOffset: 8,
-        }],
+        labels: [
+          `Saudável: ${saudavelCount}`,
+          `Atenção: ${atencaoCount}`,
+          `Crítico: ${criticoCount}`,
+        ],
+        datasets: [
+          {
+            data: [saudavelCount, atencaoCount, criticoCount],
+            backgroundColor: [
+              "rgba(45,212,160,0.9)",
+              "rgba(245,166,35,0.9)",
+              "rgba(245,90,90,0.9)",
+            ],
+            borderColor: "#141720",
+            borderWidth: 3,
+            hoverOffset: 8,
+          },
+        ],
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
         animation: { duration: 500 },
-        cutout: '60%',
+        cutout: "60%",
         plugins: {
           legend: {
             display: true,
-            position: 'bottom',
+            position: "bottom",
             labels: {
               color: text2Color,
               font: { family: FONT, size: 12 },
@@ -204,46 +220,57 @@ function buildChartsOrcamento(data: ProjetoFinanceiro[]) {
           tooltip: {
             ...tooltipBase,
             callbacks: {
-              label: (ctx: TooltipItem<'doughnut'>) => ` ${ctx.label}: ${ctx.parsed} projetos`,
+              label: (ctx: TooltipItem<"doughnut">) =>
+                ` ${ctx.label}: ${ctx.parsed} projetos`,
             },
           },
         },
       },
-    })
+    });
   }
 }
 
 function updateChartsOrcamento(data: ProjetoFinanceiro[]) {
-  const labels = data.map(p => p.projeto)
+  const labels = data.map((p) => p.projeto);
 
   if (chartBudget) {
-    chartBudget.data.labels = labels
-    chartBudget.data.datasets[0].data = data.map(p => p.budget)
-    chartBudget.data.datasets[1].data = data.map(p => p.custoReal)
-    chartBudget.update()
+    chartBudget.data.labels = labels;
+    chartBudget.data.datasets[0].data = data.map((p) => p.budget);
+    chartBudget.data.datasets[1].data = data.map((p) => p.custoReal);
+    chartBudget.update();
   }
 
   if (chartDesvio) {
-    chartDesvio.data.labels = labels
-    chartDesvio.data.datasets[0].data = data.map(p => p.desvioPercent)
-    ;(chartDesvio.data.datasets[0].backgroundColor as string[]) = data.map(p => SAUDE_COLORS[p.saude])
-    chartDesvio.update()
+    chartDesvio.data.labels = labels;
+    chartDesvio.data.datasets[0].data = data.map((p) => p.desvioPercent);
+    (chartDesvio.data.datasets[0].backgroundColor as string[]) = data.map(
+      (p) => SAUDE_COLORS[p.saude],
+    );
+    chartDesvio.update();
   }
 
   if (chartDistribuicao) {
-    const s = data.filter(p => p.saude === 'Saudável').length
-    const a = data.filter(p => p.saude === 'Atenção').length
-    const c = data.filter(p => p.saude === 'Crítico').length
-    chartDistribuicao.data.labels = [`Saudável: ${s}`, `Atenção: ${a}`, `Crítico: ${c}`]
-    chartDistribuicao.data.datasets[0].data = [s, a, c]
-    chartDistribuicao.update()
+    const s = data.filter((p) => p.saude === "Saudável").length;
+    const a = data.filter((p) => p.saude === "Atenção").length;
+    const c = data.filter((p) => p.saude === "Crítico").length;
+    chartDistribuicao.data.labels = [
+      `Saudável: ${s}`,
+      `Atenção: ${a}`,
+      `Crítico: ${c}`,
+    ];
+    chartDistribuicao.data.datasets[0].data = [s, a, c];
+    chartDistribuicao.update();
   }
 }
 
 function destroyChartsOrcamento() {
-  destroyAll()
+  destroyAll();
 }
 
 export function useChartsOrcamento() {
-  return { buildChartsOrcamento, updateChartsOrcamento, destroyChartsOrcamento }
+  return {
+    buildChartsOrcamento,
+    updateChartsOrcamento,
+    destroyChartsOrcamento,
+  };
 }
