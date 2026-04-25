@@ -37,17 +37,17 @@ export interface ConsolidadoRow {
 }
 
 export interface DashboardKPIs {
-  total_consolidated_cost: number
-  total_materials_cost: number
-  total_hours_cost: number
-  total_projects: number
-  total_programs: number
+  total_consolidated_cost: number;
+  total_materials_cost: number;
+  total_hours_cost: number;
+  total_projects: number;
+  total_programs: number;
 }
- 
+
 export interface DashboardFilters {
-  start_date?: string
-  end_date?: string
-  program?: string
-  project?: string
-  status?: string
+  start_date?: string;
+  end_date?: string;
+  program?: string;
+  project?: string;
+  status?: string;
 }

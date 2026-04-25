@@ -1,28 +1,40 @@
 <template>
   <div class="app">
     <main class="main">
-      <h1 class="sr-only">Horas Técnicas</h1>
+      <h1 class="sr-only">
+        Horas Técnicas
+      </h1>
 
       <!-- METRICS -->
       <div class="metrics">
         <div class="metric-card">
-          <div class="metric-label">Custo Total - Horas</div>
+          <div class="metric-label">
+            Custo Total - Horas
+          </div>
           <div class="metric-value blue">
             {{ fmt(kpis.custoTotal) }}
           </div>
         </div>
         <div class="metric-card">
-          <div class="metric-label">Total de Horas</div>
-          <div class="metric-value">{{ kpis.totalHoras }}h</div>
+          <div class="metric-label">
+            Total de Horas
+          </div>
+          <div class="metric-value">
+            {{ kpis.totalHoras }}h
+          </div>
         </div>
         <div class="metric-card">
-          <div class="metric-label">Custo Médio/Hora</div>
+          <div class="metric-label">
+            Custo Médio/Hora
+          </div>
           <div class="metric-value green">
             {{ fmt(kpis.custoMedio) }}
           </div>
         </div>
         <div class="metric-card">
-          <div class="metric-label">Registros</div>
+          <div class="metric-label">
+            Registros
+          </div>
           <div class="metric-value">
             {{ filteredData.length }}
           </div>
@@ -32,7 +44,11 @@
       <!-- FILTERS -->
       <div class="filters-card">
         <div class="filters-title">
-          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
             <path
               d="M3 4h18M7 10h10M11 16h2"
               stroke-width="1.5"
@@ -47,8 +63,14 @@
             class="filter-select"
             data-testid="filter-periodo"
           >
-            <option value="">Todos os Períodos</option>
-            <option v-for="p in uniquePeriodos" :key="p" :value="p">
+            <option value="">
+              Todos os Períodos
+            </option>
+            <option
+              v-for="p in uniquePeriodos"
+              :key="p"
+              :value="p"
+            >
               {{ p }}
             </option>
           </select>
@@ -57,8 +79,14 @@
             class="filter-select"
             data-testid="filter-programa"
           >
-            <option value="">Todos os Programas</option>
-            <option v-for="p in uniqueProgramas" :key="p" :value="p">
+            <option value="">
+              Todos os Programas
+            </option>
+            <option
+              v-for="p in uniqueProgramas"
+              :key="p"
+              :value="p"
+            >
               {{ p }}
             </option>
           </select>
@@ -67,8 +95,14 @@
             class="filter-select"
             data-testid="filter-projeto"
           >
-            <option value="">Todos os Projetos</option>
-            <option v-for="p in uniqueProjetos" :key="p" :value="p">
+            <option value="">
+              Todos os Projetos
+            </option>
+            <option
+              v-for="p in uniqueProjetos"
+              :key="p"
+              :value="p"
+            >
               {{ p }}
             </option>
           </select>
@@ -77,8 +111,14 @@
             class="filter-select"
             data-testid="filter-colaborador"
           >
-            <option value="">Todos os Colaboradores</option>
-            <option v-for="c in uniqueColaboradores" :key="c" :value="c">
+            <option value="">
+              Todos os Colaboradores
+            </option>
+            <option
+              v-for="c in uniqueColaboradores"
+              :key="c"
+              :value="c"
+            >
               {{ c }}
             </option>
           </select>
@@ -87,8 +127,14 @@
             class="filter-select"
             data-testid="filter-tarefa"
           >
-            <option value="">Todas as Tarefas</option>
-            <option v-for="t in uniqueTarefas" :key="t" :value="t">
+            <option value="">
+              Todas as Tarefas
+            </option>
+            <option
+              v-for="t in uniqueTarefas"
+              :key="t"
+              :value="t"
+            >
               {{ t }}
             </option>
           </select>
@@ -97,14 +143,22 @@
             data-testid="btn-export"
             @click="exportCSV"
           >
-            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
               <path
                 d="M12 16l-4-4h3V4h2v8h3l-4 4z"
                 stroke-width="1.5"
                 stroke-linecap="round"
                 stroke-linejoin="round"
               />
-              <path d="M4 20h16" stroke-width="1.5" stroke-linecap="round" />
+              <path
+                d="M4 20h16"
+                stroke-width="1.5"
+                stroke-linecap="round"
+              />
             </svg>
             Exportar
           </button>
@@ -114,13 +168,17 @@
       <!-- TOP CHARTS: Horas e Custo por Projeto -->
       <div class="charts-row">
         <div class="chart-card">
-          <div class="chart-title">Total de Horas por Projeto</div>
+          <div class="chart-title">
+            Total de Horas por Projeto
+          </div>
           <div class="chart-wrap tall">
             <canvas id="chartHorasProjeto" />
           </div>
         </div>
         <div class="chart-card">
-          <div class="chart-title">Custo de Horas por Projeto</div>
+          <div class="chart-title">
+            Custo de Horas por Projeto
+          </div>
           <div class="chart-wrap tall">
             <canvas id="chartCustoProjeto" />
           </div>
@@ -130,13 +188,17 @@
       <!-- BOTTOM CHARTS: Custo por Colaborador + Temporal -->
       <div class="charts-row">
         <div class="chart-card">
-          <div class="chart-title">Top 10 - Custo por Colaborador</div>
+          <div class="chart-title">
+            Top 10 - Custo por Colaborador
+          </div>
           <div class="chart-wrap tall">
             <canvas id="chartCustoColaborador" />
           </div>
         </div>
         <div class="chart-card">
-          <div class="chart-title">Evolução Temporal das Horas</div>
+          <div class="chart-title">
+            Evolução Temporal das Horas
+          </div>
           <div class="chart-wrap tall">
             <canvas id="chartTemporal" />
           </div>
@@ -152,25 +214,46 @@
           <table data-testid="data-table">
             <thead>
               <tr>
-                <th class="sort-col" @click="sortBy('colaborador')">
+                <th
+                  class="sort-col"
+                  @click="sortBy('colaborador')"
+                >
                   Colaborador {{ sortIcon("colaborador") }}
                 </th>
-                <th class="sort-col" @click="sortBy('projeto')">
+                <th
+                  class="sort-col"
+                  @click="sortBy('projeto')"
+                >
                   Projeto {{ sortIcon("projeto") }}
                 </th>
-                <th class="sort-col" @click="sortBy('programa')">
+                <th
+                  class="sort-col"
+                  @click="sortBy('programa')"
+                >
                   Programa {{ sortIcon("programa") }}
                 </th>
-                <th class="sort-col" @click="sortBy('horas')">
+                <th
+                  class="sort-col"
+                  @click="sortBy('horas')"
+                >
                   Horas {{ sortIcon("horas") }}
                 </th>
-                <th class="sort-col" @click="sortBy('custoPorHora')">
+                <th
+                  class="sort-col"
+                  @click="sortBy('custoPorHora')"
+                >
                   Custo/Hora {{ sortIcon("custoPorHora") }}
                 </th>
-                <th class="sort-col" @click="sortBy('custoTotal')">
+                <th
+                  class="sort-col"
+                  @click="sortBy('custoTotal')"
+                >
                   Custo Total {{ sortIcon("custoTotal") }}
                 </th>
-                <th class="sort-col" @click="sortBy('periodo')">
+                <th
+                  class="sort-col"
+                  @click="sortBy('periodo')"
+                >
                   Período {{ sortIcon("periodo") }}
                 </th>
                 <th>Tarefa</th>
@@ -178,17 +261,26 @@
             </thead>
             <tbody>
               <tr v-if="tableLoading">
-                <td colspan="8" class="table-feedback muted">
+                <td
+                  colspan="8"
+                  class="table-feedback muted"
+                >
                   Carregando dados...
                 </td>
               </tr>
               <tr v-else-if="tableError">
-                <td colspan="8" class="table-feedback error">
+                <td
+                  colspan="8"
+                  class="table-feedback error"
+                >
                   {{ tableError }}
                 </td>
               </tr>
               <tr v-else-if="pagedData.length === 0">
-                <td colspan="8" class="table-feedback muted">
+                <td
+                  colspan="8"
+                  class="table-feedback muted"
+                >
                   Nenhum registro encontrado.
                 </td>
               </tr>
@@ -206,7 +298,9 @@
                 <td class="muted">
                   {{ row.programa }}
                 </td>
-                <td class="mono right">{{ row.horas }}h</td>
+                <td class="mono right">
+                  {{ row.horas }}h
+                </td>
                 <td class="mono">
                   {{ fmt(row.custoPorHora) }}
                 </td>
@@ -224,15 +318,21 @@
           </table>
         </div>
         <div class="pagination">
-          <span
-            >{{ filteredData.length }} registros · página {{ page }} de
-            {{ totalPages }}</span
-          >
+          <span>{{ filteredData.length }} registros · página {{ page }} de
+            {{ totalPages }}</span>
           <div class="pg-btns">
-            <button class="pg-btn" :disabled="page === 1" @click="page = 1">
+            <button
+              class="pg-btn"
+              :disabled="page === 1"
+              @click="page = 1"
+            >
               «
             </button>
-            <button class="pg-btn" :disabled="page === 1" @click="page--">
+            <button
+              class="pg-btn"
+              :disabled="page === 1"
+              @click="page--"
+            >
               ‹
             </button>
             <button

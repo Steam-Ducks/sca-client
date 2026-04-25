@@ -4,19 +4,25 @@
       <!-- METRICS -->
       <div class="metrics">
         <div class="metric-card">
-          <div class="metric-label">Custo Total de Materiais</div>
+          <div class="metric-label">
+            Custo Total de Materiais
+          </div>
           <div class="metric-value blue">
             {{ fmt(totalCusto) }}
           </div>
         </div>
         <div class="metric-card">
-          <div class="metric-label">Total de Itens</div>
+          <div class="metric-label">
+            Total de Itens
+          </div>
           <div class="metric-value">
             {{ sortedData.length }}
           </div>
         </div>
         <div class="metric-card">
-          <div class="metric-label">Custo Médio por Item</div>
+          <div class="metric-label">
+            Custo Médio por Item
+          </div>
           <div class="metric-value green">
             {{ fmt(custoMedio) }}
           </div>
@@ -26,7 +32,11 @@
       <!-- FILTERS -->
       <div class="filters-card">
         <div class="filters-title">
-          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
             <path
               d="M3 4h18M7 10h10M11 16h2"
               stroke-width="1.5"
@@ -36,41 +46,98 @@
           Filtros
         </div>
         <div class="filters-row">
-          <select v-model="filters.periodo" class="filter-select">
-            <option value="">Todos os Períodos</option>
-            <option v-for="p in periodos" :key="p" :value="p">
+          <select
+            v-model="filters.periodo"
+            class="filter-select"
+          >
+            <option value="">
+              Todos os Períodos
+            </option>
+            <option
+              v-for="p in periodos"
+              :key="p"
+              :value="p"
+            >
               {{ p }}
             </option>
           </select>
-          <select v-model="filters.programa" class="filter-select">
-            <option value="">Todos os Programas</option>
-            <option v-for="p in programas" :key="p" :value="p">
+          <select
+            v-model="filters.programa"
+            class="filter-select"
+          >
+            <option value="">
+              Todos os Programas
+            </option>
+            <option
+              v-for="p in programas"
+              :key="p"
+              :value="p"
+            >
               {{ p }}
             </option>
           </select>
-          <select v-model="filters.projeto" class="filter-select">
-            <option value="">Todos os Projetos</option>
-            <option v-for="p in projetos" :key="p" :value="p">
+          <select
+            v-model="filters.projeto"
+            class="filter-select"
+          >
+            <option value="">
+              Todos os Projetos
+            </option>
+            <option
+              v-for="p in projetos"
+              :key="p"
+              :value="p"
+            >
               {{ p }}
             </option>
           </select>
-          <select v-model="filters.categoria" class="filter-select">
-            <option value="">Todas as Categorias</option>
-            <option v-for="c in categorias" :key="c" :value="c">
+          <select
+            v-model="filters.categoria"
+            class="filter-select"
+          >
+            <option value="">
+              Todas as Categorias
+            </option>
+            <option
+              v-for="c in categorias"
+              :key="c"
+              :value="c"
+            >
               {{ c }}
             </option>
           </select>
-          <select v-model="filters.fornecedor" class="filter-select">
-            <option value="">Todos os Fornecedores</option>
-            <option v-for="f in fornecedores" :key="f" :value="f">
+          <select
+            v-model="filters.fornecedor"
+            class="filter-select"
+          >
+            <option value="">
+              Todos os Fornecedores
+            </option>
+            <option
+              v-for="f in fornecedores"
+              :key="f"
+              :value="f"
+            >
               {{ f }}
             </option>
           </select>
         </div>
-        <div class="filters-row" style="margin-top: 10px">
+        <div
+          class="filters-row"
+          style="margin-top: 10px"
+        >
           <div class="search-wrap">
-            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <circle cx="11" cy="11" r="8" stroke-width="1.5" />
+            <svg
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <circle
+                cx="11"
+                cy="11"
+                r="8"
+                stroke-width="1.5"
+              />
               <path
                 d="M21 21l-4.35-4.35"
                 stroke-width="1.5"
@@ -81,17 +148,28 @@
               v-model="filters.search"
               class="search-input"
               placeholder="Buscar material..."
-            />
+            >
           </div>
-          <button class="export-btn" @click="exportCSV">
-            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <button
+            class="export-btn"
+            @click="exportCSV"
+          >
+            <svg
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
               <path
                 d="M12 16l-4-4h3V4h2v8h3l-4 4z"
                 stroke-width="1.5"
                 stroke-linecap="round"
                 stroke-linejoin="round"
               />
-              <path d="M4 20h16" stroke-width="1.5" stroke-linecap="round" />
+              <path
+                d="M4 20h16"
+                stroke-width="1.5"
+                stroke-linecap="round"
+              />
             </svg>
             Exportar
           </button>
@@ -101,13 +179,17 @@
       <!-- TOP CHARTS -->
       <div class="charts-row">
         <div class="chart-card">
-          <div class="chart-title">Top 10 – Custo por Material</div>
+          <div class="chart-title">
+            Top 10 – Custo por Material
+          </div>
           <div class="chart-wrap">
             <canvas id="chartCusto" />
           </div>
         </div>
         <div class="chart-card">
-          <div class="chart-title">Top 10 – Quantidade Consumida</div>
+          <div class="chart-title">
+            Top 10 – Quantidade Consumida
+          </div>
           <div class="chart-wrap">
             <canvas id="chartQtd" />
           </div>
@@ -117,13 +199,17 @@
       <!-- BOTTOM CHARTS -->
       <div class="charts-row">
         <div class="chart-card">
-          <div class="chart-title">Custo de Materiais por Projeto</div>
+          <div class="chart-title">
+            Custo de Materiais por Projeto
+          </div>
           <div class="chart-wrap tall">
             <canvas id="chartProjeto" />
           </div>
         </div>
         <div class="chart-card">
-          <div class="chart-title">Evolução Temporal do Custo</div>
+          <div class="chart-title">
+            Evolução Temporal do Custo
+          </div>
           <div class="chart-wrap tall">
             <canvas id="chartTemporal" />
           </div>
@@ -139,25 +225,46 @@
           <table>
             <thead>
               <tr>
-                <th class="sort-col" @click="sort('material')">
+                <th
+                  class="sort-col"
+                  @click="sort('material')"
+                >
                   Material {{ sortIcon("material") }}
                 </th>
-                <th class="sort-col" @click="sort('projeto')">
+                <th
+                  class="sort-col"
+                  @click="sort('projeto')"
+                >
                   Projeto {{ sortIcon("projeto") }}
                 </th>
-                <th class="sort-col" @click="sort('programa')">
+                <th
+                  class="sort-col"
+                  @click="sort('programa')"
+                >
                   Programa {{ sortIcon("programa") }}
                 </th>
-                <th class="sort-col" @click="sort('quantidade')">
+                <th
+                  class="sort-col"
+                  @click="sort('quantidade')"
+                >
                   Quantidade {{ sortIcon("quantidade") }}
                 </th>
-                <th class="sort-col" @click="sort('valorUnitario')">
+                <th
+                  class="sort-col"
+                  @click="sort('valorUnitario')"
+                >
                   Valor Unitário {{ sortIcon("valorUnitario") }}
                 </th>
-                <th class="sort-col" @click="sort('valorTotal')">
+                <th
+                  class="sort-col"
+                  @click="sort('valorTotal')"
+                >
                   Valor Total {{ sortIcon("valorTotal") }}
                 </th>
-                <th class="sort-col" @click="sort('periodo')">
+                <th
+                  class="sort-col"
+                  @click="sort('periodo')"
+                >
                   Período {{ sortIcon("periodo") }}
                 </th>
                 <th>Fornecedor</th>
@@ -166,21 +273,33 @@
             </thead>
             <tbody>
               <tr v-if="tableLoading">
-                <td colspan="9" class="table-feedback muted">
+                <td
+                  colspan="9"
+                  class="table-feedback muted"
+                >
                   Carregando materiais...
                 </td>
               </tr>
               <tr v-else-if="tableError">
-                <td colspan="9" class="table-feedback error">
+                <td
+                  colspan="9"
+                  class="table-feedback error"
+                >
                   {{ tableError }}
                 </td>
               </tr>
               <tr v-else-if="pagedData.length === 0">
-                <td colspan="9" class="table-feedback muted">
+                <td
+                  colspan="9"
+                  class="table-feedback muted"
+                >
                   Nenhum material encontrado.
                 </td>
               </tr>
-              <tr v-for="row in pagedData" :key="row.id">
+              <tr
+                v-for="row in pagedData"
+                :key="row.id"
+              >
                 <td class="material-name">
                   {{ row.material }}
                 </td>
@@ -215,15 +334,21 @@
           </table>
         </div>
         <div class="pagination">
-          <span
-            >{{ sortedData.length }} registros · página {{ page }} de
-            {{ totalPages }}</span
-          >
+          <span>{{ sortedData.length }} registros · página {{ page }} de
+            {{ totalPages }}</span>
           <div class="pg-btns">
-            <button class="pg-btn" :disabled="page === 1" @click="page = 1">
+            <button
+              class="pg-btn"
+              :disabled="page === 1"
+              @click="page = 1"
+            >
               «
             </button>
-            <button class="pg-btn" :disabled="page === 1" @click="page--">
+            <button
+              class="pg-btn"
+              :disabled="page === 1"
+              @click="page--"
+            >
               ‹
             </button>
             <button

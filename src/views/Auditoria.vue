@@ -1,30 +1,40 @@
 <template>
   <div class="app">
     <main class="main">
-      <h1 class="sr-only">Auditoria</h1>
+      <h1 class="sr-only">
+        Auditoria
+      </h1>
 
       <!-- METRICS -->
       <div class="metrics">
         <div class="metric-card">
-          <div class="metric-label">Total de Registros</div>
+          <div class="metric-label">
+            Total de Registros
+          </div>
           <div class="metric-value blue">
             {{ filteredData.length }}
           </div>
         </div>
         <div class="metric-card">
-          <div class="metric-label">Aprovados</div>
+          <div class="metric-label">
+            Aprovados
+          </div>
           <div class="metric-value green">
             {{ kpis.aprovados }}
           </div>
         </div>
         <div class="metric-card">
-          <div class="metric-label">Pendentes</div>
+          <div class="metric-label">
+            Pendentes
+          </div>
           <div class="metric-value amber">
             {{ kpis.pendentes }}
           </div>
         </div>
         <div class="metric-card">
-          <div class="metric-label">Rejeitados</div>
+          <div class="metric-label">
+            Rejeitados
+          </div>
           <div class="metric-value red">
             {{ kpis.rejeitados }}
           </div>
@@ -34,7 +44,11 @@
       <!-- FILTERS -->
       <div class="filters-card">
         <div class="filters-title">
-          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
             <path
               d="M3 4h18M7 10h10M11 16h2"
               stroke-width="1.5"
@@ -44,45 +58,101 @@
           Filtros
         </div>
         <div class="filters-row">
-          <select v-model="filters.tipo" class="filter-select">
-            <option value="">Todos os Tipos</option>
-            <option v-for="t in uniqueTipos" :key="t" :value="t">
+          <select
+            v-model="filters.tipo"
+            class="filter-select"
+          >
+            <option value="">
+              Todos os Tipos
+            </option>
+            <option
+              v-for="t in uniqueTipos"
+              :key="t"
+              :value="t"
+            >
               {{ t }}
             </option>
           </select>
-          <select v-model="filters.status" class="filter-select">
-            <option value="">Todos os Status</option>
-            <option v-for="s in uniqueStatuses" :key="s" :value="s">
+          <select
+            v-model="filters.status"
+            class="filter-select"
+          >
+            <option value="">
+              Todos os Status
+            </option>
+            <option
+              v-for="s in uniqueStatuses"
+              :key="s"
+              :value="s"
+            >
               {{ s }}
             </option>
           </select>
-          <select v-model="filters.projeto" class="filter-select">
-            <option value="">Todos os Projetos</option>
-            <option v-for="p in uniqueProjetos" :key="p" :value="p">
+          <select
+            v-model="filters.projeto"
+            class="filter-select"
+          >
+            <option value="">
+              Todos os Projetos
+            </option>
+            <option
+              v-for="p in uniqueProjetos"
+              :key="p"
+              :value="p"
+            >
               {{ p }}
             </option>
           </select>
-          <select v-model="filters.responsavel" class="filter-select">
-            <option value="">Todos os Responsáveis</option>
-            <option v-for="r in uniqueResponsaveis" :key="r" :value="r">
+          <select
+            v-model="filters.responsavel"
+            class="filter-select"
+          >
+            <option value="">
+              Todos os Responsáveis
+            </option>
+            <option
+              v-for="r in uniqueResponsaveis"
+              :key="r"
+              :value="r"
+            >
               {{ r }}
             </option>
           </select>
-          <select v-model="filters.programa" class="filter-select">
-            <option value="">Todos os Programas</option>
-            <option v-for="p in uniqueProgramas" :key="p" :value="p">
+          <select
+            v-model="filters.programa"
+            class="filter-select"
+          >
+            <option value="">
+              Todos os Programas
+            </option>
+            <option
+              v-for="p in uniqueProgramas"
+              :key="p"
+              :value="p"
+            >
               {{ p }}
             </option>
           </select>
-          <button class="export-btn" @click="exportCSV">
-            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <button
+            class="export-btn"
+            @click="exportCSV"
+          >
+            <svg
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
               <path
                 d="M12 16l-4-4h3V4h2v8h3l-4 4z"
                 stroke-width="1.5"
                 stroke-linecap="round"
                 stroke-linejoin="round"
               />
-              <path d="M4 20h16" stroke-width="1.5" stroke-linecap="round" />
+              <path
+                d="M4 20h16"
+                stroke-width="1.5"
+                stroke-linecap="round"
+              />
             </svg>
             Exportar
           </button>
@@ -92,13 +162,17 @@
       <!-- TOP CHARTS -->
       <div class="charts-row">
         <div class="chart-card">
-          <div class="chart-title">Registros por Status</div>
+          <div class="chart-title">
+            Registros por Status
+          </div>
           <div class="chart-wrap tall">
             <canvas id="chartStatusPeriodo" />
           </div>
         </div>
         <div class="chart-card">
-          <div class="chart-title">Registros por Tipo</div>
+          <div class="chart-title">
+            Registros por Tipo
+          </div>
           <div class="chart-wrap tall">
             <canvas id="chartPorTipo" />
           </div>
@@ -108,13 +182,17 @@
       <!-- BOTTOM CHARTS -->
       <div class="charts-row">
         <div class="chart-card">
-          <div class="chart-title">Registros por Responsável</div>
+          <div class="chart-title">
+            Registros por Responsável
+          </div>
           <div class="chart-wrap tall">
             <canvas id="chartPorResponsavel" />
           </div>
         </div>
         <div class="chart-card">
-          <div class="chart-title">Evolução de Auditorias</div>
+          <div class="chart-title">
+            Evolução de Auditorias
+          </div>
           <div class="chart-wrap tall">
             <canvas id="chartTemporalAud" />
           </div>
@@ -130,28 +208,52 @@
           <table>
             <thead>
               <tr>
-                <th class="sort-col" @click="sortBy('tipo')">
+                <th
+                  class="sort-col"
+                  @click="sortBy('tipo')"
+                >
                   Tipo {{ sortIcon("tipo") }}
                 </th>
-                <th class="sort-col" @click="sortBy('descricao')">
+                <th
+                  class="sort-col"
+                  @click="sortBy('descricao')"
+                >
                   Descrição {{ sortIcon("descricao") }}
                 </th>
-                <th class="sort-col" @click="sortBy('projeto')">
+                <th
+                  class="sort-col"
+                  @click="sortBy('projeto')"
+                >
                   Projeto {{ sortIcon("projeto") }}
                 </th>
-                <th class="sort-col" @click="sortBy('programa')">
+                <th
+                  class="sort-col"
+                  @click="sortBy('programa')"
+                >
                   Programa {{ sortIcon("programa") }}
                 </th>
-                <th class="sort-col" @click="sortBy('responsavel')">
+                <th
+                  class="sort-col"
+                  @click="sortBy('responsavel')"
+                >
                   Responsável {{ sortIcon("responsavel") }}
                 </th>
-                <th class="sort-col" @click="sortBy('dataRegistro')">
+                <th
+                  class="sort-col"
+                  @click="sortBy('dataRegistro')"
+                >
                   Data Registro {{ sortIcon("dataRegistro") }}
                 </th>
-                <th class="sort-col" @click="sortBy('dataRevisao')">
+                <th
+                  class="sort-col"
+                  @click="sortBy('dataRevisao')"
+                >
                   Data Revisão {{ sortIcon("dataRevisao") }}
                 </th>
-                <th class="sort-col" @click="sortBy('valorImpacto')">
+                <th
+                  class="sort-col"
+                  @click="sortBy('valorImpacto')"
+                >
                   Valor Impacto {{ sortIcon("valorImpacto") }}
                 </th>
                 <th>Status</th>
@@ -159,11 +261,17 @@
             </thead>
             <tbody>
               <tr v-if="pagedData.length === 0">
-                <td colspan="9" class="table-feedback muted">
+                <td
+                  colspan="9"
+                  class="table-feedback muted"
+                >
                   Nenhum registro encontrado.
                 </td>
               </tr>
-              <tr v-for="row in pagedData" :key="row.id">
+              <tr
+                v-for="row in pagedData"
+                :key="row.id"
+              >
                 <td>
                   <span :class="tipoClass(row.tipo)">{{ row.tipo }}</span>
                 </td>
@@ -196,15 +304,21 @@
           </table>
         </div>
         <div class="pagination">
-          <span
-            >{{ filteredData.length }} registros · página {{ page }} de
-            {{ totalPages }}</span
-          >
+          <span>{{ filteredData.length }} registros · página {{ page }} de
+            {{ totalPages }}</span>
           <div class="pg-btns">
-            <button class="pg-btn" :disabled="page === 1" @click="page = 1">
+            <button
+              class="pg-btn"
+              :disabled="page === 1"
+              @click="page = 1"
+            >
               «
             </button>
-            <button class="pg-btn" :disabled="page === 1" @click="page--">
+            <button
+              class="pg-btn"
+              :disabled="page === 1"
+              @click="page--"
+            >
               ‹
             </button>
             <button

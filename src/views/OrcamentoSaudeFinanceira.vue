@@ -1,10 +1,15 @@
 <template>
   <div class="app">
     <main class="main">
-      <h1 class="sr-only">Orçamento e Saúde Financeira</h1>
+      <h1 class="sr-only">
+        Orçamento e Saúde Financeira
+      </h1>
 
       <!-- KPI CARDS -->
-      <div class="metrics" data-testid="metrics-section">
+      <div
+        class="metrics"
+        data-testid="metrics-section"
+      >
         <div class="metric-card">
           <div class="metric-icon-wrap neutral">
             <svg
@@ -13,12 +18,21 @@
               stroke="currentColor"
               stroke-width="1.5"
             >
-              <circle cx="12" cy="12" r="9" />
-              <path d="M12 7v5l3 3" stroke-linecap="round" />
+              <circle
+                cx="12"
+                cy="12"
+                r="9"
+              />
+              <path
+                d="M12 7v5l3 3"
+                stroke-linecap="round"
+              />
             </svg>
           </div>
           <div>
-            <div class="metric-label">Budget Total</div>
+            <div class="metric-label">
+              Budget Total
+            </div>
             <div class="metric-value blue">
               {{ fmtBRL(kpis.budgetTotal) }}
             </div>
@@ -41,7 +55,9 @@
             </svg>
           </div>
           <div>
-            <div class="metric-label">Custo Real Total</div>
+            <div class="metric-label">
+              Custo Real Total
+            </div>
             <div class="metric-value">
               {{ fmtBRL(kpis.custoRealTotal) }}
             </div>
@@ -69,8 +85,12 @@
             </svg>
           </div>
           <div>
-            <div class="metric-label">Desvio % Médio</div>
-            <div class="metric-value">{{ kpis.desvioMedio.toFixed(1) }}%</div>
+            <div class="metric-label">
+              Desvio % Médio
+            </div>
+            <div class="metric-value">
+              {{ kpis.desvioMedio.toFixed(1) }}%
+            </div>
           </div>
         </div>
 
@@ -94,7 +114,9 @@
             </svg>
           </div>
           <div>
-            <div class="metric-label">Projetos Saudáveis</div>
+            <div class="metric-label">
+              Projetos Saudáveis
+            </div>
             <div class="metric-value green">
               {{ kpis.saudavelCount }}
             </div>
@@ -109,7 +131,11 @@
               stroke="currentColor"
               stroke-width="1.5"
             >
-              <circle cx="12" cy="12" r="10" />
+              <circle
+                cx="12"
+                cy="12"
+                r="10"
+              />
               <polyline
                 points="12 6 12 12 16 14"
                 stroke-linecap="round"
@@ -118,7 +144,9 @@
             </svg>
           </div>
           <div>
-            <div class="metric-label">Projetos em Atenção</div>
+            <div class="metric-label">
+              Projetos em Atenção
+            </div>
             <div class="metric-value amber">
               {{ kpis.atencaoCount }}
             </div>
@@ -133,13 +161,31 @@
               stroke="currentColor"
               stroke-width="1.5"
             >
-              <circle cx="12" cy="12" r="10" />
-              <line x1="12" y1="8" x2="12" y2="12" stroke-linecap="round" />
-              <line x1="12" y1="16" x2="12.01" y2="16" stroke-linecap="round" />
+              <circle
+                cx="12"
+                cy="12"
+                r="10"
+              />
+              <line
+                x1="12"
+                y1="8"
+                x2="12"
+                y2="12"
+                stroke-linecap="round"
+              />
+              <line
+                x1="12"
+                y1="16"
+                x2="12.01"
+                y2="16"
+                stroke-linecap="round"
+              />
             </svg>
           </div>
           <div>
-            <div class="metric-label">Projetos Críticos</div>
+            <div class="metric-label">
+              Projetos Críticos
+            </div>
             <div class="metric-value red">
               {{ kpis.criticoCount }}
             </div>
@@ -167,7 +213,9 @@
             </svg>
           </div>
           <div>
-            <div class="metric-label">Projeção de Estouro</div>
+            <div class="metric-label">
+              Projeção de Estouro
+            </div>
             <div class="metric-value">
               {{ fmtBRL(kpis.projecaoEstouro) }}
             </div>
@@ -182,26 +230,62 @@
               stroke="currentColor"
               stroke-width="1.5"
             >
-              <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-              <line x1="16" y1="2" x2="16" y2="6" stroke-linecap="round" />
-              <line x1="8" y1="2" x2="8" y2="6" stroke-linecap="round" />
-              <line x1="3" y1="10" x2="21" y2="10" stroke-linecap="round" />
+              <rect
+                x="3"
+                y="4"
+                width="18"
+                height="18"
+                rx="2"
+                ry="2"
+              />
+              <line
+                x1="16"
+                y1="2"
+                x2="16"
+                y2="6"
+                stroke-linecap="round"
+              />
+              <line
+                x1="8"
+                y1="2"
+                x2="8"
+                y2="6"
+                stroke-linecap="round"
+              />
+              <line
+                x1="3"
+                y1="10"
+                x2="21"
+                y2="10"
+                stroke-linecap="round"
+              />
             </svg>
           </div>
           <div>
-            <div class="metric-label">Última Atualização</div>
+            <div class="metric-label">
+              Última Atualização
+            </div>
             <div class="metric-value date">
               {{ ultimaAtualizacao }}
             </div>
-            <div class="metric-sub">Hoje</div>
+            <div class="metric-sub">
+              Hoje
+            </div>
           </div>
         </div>
       </div>
 
       <!-- FILTERS -->
-      <div class="filters-card" data-testid="filters-section">
+      <div
+        class="filters-card"
+        data-testid="filters-section"
+      >
         <div class="filters-title">
-          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
             <path
               d="M3 4h18M7 10h10M11 16h2"
               stroke-width="1.5"
@@ -216,8 +300,14 @@
             class="filter-select"
             data-testid="filter-periodo"
           >
-            <option value="">Todos os períodos</option>
-            <option v-for="p in uniquePeriodos" :key="p" :value="p">
+            <option value="">
+              Todos os períodos
+            </option>
+            <option
+              v-for="p in uniquePeriodos"
+              :key="p"
+              :value="p"
+            >
               {{ p }}
             </option>
           </select>
@@ -226,8 +316,14 @@
             class="filter-select"
             data-testid="filter-programa"
           >
-            <option value="">Todos os programas</option>
-            <option v-for="p in uniqueProgramas" :key="p" :value="p">
+            <option value="">
+              Todos os programas
+            </option>
+            <option
+              v-for="p in uniqueProgramas"
+              :key="p"
+              :value="p"
+            >
               {{ p }}
             </option>
           </select>
@@ -236,8 +332,14 @@
             class="filter-select"
             data-testid="filter-projeto"
           >
-            <option value="">Todos os projetos</option>
-            <option v-for="p in uniqueProjetos" :key="p" :value="p">
+            <option value="">
+              Todos os projetos
+            </option>
+            <option
+              v-for="p in uniqueProjetos"
+              :key="p"
+              :value="p"
+            >
               {{ p }}
             </option>
           </select>
@@ -246,10 +348,18 @@
             class="filter-select"
             data-testid="filter-saude"
           >
-            <option value="">Todas as classificações</option>
-            <option value="Saudável">Saudável</option>
-            <option value="Atenção">Atenção</option>
-            <option value="Crítico">Crítico</option>
+            <option value="">
+              Todas as classificações
+            </option>
+            <option value="Saudável">
+              Saudável
+            </option>
+            <option value="Atenção">
+              Atenção
+            </option>
+            <option value="Crítico">
+              Crítico
+            </option>
           </select>
           <button
             class="clear-btn"
@@ -264,13 +374,17 @@
       <!-- CHARTS ROW 1 -->
       <div class="charts-row">
         <div class="chart-card">
-          <div class="chart-title">Budget vs Custo Real por Projeto</div>
+          <div class="chart-title">
+            Budget vs Custo Real por Projeto
+          </div>
           <div class="chart-wrap tall">
             <canvas id="chartBudgetVsCusto" />
           </div>
         </div>
         <div class="chart-card">
-          <div class="chart-title">Desvio Percentual por Projeto</div>
+          <div class="chart-title">
+            Desvio Percentual por Projeto
+          </div>
           <div class="chart-wrap tall">
             <canvas id="chartDesvioPercentual" />
           </div>
@@ -288,7 +402,9 @@
           </div>
         </div>
         <div class="chart-card projecao-card">
-          <div class="chart-title">Projeção de Estouro Orçamentário</div>
+          <div class="chart-title">
+            Projeção de Estouro Orçamentário
+          </div>
           <div class="projecao-empty">
             <svg
               viewBox="0 0 48 48"
@@ -313,7 +429,10 @@
       </div>
 
       <!-- PROJECT HEALTH CARDS -->
-      <div class="section-card" data-testid="project-cards-section">
+      <div
+        class="section-card"
+        data-testid="project-cards-section"
+      >
         <div class="section-header">
           <h2>Saúde Financeira dos Projetos</h2>
         </div>
@@ -348,9 +467,7 @@
               </div>
               <div class="project-stat">
                 <span class="stat-label">Desvio:</span>
-                <span class="stat-value"
-                  >{{ p.desvioPercent.toFixed(1) }}%</span
-                >
+                <span class="stat-value">{{ p.desvioPercent.toFixed(1) }}%</span>
               </div>
             </div>
             <div class="progress-bar-wrap">
@@ -365,7 +482,10 @@
       </div>
 
       <!-- ANALYTICAL TABLE -->
-      <div class="table-card" data-testid="table-section">
+      <div
+        class="table-card"
+        data-testid="table-section"
+      >
         <div class="table-header">
           <h2>Tabela Analítica</h2>
           <button
@@ -380,37 +500,64 @@
           <table data-testid="data-table">
             <thead>
               <tr>
-                <th class="sort-col" @click="sortBy('programa')">
+                <th
+                  class="sort-col"
+                  @click="sortBy('programa')"
+                >
                   Programa {{ sortIcon("programa") }}
                 </th>
-                <th class="sort-col" @click="sortBy('projeto')">
+                <th
+                  class="sort-col"
+                  @click="sortBy('projeto')"
+                >
                   Projeto {{ sortIcon("projeto") }}
                 </th>
-                <th class="sort-col" @click="sortBy('budget')">
+                <th
+                  class="sort-col"
+                  @click="sortBy('budget')"
+                >
                   Budget {{ sortIcon("budget") }}
                 </th>
-                <th class="sort-col" @click="sortBy('custoMateriais')">
+                <th
+                  class="sort-col"
+                  @click="sortBy('custoMateriais')"
+                >
                   Custo Materiais {{ sortIcon("custoMateriais") }}
                 </th>
-                <th class="sort-col" @click="sortBy('custoHoras')">
+                <th
+                  class="sort-col"
+                  @click="sortBy('custoHoras')"
+                >
                   Custo Horas {{ sortIcon("custoHoras") }}
                 </th>
-                <th class="sort-col" @click="sortBy('custoReal')">
+                <th
+                  class="sort-col"
+                  @click="sortBy('custoReal')"
+                >
                   Custo Real {{ sortIcon("custoReal") }}
                 </th>
-                <th class="sort-col" @click="sortBy('desvioPercent')">
+                <th
+                  class="sort-col"
+                  @click="sortBy('desvioPercent')"
+                >
                   Desvio % {{ sortIcon("desvioPercent") }}
                 </th>
                 <th>Saúde</th>
                 <th>Projeção Estouro</th>
-                <th class="sort-col" @click="sortBy('periodo')">
+                <th
+                  class="sort-col"
+                  @click="sortBy('periodo')"
+                >
                   Período {{ sortIcon("periodo") }}
                 </th>
               </tr>
             </thead>
             <tbody>
               <tr v-if="sortedData.length === 0">
-                <td colspan="10" class="table-feedback muted">
+                <td
+                  colspan="10"
+                  class="table-feedback muted"
+                >
                   Nenhum registro encontrado.
                 </td>
               </tr>
@@ -437,13 +584,17 @@
                 <td class="total">
                   {{ fmtBRL(row.custoReal) }}
                 </td>
-                <td class="mono">{{ row.desvioPercent.toFixed(1) }}%</td>
+                <td class="mono">
+                  {{ row.desvioPercent.toFixed(1) }}%
+                </td>
                 <td>
                   <span :class="['saude-badge', saudeBadgeClass(row.saude)]">{{
                     row.saude
                   }}</span>
                 </td>
-                <td class="muted center">-</td>
+                <td class="muted center">
+                  -
+                </td>
                 <td class="mono">
                   {{ row.periodo }}
                 </td>

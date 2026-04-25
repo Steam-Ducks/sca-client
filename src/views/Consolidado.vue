@@ -1,30 +1,40 @@
 <template>
   <div class="app">
     <main class="main">
-      <h1 class="sr-only">Consolidado</h1>
+      <h1 class="sr-only">
+        Consolidado
+      </h1>
 
       <!-- METRICS -->
       <div class="metrics">
         <div class="metric-card">
-          <div class="metric-label">Custo Total Consolidado</div>
+          <div class="metric-label">
+            Custo Total Consolidado
+          </div>
           <div class="metric-value blue">
             {{ fmt(kpis.custoTotal) }}
           </div>
         </div>
         <div class="metric-card">
-          <div class="metric-label">Custo Materiais</div>
+          <div class="metric-label">
+            Custo Materiais
+          </div>
           <div class="metric-value">
             {{ fmt(kpis.custoMateriais) }}
           </div>
         </div>
         <div class="metric-card">
-          <div class="metric-label">Custo Horas Técnicas</div>
+          <div class="metric-label">
+            Custo Horas Técnicas
+          </div>
           <div class="metric-value green">
             {{ fmt(kpis.custoHoras) }}
           </div>
         </div>
         <div class="metric-card">
-          <div class="metric-label">Total de Projetos</div>
+          <div class="metric-label">
+            Total de Projetos
+          </div>
           <div class="metric-value">
             {{ kpis.totalProjetos }}
           </div>
@@ -34,7 +44,11 @@
       <!-- FILTERS -->
       <div class="filters-card">
         <div class="filters-title">
-          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
             <path
               d="M3 4h18M7 10h10M11 16h2"
               stroke-width="1.5"
@@ -44,39 +58,86 @@
           Filtros
         </div>
         <div class="filters-row">
-          <select v-model="filters.periodo" class="filter-select">
-            <option value="">Todos os Períodos</option>
-            <option v-for="p in uniquePeriodos" :key="p" :value="p">
+          <select
+            v-model="filters.periodo"
+            class="filter-select"
+          >
+            <option value="">
+              Todos os Períodos
+            </option>
+            <option
+              v-for="p in uniquePeriodos"
+              :key="p"
+              :value="p"
+            >
               {{ p }}
             </option>
           </select>
-          <select v-model="filters.programa" class="filter-select">
-            <option value="">Todos os Programas</option>
-            <option v-for="p in uniqueProgramas" :key="p" :value="p">
+          <select
+            v-model="filters.programa"
+            class="filter-select"
+          >
+            <option value="">
+              Todos os Programas
+            </option>
+            <option
+              v-for="p in uniqueProgramas"
+              :key="p"
+              :value="p"
+            >
               {{ p }}
             </option>
           </select>
-          <select v-model="filters.projeto" class="filter-select">
-            <option value="">Todos os Projetos</option>
-            <option v-for="p in uniqueProjetos" :key="p" :value="p">
+          <select
+            v-model="filters.projeto"
+            class="filter-select"
+          >
+            <option value="">
+              Todos os Projetos
+            </option>
+            <option
+              v-for="p in uniqueProjetos"
+              :key="p"
+              :value="p"
+            >
               {{ p }}
             </option>
           </select>
-          <select v-model="filters.status" class="filter-select">
-            <option value="">Todos os Status</option>
-            <option v-for="s in uniqueStatuses" :key="s" :value="s">
+          <select
+            v-model="filters.status"
+            class="filter-select"
+          >
+            <option value="">
+              Todos os Status
+            </option>
+            <option
+              v-for="s in uniqueStatuses"
+              :key="s"
+              :value="s"
+            >
               {{ s }}
             </option>
           </select>
-          <button class="export-btn" @click="exportCSV">
-            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <button
+            class="export-btn"
+            @click="exportCSV"
+          >
+            <svg
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
               <path
                 d="M12 16l-4-4h3V4h2v8h3l-4 4z"
                 stroke-width="1.5"
                 stroke-linecap="round"
                 stroke-linejoin="round"
               />
-              <path d="M4 20h16" stroke-width="1.5" stroke-linecap="round" />
+              <path
+                d="M4 20h16"
+                stroke-width="1.5"
+                stroke-linecap="round"
+              />
             </svg>
             Exportar
           </button>
@@ -94,7 +155,9 @@
           </div>
         </div>
         <div class="chart-card">
-          <div class="chart-title">Custo Total por Programa</div>
+          <div class="chart-title">
+            Custo Total por Programa
+          </div>
           <div class="chart-wrap tall">
             <canvas id="chartPorPrograma" />
           </div>
@@ -104,13 +167,17 @@
       <!-- BOTTOM CHARTS -->
       <div class="charts-row">
         <div class="chart-card">
-          <div class="chart-title">Top 10 – Maior Custo Total</div>
+          <div class="chart-title">
+            Top 10 – Maior Custo Total
+          </div>
           <div class="chart-wrap tall">
             <canvas id="chartTopCustos" />
           </div>
         </div>
         <div class="chart-card">
-          <div class="chart-title">Evolução Mensal Consolidada</div>
+          <div class="chart-title">
+            Evolução Mensal Consolidada
+          </div>
           <div class="chart-wrap tall">
             <canvas id="chartTemporalCons" />
           </div>
@@ -126,28 +193,52 @@
           <table>
             <thead>
               <tr>
-                <th class="sort-col" @click="sortBy('projeto')">
+                <th
+                  class="sort-col"
+                  @click="sortBy('projeto')"
+                >
                   Projeto {{ sortIcon("projeto") }}
                 </th>
-                <th class="sort-col" @click="sortBy('programa')">
+                <th
+                  class="sort-col"
+                  @click="sortBy('programa')"
+                >
                   Programa {{ sortIcon("programa") }}
                 </th>
-                <th class="sort-col" @click="sortBy('custoMateriais')">
+                <th
+                  class="sort-col"
+                  @click="sortBy('custoMateriais')"
+                >
                   Custo Materiais {{ sortIcon("custoMateriais") }}
                 </th>
-                <th class="sort-col" @click="sortBy('custoHoras')">
+                <th
+                  class="sort-col"
+                  @click="sortBy('custoHoras')"
+                >
                   Custo Horas {{ sortIcon("custoHoras") }}
                 </th>
-                <th class="sort-col" @click="sortBy('custoTotal')">
+                <th
+                  class="sort-col"
+                  @click="sortBy('custoTotal')"
+                >
                   Custo Total {{ sortIcon("custoTotal") }}
                 </th>
-                <th class="sort-col" @click="sortBy('qtdMateriais')">
+                <th
+                  class="sort-col"
+                  @click="sortBy('qtdMateriais')"
+                >
                   Qtd Materiais {{ sortIcon("qtdMateriais") }}
                 </th>
-                <th class="sort-col" @click="sortBy('totalHoras')">
+                <th
+                  class="sort-col"
+                  @click="sortBy('totalHoras')"
+                >
                   Total Horas {{ sortIcon("totalHoras") }}
                 </th>
-                <th class="sort-col" @click="sortBy('periodo')">
+                <th
+                  class="sort-col"
+                  @click="sortBy('periodo')"
+                >
                   Período {{ sortIcon("periodo") }}
                 </th>
                 <th>Status</th>
@@ -155,11 +246,17 @@
             </thead>
             <tbody>
               <tr v-if="pagedData.length === 0">
-                <td colspan="9" class="table-feedback muted">
+                <td
+                  colspan="9"
+                  class="table-feedback muted"
+                >
                   Nenhum registro encontrado.
                 </td>
               </tr>
-              <tr v-for="row in pagedData" :key="row.id">
+              <tr
+                v-for="row in pagedData"
+                :key="row.id"
+              >
                 <td class="material-name">
                   {{ row.projeto }}
                 </td>
@@ -178,7 +275,9 @@
                 <td class="mono right">
                   {{ row.qtdMateriais }}
                 </td>
-                <td class="mono right">{{ row.totalHoras }}h</td>
+                <td class="mono right">
+                  {{ row.totalHoras }}h
+                </td>
                 <td class="mono">
                   {{ row.periodo }}
                 </td>
@@ -190,15 +289,21 @@
           </table>
         </div>
         <div class="pagination">
-          <span
-            >{{ filteredData.length }} registros · página {{ page }} de
-            {{ totalPages }}</span
-          >
+          <span>{{ filteredData.length }} registros · página {{ page }} de
+            {{ totalPages }}</span>
           <div class="pg-btns">
-            <button class="pg-btn" :disabled="page === 1" @click="page = 1">
+            <button
+              class="pg-btn"
+              :disabled="page === 1"
+              @click="page = 1"
+            >
               «
             </button>
-            <button class="pg-btn" :disabled="page === 1" @click="page--">
+            <button
+              class="pg-btn"
+              :disabled="page === 1"
+              @click="page--"
+            >
               ‹
             </button>
             <button
