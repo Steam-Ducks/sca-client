@@ -8,8 +8,8 @@
 </template>
 
 <script setup lang="ts">
-import { RouterView } from 'vue-router'
-import AppHeader from '@/components/AppHeader.vue'
+import { RouterView } from "vue-router";
+import AppHeader from "@/components/AppHeader.vue";
 </script>
 
 <style>
@@ -40,7 +40,7 @@ import AppHeader from '@/components/AppHeader.vue'
 body {
   background: var(--bg);
   color: var(--text);
-  font-family: 'IBM Plex Sans', sans-serif;
+  font-family: "IBM Plex Sans", sans-serif;
   font-size: 14px;
 }
 </style>

@@ -1,35 +1,35 @@
-import axios from 'axios'
-import { CONFIG } from './config'
+import axios from "axios";
+import { CONFIG } from "./config";
 
-type LogLevel = 'INFO' | 'ERROR' | 'WARN'
-type LogContext = Record<string, unknown>
+type LogLevel = "INFO" | "ERROR" | "WARN";
+type LogContext = Record<string, unknown>;
 
 interface LogPayload {
-  level: LogLevel
-  message: string
-  timestamp: string
-  context?: LogContext
-  correlation_id?: string
+  level: LogLevel;
+  message: string;
+  timestamp: string;
+  context?: LogContext;
+  correlation_id?: string;
 }
 
 const sendLog = async (payload: LogPayload) => {
-  if (!CONFIG.ENABLE_LOGS) return
+  if (!CONFIG.ENABLE_LOGS) return;
 
   try {
     await axios.post(`${CONFIG.API_BASE_URL}/logs/`, payload, {
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
-    })
+    });
   } catch (error) {
-    console.error('Error while sending log', error)
+    console.error("Error while sending log", error);
   }
-}
+};
 
 export const logger = {
   info: (message: string, context?: LogContext) =>
     sendLog({
-      level: 'INFO',
+      level: "INFO",
       message,
       context,
       timestamp: new Date().toISOString(),
@@ -38,7 +38,7 @@ export const logger = {
 
   error: (message: string, context?: LogContext) =>
     sendLog({
-      level: 'ERROR',
+      level: "ERROR",
       message,
       context,
       timestamp: new Date().toISOString(),
@@ -47,10 +47,10 @@ export const logger = {
 
   warn: (message: string, context?: LogContext) =>
     sendLog({
-      level: 'WARN',
+      level: "WARN",
       message,
       context,
       timestamp: new Date().toISOString(),
       correlation_id: crypto.randomUUID(),
     }),
-}
+};
