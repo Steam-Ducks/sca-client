@@ -31,6 +31,8 @@ vi.mock("chart.js", () => {
 
 const fetchKPIsMock = vi.hoisted(() => vi.fn());
 
+const flushPromises = () => new Promise((resolve) => setTimeout(resolve, 0));
+
 vi.mock("@/services/dashboardService", () => ({
   dashboardService: {
     fetchKPIs: fetchKPIsMock,
@@ -257,6 +259,7 @@ describe("DashboardView.vue", () => {
     );
 
     const wrapper = mount(DashboardView);
+    await flushPromises();
     await nextTick();
     await nextTick();
 
@@ -329,6 +332,7 @@ describe("DashboardView.vue", () => {
     );
 
     const wrapper = mount(DashboardView);
+    await flushPromises();
     await nextTick();
     await nextTick();
 
