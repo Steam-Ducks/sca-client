@@ -68,3 +68,11 @@ export interface DashboardFilters {
   project?: string;
   status?: string;
 }
+
+export interface CompositionData {
+  custo_materiais: number;
+  custo_horas: number;
+  custo_total: number;
+  pct_materiais: number;
+  pct_horas: number;
+}

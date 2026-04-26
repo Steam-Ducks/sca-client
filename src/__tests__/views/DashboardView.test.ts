@@ -1,6 +1,6 @@
 // src/__tests__/views/DashboardView.test.ts
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { mount } from "@vue/test-utils";
+import { flushPromises, mount } from "@vue/test-utils";
 import { nextTick } from "vue";
 import DashboardView from "@/views/DashboardView.vue";
 
@@ -10,6 +10,14 @@ const KPIS_MOCK = {
   total_hours_cost: 300000.0,
   total_projects: 8,
   total_programs: 3,
+};
+
+const COMPOSITION_MOCK = {
+  custo_materiais: 450000.0,
+  custo_horas: 300000.0,
+  custo_total: 750000.0,
+  pct_materiais: 60.0,
+  pct_horas: 40.0,
 };
 
 vi.mock("@/composables/useChartsDashboard", () => ({
@@ -25,7 +33,7 @@ vi.mock("chart.js", () => {
     destroy: vi.fn(),
     update: vi.fn(),
   }))
-  MockChart.register = vi.fn()
+  ;(MockChart as any).register = vi.fn()
   return { Chart: MockChart, registerables: [] }
 });
 
@@ -43,10 +51,21 @@ describe("DashboardView.vue", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     fetchKPIsMock.mockResolvedValue(KPIS_MOCK);
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
-      ok: true,
-      json: () => Promise.resolve([]),
-    }));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockImplementation((url: string) => {
+        if (url.includes("composition")) {
+          return Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve(COMPOSITION_MOCK),
+          });
+        }
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve([]),
+        });
+      }),
+    );
   });
 
   // ── Estrutura geral ──────────────────────────────────────────────────────

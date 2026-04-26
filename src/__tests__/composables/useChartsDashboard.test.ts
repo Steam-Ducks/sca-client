@@ -15,7 +15,7 @@ vi.mock('chart.js', () => {
       ],
     },
   }))
-  MockChart.register = vi.fn()
+  ;(MockChart as any).register = vi.fn()
   return { Chart: MockChart, registerables: [] }
 })
 
@@ -29,6 +29,14 @@ const SAMPLE_DATA: DashboardRow[] = [
   { projeto: 'Projeto B', programa: 'Alpha', custoMateriais: 200000, custoHoras: 80000, custoTotal: 280000, periodo: '2024-02' },
   { projeto: 'Projeto C', programa: 'Beta',  custoMateriais:  50000, custoHoras: 30000, custoTotal:  80000, periodo: '2024-01' },
 ]
+
+const SAMPLE_COMPOSITION = {
+  custo_materiais: 350000,
+  custo_horas: 160000,
+  custo_total: 510000,
+  pct_materiais: 68.6,
+  pct_horas: 31.4,
+}
 
 describe('useChartsDashboard', () => {
   beforeEach(() => {
@@ -80,7 +88,7 @@ describe('useChartsDashboard', () => {
     const { buildCharts, destroyCharts } = useChartsDashboard()
 
     buildCharts(SAMPLE_DATA)
-    const instance = vi.mocked(await import('chart.js')).Chart.mock.results[0].value
+    const instance = ((await import('chart.js')).Chart as any).mock.results[0].value
     vi.clearAllMocks()
 
     destroyCharts()
@@ -134,5 +142,95 @@ describe('useChartsDashboard', () => {
     useChartsDashboard().buildCharts(SAMPLE_DATA)
 
     expect(Chart).not.toHaveBeenCalled()
+  })
+
+  // ── CT01: percentage composition ─────────────────────────────────────────
+
+  it('CT01: buildCharts creates doughnut chart for composition (chartComparativo)', async () => {
+    const { Chart } = await import('chart.js')
+    const { useChartsDashboard } = await import('@/composables/useChartsDashboard')
+
+    useChartsDashboard().buildCharts(SAMPLE_DATA, SAMPLE_COMPOSITION)
+
+    const calls = vi.mocked(Chart).mock.calls
+    const doughnutCall = calls.find(([, cfg]) => (cfg as any).type === 'doughnut')
+    expect(doughnutCall).toBeDefined()
+  })
+
+  it('CT01: doughnut dataset has two segments (materiais and horas)', async () => {
+    const { Chart } = await import('chart.js')
+    const { useChartsDashboard } = await import('@/composables/useChartsDashboard')
+
+    useChartsDashboard().buildCharts(SAMPLE_DATA, SAMPLE_COMPOSITION)
+
+    const calls = vi.mocked(Chart).mock.calls
+    const doughnutCall = calls.find(([, cfg]) => (cfg as any).type === 'doughnut')
+    expect(doughnutCall).toBeDefined()
+    const dataset = (doughnutCall![1] as any).data.datasets[0]
+    expect(dataset.data).toHaveLength(2)
+  })
+
+  // ── CT02: absolute values ─────────────────────────────────────────────────
+
+  it('CT02: buildCharts uses composition absolute values when provided', async () => {
+    const { Chart } = await import('chart.js')
+    const { useChartsDashboard } = await import('@/composables/useChartsDashboard')
+
+    useChartsDashboard().buildCharts(SAMPLE_DATA, SAMPLE_COMPOSITION)
+
+    const calls = vi.mocked(Chart).mock.calls
+    const doughnutCall = calls.find(([, cfg]) => (cfg as any).type === 'doughnut')
+    const dataset = (doughnutCall![1] as any).data.datasets[0]
+    expect(dataset.data[0]).toBe(SAMPLE_COMPOSITION.custo_materiais)
+    expect(dataset.data[1]).toBe(SAMPLE_COMPOSITION.custo_horas)
+  })
+
+  it('CT02: buildCharts falls back to summing row data when composition is absent', async () => {
+    const { Chart } = await import('chart.js')
+    const { useChartsDashboard } = await import('@/composables/useChartsDashboard')
+
+    useChartsDashboard().buildCharts(SAMPLE_DATA)
+
+    const calls = vi.mocked(Chart).mock.calls
+    const doughnutCall = calls.find(([, cfg]) => (cfg as any).type === 'doughnut')
+    const dataset = (doughnutCall![1] as any).data.datasets[0]
+    const expectedMat = SAMPLE_DATA.reduce((s, r) => s + r.custoMateriais, 0)
+    const expectedHoras = SAMPLE_DATA.reduce((s, r) => s + r.custoHoras, 0)
+    expect(dataset.data[0]).toBe(expectedMat)
+    expect(dataset.data[1]).toBe(expectedHoras)
+  })
+
+  // ── CT03: update triggered by filters ────────────────────────────────────
+
+  it('CT03: updateCharts refreshes doughnut data with new composition', async () => {
+    const { Chart } = await import('chart.js')
+    const { useChartsDashboard } = await import('@/composables/useChartsDashboard')
+    const { buildCharts, updateCharts } = useChartsDashboard()
+
+    buildCharts(SAMPLE_DATA, SAMPLE_COMPOSITION)
+
+    // doughnut is the 2nd chart created (index 1) — bar, doughnut, line, bar
+    const doughnutInstance = vi.mocked(Chart).mock.results[1].value
+    vi.clearAllMocks()
+
+    const newComposition = {
+      custo_materiais: 100,
+      custo_horas: 900,
+      custo_total: 1000,
+      pct_materiais: 10.0,
+      pct_horas: 90.0,
+    }
+    updateCharts(SAMPLE_DATA, newComposition)
+
+    expect(doughnutInstance?.update).toHaveBeenCalled()
+  })
+
+  it('CT03: updateCharts without composition falls back to row sums', async () => {
+    const { useChartsDashboard } = await import('@/composables/useChartsDashboard')
+    const { buildCharts, updateCharts } = useChartsDashboard()
+
+    buildCharts(SAMPLE_DATA)
+
+    expect(() => updateCharts(SAMPLE_DATA)).not.toThrow()
   })
 })

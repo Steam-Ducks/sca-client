@@ -150,7 +150,7 @@
         </div>
         <div class="chart-card">
           <div class="chart-title">
-            Comparativo: Materiais vs Horas Técnicas
+            Composição do Custo: Materiais vs Horas Técnicas
           </div>
           <div class="chart-wrap tall">
             <canvas id="chartComparativo" />
@@ -314,7 +314,7 @@ import { useChartsDashboard } from "@/composables/useChartsDashboard";
 import type { DashboardRow } from "@/composables/useChartsDashboard";
 import { dashboardService } from "@/services/dashboardService";
 import { CONFIG } from "@/utils/config";
-import type { DashboardKPIs, DashboardFilters } from "@/types/api";
+import type { CompositionData, DashboardKPIs, DashboardFilters } from "@/types/api";
 
 const PER_PAGE = 8;
 
@@ -329,6 +329,8 @@ const kpis = ref<DashboardKPIs>({
   total_projects: 0,
   total_programs: 0,
 });
+
+const compositionData = ref<CompositionData | null>(null);
 
 const filters = ref({ periodo: "", programa: "", projeto: "" });
 const sortKey = ref<keyof DashboardRow>("custoTotal");
@@ -435,13 +437,50 @@ async function fetchTableData() {
   }
 }
 
+// ─── Buscar composição de custos da API ───────────────────────────────────────
+async function fetchComposition() {
+  try {
+    const f = filters.value;
+    const params = new URLSearchParams();
+
+    if (f.periodo) {
+      params.append("start_date", `${f.periodo}-01`);
+      const [y, m] = f.periodo.split("-").map(Number);
+      const lastDay = new Date(y, m, 0).getDate();
+      params.append(
+        "end_date",
+        `${f.periodo}-${String(lastDay).padStart(2, "0")}`,
+      );
+    }
+    if (f.programa) params.append("programa", f.programa);
+    if (f.projeto) params.append("projeto", f.projeto);
+
+    const query = params.toString() ? `?${params.toString()}` : "";
+    const response = await fetch(
+      `${CONFIG.API_BASE_URL}/main-dashboard/composition/${query}`,
+    );
+    if (!response.ok)
+      throw new Error(`Erro ao buscar composição: ${response.status}`);
+
+    compositionData.value = await response.json();
+  } catch (err) {
+    console.error("Erro ao buscar composição:", err);
+  }
+}
+
 // ─── Watchers ────────────────────────────────────────────────────────────────
 watch(filteredData, (val) => {
   page.value = 1;
-  nextTick(() => updateCharts(val));
+  nextTick(() => updateCharts(val, compositionData.value ?? undefined));
 });
 
-watch(filters, () => fetchKPIs(), { deep: true });
+watch(
+  filters,
+  async () => {
+    await Promise.all([fetchKPIs(), fetchComposition()]);
+  },
+  { deep: true },
+);
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 const fmt = (v: number) =>
@@ -481,8 +520,8 @@ function exportCSV() {
 const { buildCharts, updateCharts, destroyCharts } = useChartsDashboard();
 
 onMounted(async () => {
-  await Promise.all([fetchKPIs(), fetchTableData()]);
-  nextTick(() => buildCharts(tableData.value));
+  await Promise.all([fetchKPIs(), fetchTableData(), fetchComposition()]);
+  nextTick(() => buildCharts(tableData.value, compositionData.value ?? undefined));
 });
 onUnmounted(destroyCharts);
 </script>
