@@ -178,7 +178,7 @@
         </div>
       </div>
 
-      <!-- TABLE -->
+      <!-- DETAILED TABLE -->
       <div class="table-card">
         <div class="table-header">
           <h2>Resumo por Projeto</h2>
@@ -302,6 +302,100 @@
               »
             </button>
           </div>
+        </div>
+      </div>
+
+      <!-- SUMMARY TABLE -->
+      <div class="table-card">
+        <div class="table-header">
+          <h2>Resumo Agregado por Programa</h2>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th
+                  class="sort-col"
+                  @click="sortSummaryBy('programa')"
+                >
+                  Programa {{ summarySortIcon("programa") }}
+                </th>
+                <th
+                  class="sort-col"
+                  @click="sortSummaryBy('qtdProjetos')"
+                >
+                  Qtd. Projetos {{ summarySortIcon("qtdProjetos") }}
+                </th>
+                <th
+                  class="sort-col"
+                  @click="sortSummaryBy('custoMateriais')"
+                >
+                  Custo Materiais {{ summarySortIcon("custoMateriais") }}
+                </th>
+                <th
+                  class="sort-col"
+                  @click="sortSummaryBy('custoHoras')"
+                >
+                  Custo Horas {{ summarySortIcon("custoHoras") }}
+                </th>
+                <th
+                  class="sort-col"
+                  @click="sortSummaryBy('custoTotal')"
+                >
+                  Custo Total {{ summarySortIcon("custoTotal") }}
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-if="aggregateSummary.length === 0">
+                <td
+                  colspan="5"
+                  class="table-feedback muted"
+                >
+                  Nenhum registro encontrado.
+                </td>
+              </tr>
+              <tr
+                v-for="row in aggregateSummary"
+                :key="row.programa"
+              >
+                <td class="material-name">
+                  {{ row.programa }}
+                </td>
+                <td class="mono">
+                  {{ row.qtdProjetos }}
+                </td>
+                <td class="mono">
+                  {{ fmt(row.custoMateriais) }}
+                </td>
+                <td class="mono">
+                  {{ fmt(row.custoHoras) }}
+                </td>
+                <td class="total">
+                  {{ fmt(row.custoTotal) }}
+                </td>
+              </tr>
+            </tbody>
+            <tfoot>
+              <tr class="totals-row">
+                <td class="totals-label">
+                  Total
+                </td>
+                <td class="mono totals-value">
+                  {{ summaryTotals.qtdProjetos }}
+                </td>
+                <td class="mono totals-value">
+                  {{ fmt(summaryTotals.custoMateriais) }}
+                </td>
+                <td class="mono totals-value">
+                  {{ fmt(summaryTotals.custoHoras) }}
+                </td>
+                <td class="total totals-value">
+                  {{ fmt(summaryTotals.custoTotal) }}
+                </td>
+              </tr>
+            </tfoot>
+          </table>
         </div>
       </div>
     </main>
@@ -476,6 +570,86 @@ function exportCSV() {
   a.download = "dashboard-geral.csv";
   a.click();
 }
+
+// ─── Summary aggregate table ──────────────────────────────────────────────────
+type SummaryRow = {
+  programa: string;
+  qtdProjetos: number;
+  custoMateriais: number;
+  custoHoras: number;
+  custoTotal: number;
+};
+
+const summarySortKey = ref<keyof SummaryRow>("custoTotal");
+const summarySortDir = ref<1 | -1>(-1);
+
+const aggregateSummary = computed<SummaryRow[]>(() => {
+  const map = new Map<
+    string,
+    {
+      programa: string;
+      projetos: Set<string>;
+      custoMateriais: number;
+      custoHoras: number;
+      custoTotal: number;
+    }
+  >();
+
+  for (const row of filteredData.value) {
+    const prog = row.programa || "Sem Programa";
+    if (!map.has(prog)) {
+      map.set(prog, {
+        programa: prog,
+        projetos: new Set(),
+        custoMateriais: 0,
+        custoHoras: 0,
+        custoTotal: 0,
+      });
+    }
+    const entry = map.get(prog)!;
+    entry.projetos.add(row.projeto);
+    entry.custoMateriais += row.custoMateriais;
+    entry.custoHoras += row.custoHoras;
+    entry.custoTotal += row.custoTotal;
+  }
+
+  const rows: SummaryRow[] = [...map.values()].map((e) => ({
+    programa: e.programa,
+    qtdProjetos: e.projetos.size,
+    custoMateriais: e.custoMateriais,
+    custoHoras: e.custoHoras,
+    custoTotal: e.custoTotal,
+  }));
+
+  return rows.sort((a, b) => {
+    const av = a[summarySortKey.value];
+    const bv = b[summarySortKey.value];
+    return typeof av === "string"
+      ? av.localeCompare(bv as string) * summarySortDir.value
+      : ((av as number) - (bv as number)) * summarySortDir.value;
+  });
+});
+
+const summaryTotals = computed(() => ({
+  qtdProjetos: aggregateSummary.value.reduce((s, r) => s + r.qtdProjetos, 0),
+  custoMateriais: aggregateSummary.value.reduce(
+    (s, r) => s + r.custoMateriais,
+    0,
+  ),
+  custoHoras: aggregateSummary.value.reduce((s, r) => s + r.custoHoras, 0),
+  custoTotal: aggregateSummary.value.reduce((s, r) => s + r.custoTotal, 0),
+}));
+
+function sortSummaryBy(k: keyof SummaryRow) {
+  if (summarySortKey.value === k)
+    summarySortDir.value = (summarySortDir.value * -1) as 1 | -1;
+  else {
+    summarySortKey.value = k;
+    summarySortDir.value = -1;
+  }
+}
+const summarySortIcon = (k: keyof SummaryRow) =>
+  summarySortKey.value !== k ? "↕" : summarySortDir.value > 0 ? "↑" : "↓";
 
 // ─── Charts ──────────────────────────────────────────────────────────────────
 const { buildCharts, updateCharts, destroyCharts } = useChartsDashboard();
@@ -768,6 +942,31 @@ td.total {
 }
 .table-feedback.muted {
   color: var(--text3);
+}
+
+/* ── Summary tfoot ────────────────────────────────────────────────────────── */
+tfoot tr.totals-row {
+  background: var(--bg3);
+  border-top: 2px solid var(--border2);
+}
+tfoot td {
+  padding: 11px 16px;
+  white-space: nowrap;
+}
+tfoot td.totals-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text2);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+}
+tfoot td.totals-value {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+}
+tfoot td.total.totals-value {
+  color: var(--green);
 }
 
 /* ── Pagination ───────────────────────────────────────────────────────────── */

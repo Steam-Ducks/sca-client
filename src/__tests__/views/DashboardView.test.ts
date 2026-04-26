@@ -79,12 +79,21 @@ describe("DashboardView.vue", () => {
     expect(wrapper.findAll("select").length).toBe(3);
   });
 
-  it("renders table with six headers", async () => {
+  it("renders detailed project table with six headers", async () => {
     const wrapper = mount(DashboardView);
     await nextTick();
 
-    expect(wrapper.find(".table-card").exists()).toBe(true);
-    expect(wrapper.findAll("th").length).toBe(6);
+    const tables = wrapper.findAll("table");
+    expect(tables.length).toBe(2);
+    expect(tables[0].findAll("th").length).toBe(6);
+  });
+
+  it("renders summary aggregate table with five headers", async () => {
+    const wrapper = mount(DashboardView);
+    await nextTick();
+
+    const tables = wrapper.findAll("table");
+    expect(tables[1].findAll("th").length).toBe(5);
   });
 
   it("displays pagination controls", async () => {
@@ -179,6 +188,298 @@ describe("DashboardView.vue", () => {
     const card = cards.find((c) => c.text().includes("Número de Programas"));
     expect(card).toBeDefined();
     expect(card!.text()).toContain("3");
+  });
+
+  // ── Summary table: CT01 display ─────────────────────────────────────────
+
+  it("CT01-summary: renders summary table title", async () => {
+    const wrapper = mount(DashboardView);
+    await nextTick();
+
+    expect(wrapper.text()).toContain("Resumo Agregado por Programa");
+  });
+
+  it("CT01-summary: renders correct column headers", async () => {
+    const wrapper = mount(DashboardView);
+    await nextTick();
+
+    const summaryTable = wrapper.findAll("table")[1];
+    const headers = summaryTable.findAll("th").map((th) => th.text());
+    expect(headers).toContain("Programa ↕");
+    expect(headers).toContain("Qtd. Projetos ↕");
+    expect(headers).toContain("Custo Materiais ↕");
+    expect(headers).toContain("Custo Horas ↕");
+    expect(headers).toContain("Custo Total ↓");
+  });
+
+  it("CT01-summary: shows empty state when no data", async () => {
+    const wrapper = mount(DashboardView);
+    await nextTick();
+    await nextTick();
+
+    const summaryTable = wrapper.findAll("table")[1];
+    expect(summaryTable.text()).toContain("Nenhum registro encontrado.");
+  });
+
+  it("CT01-summary: aggregates rows by program and shows totals", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: () =>
+          Promise.resolve([
+            {
+              nome_projeto: "Projeto A",
+              programa: "Programa X",
+              custo_materiais: 1000,
+              custo_horas: 500,
+              custo_total: 1500,
+              status: "2024-01",
+            },
+            {
+              nome_projeto: "Projeto B",
+              programa: "Programa X",
+              custo_materiais: 2000,
+              custo_horas: 1000,
+              custo_total: 3000,
+              status: "2024-01",
+            },
+            {
+              nome_projeto: "Projeto C",
+              programa: "Programa Y",
+              custo_materiais: 500,
+              custo_horas: 250,
+              custo_total: 750,
+              status: "2024-01",
+            },
+          ]),
+      }),
+    );
+
+    const wrapper = mount(DashboardView);
+    await nextTick();
+    await nextTick();
+
+    const summaryTable = wrapper.findAll("table")[1];
+    const bodyRows = summaryTable.findAll("tbody tr");
+
+    // Two programs → two rows
+    expect(bodyRows.length).toBe(2);
+
+    // Totals row in tfoot
+    const totalRow = summaryTable.find("tfoot tr");
+    expect(totalRow.exists()).toBe(true);
+    expect(totalRow.text()).toContain("Total");
+  });
+
+  it("CT01-summary: shows formatted currency values", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: () =>
+          Promise.resolve([
+            {
+              nome_projeto: "Projeto A",
+              programa: "Programa X",
+              custo_materiais: 1000,
+              custo_horas: 500,
+              custo_total: 1500,
+              status: "2024-01",
+            },
+          ]),
+      }),
+    );
+
+    const wrapper = mount(DashboardView);
+    await nextTick();
+    await nextTick();
+
+    const summaryTable = wrapper.findAll("table")[1];
+    expect(summaryTable.text()).toContain("R$");
+  });
+
+  // ── Summary table: CT02 filter response ─────────────────────────────────
+
+  it("CT02-summary: filters rows when programa filter is applied", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: () =>
+          Promise.resolve([
+            {
+              nome_projeto: "Projeto A",
+              programa: "Programa X",
+              custo_materiais: 1000,
+              custo_horas: 500,
+              custo_total: 1500,
+              status: "2024-01",
+            },
+            {
+              nome_projeto: "Projeto C",
+              programa: "Programa Y",
+              custo_materiais: 500,
+              custo_horas: 250,
+              custo_total: 750,
+              status: "2024-01",
+            },
+          ]),
+      }),
+    );
+
+    const wrapper = mount(DashboardView);
+    await nextTick();
+    await nextTick();
+
+    // Before filter: two programs
+    expect(wrapper.findAll("table")[1].findAll("tbody tr").length).toBe(2);
+
+    // Apply programa filter
+    const vm = wrapper.vm as unknown as {
+      filters: { periodo: string; programa: string; projeto: string };
+    };
+    vm.filters.programa = "Programa X";
+    await nextTick();
+
+    // After filter: only one program
+    const rows = wrapper.findAll("table")[1].findAll("tbody tr");
+    expect(rows.length).toBe(1);
+    expect(rows[0].text()).toContain("Programa X");
+  });
+
+  it("CT02-summary: shows empty state when filter matches nothing", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: () =>
+          Promise.resolve([
+            {
+              nome_projeto: "Projeto A",
+              programa: "Programa X",
+              custo_materiais: 1000,
+              custo_horas: 500,
+              custo_total: 1500,
+              status: "2024-01",
+            },
+          ]),
+      }),
+    );
+
+    const wrapper = mount(DashboardView);
+    await nextTick();
+    await nextTick();
+
+    const vm = wrapper.vm as unknown as {
+      filters: { periodo: string; programa: string; projeto: string };
+    };
+    vm.filters.programa = "Programa Inexistente";
+    await nextTick();
+
+    const summaryTable = wrapper.findAll("table")[1];
+    expect(summaryTable.text()).toContain("Nenhum registro encontrado.");
+  });
+
+  // ── Summary table: CT03 sorting ──────────────────────────────────────────
+
+  it("CT03-summary: clicking a header changes sort indicator", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: () =>
+          Promise.resolve([
+            {
+              nome_projeto: "Projeto A",
+              programa: "Programa X",
+              custo_materiais: 1000,
+              custo_horas: 500,
+              custo_total: 1500,
+              status: "2024-01",
+            },
+            {
+              nome_projeto: "Projeto C",
+              programa: "Programa Y",
+              custo_materiais: 200,
+              custo_horas: 100,
+              custo_total: 300,
+              status: "2024-01",
+            },
+          ]),
+      }),
+    );
+
+    const wrapper = mount(DashboardView);
+    await nextTick();
+    await nextTick();
+
+    const summaryTable = wrapper.findAll("table")[1];
+    const programaHeader = summaryTable.findAll("th")[0];
+
+    // Default: no active sort on Programa column
+    expect(programaHeader.text()).toContain("↕");
+
+    // Click to sort ascending
+    await programaHeader.trigger("click");
+    expect(programaHeader.text()).toContain("↓");
+
+    // Click again to reverse
+    await programaHeader.trigger("click");
+    expect(programaHeader.text()).toContain("↑");
+  });
+
+  it("CT03-summary: sorting by qtdProjetos reorders rows", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: () =>
+          Promise.resolve([
+            {
+              nome_projeto: "Projeto A",
+              programa: "Programa X",
+              custo_materiais: 1000,
+              custo_horas: 500,
+              custo_total: 1500,
+              status: "2024-01",
+            },
+            {
+              nome_projeto: "Projeto B",
+              programa: "Programa X",
+              custo_materiais: 500,
+              custo_horas: 250,
+              custo_total: 750,
+              status: "2024-01",
+            },
+            {
+              nome_projeto: "Projeto C",
+              programa: "Programa Y",
+              custo_materiais: 300,
+              custo_horas: 150,
+              custo_total: 450,
+              status: "2024-01",
+            },
+          ]),
+      }),
+    );
+
+    const wrapper = mount(DashboardView);
+    await nextTick();
+    await nextTick();
+
+    const summaryTable = wrapper.findAll("table")[1];
+    const qtdHeader = summaryTable.findAll("th")[1]; // Qtd. Projetos
+
+    // Sort descending (Programa X has 2 projects, Programa Y has 1)
+    await qtdHeader.trigger("click");
+    let rows = summaryTable.findAll("tbody tr");
+    expect(rows[0].text()).toContain("Programa X");
+
+    // Sort ascending (Programa Y first)
+    await qtdHeader.trigger("click");
+    rows = summaryTable.findAll("tbody tr");
+    expect(rows[0].text()).toContain("Programa Y");
   });
 
   // ── CT06: Atualizar indicadores ao aplicar filtros ───────────────────────
