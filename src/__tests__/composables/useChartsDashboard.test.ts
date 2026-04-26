@@ -4,20 +4,25 @@ import type { DashboardRow } from '@/composables/useChartsDashboard'
 
 // ── Mock Chart.js — inclui register como método estático ──────────────────────
 vi.mock('chart.js', () => {
-  const MockChart = vi.fn().mockImplementation(() => ({
-    destroy: vi.fn(),
-    update: vi.fn(),
-    data: {
-      labels: [] as unknown[],
-      datasets: [
-        { data: [] as unknown[], backgroundColor: [] as unknown[] },
-        { data: [] as unknown[] },
-      ],
-    },
-  }))
-  ;(MockChart as any).register = vi.fn()
+  const MockChart = Object.assign(
+    vi.fn().mockImplementation(() => ({
+      destroy: vi.fn(),
+      update: vi.fn(),
+      data: {
+        labels: [] as unknown[],
+        datasets: [
+          { data: [] as unknown[], backgroundColor: [] as unknown[] },
+          { data: [] as unknown[] },
+        ],
+      },
+    })),
+    { register: vi.fn() },
+  )
   return { Chart: MockChart, registerables: [] }
 })
+
+type MockCfg = { type?: string; data?: { datasets: { data: number[] }[] } }
+type MockCalls = [unknown, MockCfg][]
 
 // ── Mock canvas DOM ───────────────────────────────────────────────────────────
 const mockCtx = {}
@@ -84,11 +89,12 @@ describe('useChartsDashboard', () => {
   })
 
   it('destroyCharts calls destroy on all active chart instances', async () => {
+    const { Chart } = await import('chart.js')
     const { useChartsDashboard } = await import('@/composables/useChartsDashboard')
     const { buildCharts, destroyCharts } = useChartsDashboard()
 
     buildCharts(SAMPLE_DATA)
-    const instance = ((await import('chart.js')).Chart as any).mock.results[0].value
+    const instance = vi.mocked(Chart).mock.results[0].value
     vi.clearAllMocks()
 
     destroyCharts()
