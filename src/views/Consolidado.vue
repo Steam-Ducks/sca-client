@@ -5,6 +5,32 @@
         Consolidado
       </h1>
 
+      <div
+        class="update-banner"
+        data-testid="last-update-banner"
+      >
+        <svg
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <circle
+            cx="12"
+            cy="12"
+            r="8"
+            stroke-width="1.5"
+          />
+          <path
+            d="M12 8v5l3 2"
+            stroke-width="1.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+        <span class="update-label">Última importação</span>
+        <strong class="update-value">{{ formattedLastUpdatedAt }}</strong>
+      </div>
+
       <!-- METRICS -->
       <div class="metrics">
         <div class="metric-card">
@@ -494,6 +520,7 @@ const MOCK: ConsolidadoRow[] = [
 
 // ─── State ───────────────────────────────────────────────────────────────────
 const tableData = ref<ConsolidadoRow[]>([]);
+const lastUpdatedAt = ref<string | null>(null);
 const filters = ref({ periodo: "", programa: "", projeto: "", status: "" });
 const sortKey = ref<keyof ConsolidadoRow>("custoTotal");
 const sortDir = ref<1 | -1>(-1);
@@ -557,6 +584,15 @@ const visiblePages = computed(() => {
   return Array.from({ length: e - s + 1 }, (_, i) => s + i);
 });
 
+const formattedLastUpdatedAt = computed(() => {
+  if (!lastUpdatedAt.value) return "Não informado";
+
+  return new Intl.DateTimeFormat("pt-BR", {
+    dateStyle: "short",
+    timeStyle: "short",
+  }).format(new Date(lastUpdatedAt.value));
+});
+
 // ─── Watchers ────────────────────────────────────────────────────────────────
 watch(filteredData, (val) => {
   page.value = 1;
@@ -615,10 +651,13 @@ const { buildCharts, updateCharts, destroyCharts } = useChartsConsolidado();
 
 async function loadConsolidado() {
   try {
-    tableData.value = await apiService.consolidated.fetchConsolidated();
+    const snapshot = await apiService.consolidated.fetchConsolidatedSnapshot();
+    tableData.value = snapshot.rows;
+    lastUpdatedAt.value = snapshot.lastUpdatedAt;
   } catch (error) {
     console.error(error);
     tableData.value = MOCK;
+    lastUpdatedAt.value = null;
   }
 
   nextTick(() => buildCharts(tableData.value));
@@ -676,6 +715,37 @@ onUnmounted(destroyCharts);
   display: flex;
   flex-direction: column;
   gap: 20px;
+}
+
+.update-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  background: linear-gradient(90deg, rgba(77, 143, 255, 0.12), var(--bg2));
+  border: 1px solid rgba(77, 143, 255, 0.28);
+  border-radius: 10px;
+  color: var(--text);
+}
+
+.update-banner svg {
+  width: 16px;
+  height: 16px;
+  color: var(--blue);
+  flex-shrink: 0;
+}
+
+.update-label {
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text2);
+}
+
+.update-value {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 13px;
+  color: var(--blue);
 }
 
 /* ── Metrics ──────────────────────────────────────────────────────────────── */
