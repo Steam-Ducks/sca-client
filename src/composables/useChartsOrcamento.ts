@@ -1,6 +1,6 @@
 import { Chart, registerables } from "chart.js";
 import type { TooltipItem } from "chart.js";
-import type { ProjetoFinanceiro, SaudeStatus } from "@/data/orcamento";
+import type { BudgetHealthStatus, BudgetProjectRow } from "@/types/api";
 
 Chart.register(...registerables);
 
@@ -10,7 +10,7 @@ const gridColor = "rgba(42,47,69,0.8)";
 const textColor = "#555d7a";
 const text2Color = "#8b92aa";
 
-const SAUDE_COLORS: Record<SaudeStatus, string> = {
+const SAUDE_COLORS: Record<BudgetHealthStatus, string> = {
   Saudável: "rgba(45,212,160,0.85)",
   Atenção: "rgba(245,166,35,0.85)",
   Crítico: "rgba(245,90,90,0.85)",
@@ -33,6 +33,11 @@ function fmtBRL(v: number): string {
   return `R$ ${v.toLocaleString("pt-BR")}`;
 }
 
+function deviationMax(data: BudgetProjectRow[]): number {
+  const maxDeviation = Math.max(...data.map((p) => p.desvioPercent), 100);
+  return Math.ceil(maxDeviation / 10) * 10;
+}
+
 let chartBudget: Chart | null = null;
 let chartDesvio: Chart | null = null;
 let chartDistribuicao: Chart | null = null;
@@ -42,12 +47,11 @@ function destroyAll() {
   chartBudget = chartDesvio = chartDistribuicao = null;
 }
 
-function buildChartsOrcamento(data: ProjetoFinanceiro[]) {
+function buildChartsOrcamento(data: BudgetProjectRow[]) {
   destroyAll();
 
   const labels = data.map((p) => p.projeto);
 
-  // 1. Budget vs Custo Real — grouped bar
   const ctxB = (
     document.getElementById("chartBudgetVsCusto") as HTMLCanvasElement
   )?.getContext("2d");
@@ -116,7 +120,6 @@ function buildChartsOrcamento(data: ProjetoFinanceiro[]) {
     });
   }
 
-  // 2. Desvio Percentual — bar, colored by health
   const ctxD = (
     document.getElementById("chartDesvioPercentual") as HTMLCanvasElement
   )?.getContext("2d");
@@ -156,7 +159,7 @@ function buildChartsOrcamento(data: ProjetoFinanceiro[]) {
           },
           y: {
             min: 0,
-            max: 100,
+            max: deviationMax(data),
             border: { display: false },
             grid: { color: gridColor },
             ticks: {
@@ -170,7 +173,6 @@ function buildChartsOrcamento(data: ProjetoFinanceiro[]) {
     });
   }
 
-  // 3. Distribuição por Status de Saúde — doughnut
   const saudavelCount = data.filter((p) => p.saude === "Saudável").length;
   const atencaoCount = data.filter((p) => p.saude === "Atenção").length;
   const criticoCount = data.filter((p) => p.saude === "Crítico").length;
@@ -230,7 +232,7 @@ function buildChartsOrcamento(data: ProjetoFinanceiro[]) {
   }
 }
 
-function updateChartsOrcamento(data: ProjetoFinanceiro[]) {
+function updateChartsOrcamento(data: BudgetProjectRow[]) {
   const labels = data.map((p) => p.projeto);
 
   if (chartBudget) {
@@ -246,6 +248,9 @@ function updateChartsOrcamento(data: ProjetoFinanceiro[]) {
     (chartDesvio.data.datasets[0].backgroundColor as string[]) = data.map(
       (p) => SAUDE_COLORS[p.saude],
     );
+    if (chartDesvio.options.scales?.y) {
+      chartDesvio.options.scales.y.max = deviationMax(data);
+    }
     chartDesvio.update();
   }
 
