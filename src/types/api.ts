@@ -76,3 +76,50 @@ export interface CompositionData {
   pct_materiais: number;
   pct_horas: number;
 }
+
+export type BudgetHealthStatus = "Saudável" | "Atenção" | "Crítico";
+
+export interface BudgetApiRow {
+  id: number;
+  projeto: string;
+  programa: string | null;
+  budget: number;
+  custoMateriais: number;
+  custoHoras: number;
+  custoReal: number;
+  desvioPercent: number;
+  saude: BudgetHealthStatus;
+  projecaoEstouro: number | null;
+  periodo: string;
+  status: string | null;
+}
+
+export interface BudgetApiResponse {
+  data?: BudgetApiRow[];
+  last_updated_at?: string | null;
+  lastUpdate?: string | null;
+  updated_at?: string | null;
+  imported_at?: string | null;
+  ultima_atualizacao?: string | null;
+  ultimaAtualizacao?: string | null;
+}
+
+export interface BudgetProjectRow {
+  id: number;
+  projeto: string;
+  programa: string;
+  budget: number;
+  custoMateriais: number;
+  custoHoras: number;
+  custoReal: number;
+  desvioPercent: number;
+  saude: BudgetHealthStatus;
+  projecaoEstouro: number | null;
+  periodo: string;
+  status: string;
+}
+
+export interface BudgetSnapshot {
+  rows: BudgetProjectRow[];
+  lastUpdatedAt: string | null;
+}
