@@ -1,4 +1,6 @@
 import { Chart, registerables } from "chart.js";
+import type { CompositionData } from "@/types/api";
+
 Chart.register(...registerables);
 
 const FONT = "'IBM Plex Sans', sans-serif";
@@ -75,7 +77,7 @@ function destroyAll() {
       null;
 }
 
-function buildCharts(data: DashboardRow[]) {
+function buildCharts(data: DashboardRow[], composition?: CompositionData) {
   destroyAll();
 
   // 1. Custo por Programa — horizontal bar, blue
@@ -121,63 +123,66 @@ function buildCharts(data: DashboardRow[]) {
     });
   }
 
-  // 2. Comparativo Materiais vs Horas — grouped bar, blue + green
-  const projetos = [...new Set(data.map((r) => r.projeto))].slice(0, 8);
-  const matPorProjeto = projetos.map((p) =>
-    data
-      .filter((r) => r.projeto === p)
-      .reduce((s, r) => s + r.custoMateriais, 0),
-  );
-  const horasPorProjeto = projetos.map((p) =>
-    data.filter((r) => r.projeto === p).reduce((s, r) => s + r.custoHoras, 0),
-  );
+  // 2. Composição: Materiais vs Horas Técnicas — doughnut, blue + green
+  const totalMat =
+    composition?.custo_materiais ??
+    data.reduce((s, r) => s + r.custoMateriais, 0);
+  const totalHoras =
+    composition?.custo_horas ??
+    data.reduce((s, r) => s + r.custoHoras, 0);
 
   const ctxComp = (
     document.getElementById("chartComparativo") as HTMLCanvasElement
   )?.getContext("2d");
   if (ctxComp) {
     chartComparativo = new Chart(ctxComp, {
-      type: "bar",
+      type: "doughnut",
       data: {
-        labels: projetos,
+        labels: ["Materiais", "Horas Técnicas"],
         datasets: [
           {
-            label: "Materiais",
-            data: matPorProjeto,
-            backgroundColor: "rgba(77,143,255,0.85)",
-            borderRadius: 4,
-            borderSkipped: false,
-          },
-          {
-            label: "Horas Técnicas",
-            data: horasPorProjeto,
-            backgroundColor: "rgba(45,212,160,0.85)",
-            borderRadius: 4,
-            borderSkipped: false,
+            data: [totalMat, totalHoras],
+            backgroundColor: [
+              "rgba(77,143,255,0.85)",
+              "rgba(45,212,160,0.85)",
+            ],
+            borderColor: ["#1c2030", "#1c2030"],
+            borderWidth: 2,
+            hoverOffset: 8,
           },
         ],
       },
       options: {
-        ...baseOptions("y"),
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: "68%",
+        animation: { duration: 500 },
         plugins: {
-          ...baseOptions("y").plugins,
           legend: {
             display: true,
-            labels: { color: text2Color, font: { family: FONT, size: 11 } },
-          },
-        },
-        scales: {
-          x: {
-            grid: { color: gridColor, drawBorder: false },
-            ticks: {
-              color: textColor,
-              font: { family: MONO, size: 11 },
-              callback: (v) => fmtR$(v as number),
+            position: "bottom",
+            labels: {
+              color: text2Color,
+              font: { family: FONT, size: 11 },
+              padding: 16,
+              usePointStyle: true,
+              pointStyleWidth: 10,
             },
           },
-          y: {
-            grid: { display: false },
-            ticks: { color: text2Color, font: { family: FONT, size: 11 } },
+          tooltip: {
+            ...baseOptions().plugins.tooltip,
+            callbacks: {
+              label: (ctx) => {
+                const v = ctx.parsed as number;
+                const total = (ctx.dataset.data as number[]).reduce(
+                  (a: number, b: number) => a + b,
+                  0,
+                );
+                const pct =
+                  total > 0 ? ((v / total) * 100).toFixed(1) : "0.0";
+                return ` ${ctx.label}: ${fmtR$(v)} (${pct}%)`;
+              },
+            },
           },
         },
       },
@@ -288,7 +293,7 @@ function buildCharts(data: DashboardRow[]) {
   }
 }
 
-function updateCharts(data: DashboardRow[]) {
+function updateCharts(data: DashboardRow[], composition?: CompositionData) {
   const porPrograma = groupBy(
     data,
     (r) => r.programa,
@@ -300,17 +305,14 @@ function updateCharts(data: DashboardRow[]) {
     chartCustoPrograma.update();
   }
 
-  const projetos = [...new Set(data.map((r) => r.projeto))].slice(0, 8);
   if (chartComparativo) {
-    chartComparativo.data.labels = projetos;
-    chartComparativo.data.datasets[0].data = projetos.map((p) =>
-      data
-        .filter((r) => r.projeto === p)
-        .reduce((s, r) => s + r.custoMateriais, 0),
-    );
-    chartComparativo.data.datasets[1].data = projetos.map((p) =>
-      data.filter((r) => r.projeto === p).reduce((s, r) => s + r.custoHoras, 0),
-    );
+    const totalMat =
+      composition?.custo_materiais ??
+      data.reduce((s, r) => s + r.custoMateriais, 0);
+    const totalHoras =
+      composition?.custo_horas ??
+      data.reduce((s, r) => s + r.custoHoras, 0);
+    chartComparativo.data.datasets[0].data = [totalMat, totalHoras];
     chartComparativo.update();
   }
 

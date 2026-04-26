@@ -12,6 +12,14 @@ const KPIS_MOCK = {
   total_programs: 3,
 };
 
+const COMPOSITION_MOCK = {
+  custo_materiais: 450000.0,
+  custo_horas: 300000.0,
+  custo_total: 750000.0,
+  pct_materiais: 60.0,
+  pct_horas: 40.0,
+};
+
 vi.mock("@/composables/useChartsDashboard", () => ({
   useChartsDashboard: vi.fn(() => ({
     buildCharts: vi.fn(),
@@ -25,7 +33,7 @@ vi.mock("chart.js", () => {
     destroy: vi.fn(),
     update: vi.fn(),
   }))
-  MockChart.register = vi.fn()
+  Object.assign(MockChart, { register: vi.fn() })
   return { Chart: MockChart, registerables: [] }
 });
 
@@ -43,10 +51,21 @@ describe("DashboardView.vue", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     fetchKPIsMock.mockResolvedValue(KPIS_MOCK);
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
-      ok: true,
-      json: () => Promise.resolve([]),
-    }));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockImplementation((url: string) => {
+        if (url.includes("composition")) {
+          return Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve(COMPOSITION_MOCK),
+          });
+        }
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve([]),
+        });
+      }),
+    );
   });
 
   // ── Estrutura geral ──────────────────────────────────────────────────────
