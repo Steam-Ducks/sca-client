@@ -23,6 +23,18 @@ export interface ConsolidatedApiRow {
   status: string;
 }
 
+export interface ConsolidatedApiResponse {
+  data?: ConsolidatedApiRow[];
+  results?: ConsolidatedApiRow[];
+  items?: ConsolidatedApiRow[];
+  last_updated_at?: string | null;
+  lastUpdate?: string | null;
+  updated_at?: string | null;
+  imported_at?: string | null;
+  ultima_atualizacao?: string | null;
+  ultimaAtualizacao?: string | null;
+}
+
 export interface ConsolidadoRow {
   id: number;
   projeto: string;
@@ -34,6 +46,11 @@ export interface ConsolidadoRow {
   totalHoras: number;
   periodo: string;
   status: string;
+}
+
+export interface ConsolidatedSnapshot {
+  rows: ConsolidadoRow[];
+  lastUpdatedAt: string | null;
 }
 
 export interface DashboardKPIs {

@@ -1,4 +1,9 @@
-import type { ConsolidatedApiRow, ConsolidadoRow } from "@/types/api";
+import type {
+  ConsolidatedApiResponse,
+  ConsolidatedApiRow,
+  ConsolidatedSnapshot,
+  ConsolidadoRow,
+} from "@/types/api";
 import { CONFIG } from "@/utils/config";
 
 const apiBaseUrl = CONFIG.API_BASE_URL;
@@ -39,12 +44,63 @@ function normalizeRow(row: ConsolidatedApiRow): ConsolidadoRow {
   };
 }
 
+function isValidDate(value: unknown): value is string {
+  return typeof value === "string" && !Number.isNaN(Date.parse(value));
+}
+
+function extractRows(
+  payload: ConsolidatedApiRow[] | ConsolidatedApiResponse,
+): ConsolidatedApiRow[] {
+  if (Array.isArray(payload)) return payload;
+  if (Array.isArray(payload.data)) return payload.data;
+  if (Array.isArray(payload.results)) return payload.results;
+  if (Array.isArray(payload.items)) return payload.items;
+  return [];
+}
+
+function extractLastUpdatedAt(
+  payload: ConsolidatedApiRow[] | ConsolidatedApiResponse,
+  response: Response,
+): string | null {
+  if (!Array.isArray(payload)) {
+    const candidates = [
+      payload.last_updated_at,
+      payload.lastUpdate,
+      payload.updated_at,
+      payload.imported_at,
+      payload.ultima_atualizacao,
+      payload.ultimaAtualizacao,
+    ];
+
+    const bodyTimestamp = candidates.find(isValidDate);
+    if (bodyTimestamp) return bodyTimestamp;
+  }
+
+  const headerTimestamp = [
+    response.headers.get("x-last-updated"),
+    response.headers.get("last-modified"),
+  ].find(isValidDate);
+
+  return headerTimestamp ?? null;
+}
+
 export const consolidatedService = {
   async fetchConsolidated(): Promise<ConsolidadoRow[]> {
+    const snapshot = await this.fetchConsolidatedSnapshot();
+    return snapshot.rows;
+  },
+
+  async fetchConsolidatedSnapshot(): Promise<ConsolidatedSnapshot> {
     const response = await fetch(`${apiBaseUrl}/consolidated/`);
     if (!response.ok) throw new Error("Erro ao buscar dados consolidados");
 
-    const data = (await response.json()) as ConsolidatedApiRow[];
-    return data.map(normalizeRow);
+    const payload = (await response.json()) as
+      | ConsolidatedApiRow[]
+      | ConsolidatedApiResponse;
+
+    return {
+      rows: extractRows(payload).map(normalizeRow),
+      lastUpdatedAt: extractLastUpdatedAt(payload, response),
+    };
   },
 };

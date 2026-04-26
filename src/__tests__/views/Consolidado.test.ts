@@ -25,7 +25,7 @@ vi.mock("chart.js", () => ({
 vi.mock("@/services/apiService", () => ({
   apiService: {
     consolidated: {
-      fetchConsolidated: vi.fn(),
+      fetchConsolidatedSnapshot: vi.fn(),
     },
   },
 }));
@@ -84,9 +84,10 @@ const consolidatedRows = [
 describe("Consolidado.vue", () => {
   beforeEach(() => {
     vi.restoreAllMocks();
-    vi.mocked(apiService.consolidated.fetchConsolidated).mockResolvedValue(
-      consolidatedRows,
-    );
+    vi.mocked(apiService.consolidated.fetchConsolidatedSnapshot).mockResolvedValue({
+      rows: consolidatedRows,
+      lastUpdatedAt: "2026-04-25T14:30:00Z",
+    });
   });
 
   const getVm = (wrapper: ReturnType<typeof mount>) =>
@@ -109,6 +110,42 @@ describe("Consolidado.vue", () => {
     expect(wrapper.find(".metrics").exists()).toBe(true);
     const metricCards = wrapper.findAll(".metric-card");
     expect(metricCards.length).toBe(4);
+  });
+
+  it("CT01: displays the last update date and time", async () => {
+    const wrapper = mount(Consolidado);
+    await nextTick();
+    await nextTick();
+
+    const banner = wrapper.find('[data-testid="last-update-banner"]');
+    expect(banner.exists()).toBe(true);
+    expect(banner.text()).toContain("Última importação");
+    expect(banner.text()).toContain("25/04/2026");
+    expect(banner.text()).toMatch(/\d{2}:\d{2}/);
+  });
+
+  it("CT02: updates the displayed value after a new data load", async () => {
+    vi.mocked(apiService.consolidated.fetchConsolidatedSnapshot)
+      .mockResolvedValueOnce({
+        rows: consolidatedRows,
+        lastUpdatedAt: "2026-04-25T14:30:00Z",
+      })
+      .mockResolvedValueOnce({
+        rows: consolidatedRows,
+        lastUpdatedAt: "2026-04-26T09:45:00Z",
+      });
+
+    const firstWrapper = mount(Consolidado);
+    await nextTick();
+    await nextTick();
+    expect(firstWrapper.text()).toContain("25/04/2026");
+    firstWrapper.unmount();
+
+    const secondWrapper = mount(Consolidado);
+    await nextTick();
+    await nextTick();
+    expect(secondWrapper.text()).toContain("26/04/2026");
+    expect(secondWrapper.text()).toMatch(/\d{2}:\d{2}/);
   });
 
   it("displays correct metric labels", async () => {
