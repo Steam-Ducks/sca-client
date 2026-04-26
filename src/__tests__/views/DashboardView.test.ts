@@ -1,6 +1,6 @@
 // src/__tests__/views/DashboardView.test.ts
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { flushPromises, mount } from "@vue/test-utils";
+import { mount } from "@vue/test-utils";
 import { nextTick } from "vue";
 import DashboardView from "@/views/DashboardView.vue";
 
@@ -33,7 +33,7 @@ vi.mock("chart.js", () => {
     destroy: vi.fn(),
     update: vi.fn(),
   }))
-  ;(MockChart as any).register = vi.fn()
+  Object.assign(MockChart, { register: vi.fn() })
   return { Chart: MockChart, registerables: [] }
 });
 

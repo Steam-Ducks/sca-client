@@ -22,7 +22,10 @@ vi.mock('chart.js', () => {
 })
 
 type MockCfg = { type?: string; data?: { datasets: { data: number[] }[] } }
-type MockCalls = [unknown, MockCfg][]
+
+function getDoughnutConfig(calls: [unknown, MockCfg][]) {
+  return calls.find(([, cfg]) => cfg.type === 'doughnut')?.[1]
+}
 
 // ── Mock canvas DOM ───────────────────────────────────────────────────────────
 const mockCtx = {}
@@ -158,9 +161,9 @@ describe('useChartsDashboard', () => {
 
     useChartsDashboard().buildCharts(SAMPLE_DATA, SAMPLE_COMPOSITION)
 
-    const calls = vi.mocked(Chart).mock.calls
-    const doughnutCall = calls.find(([, cfg]) => (cfg as any).type === 'doughnut')
-    expect(doughnutCall).toBeDefined()
+    const calls = vi.mocked(Chart).mock.calls as [unknown, MockCfg][]
+    const doughnutConfig = getDoughnutConfig(calls)
+    expect(doughnutConfig).toBeDefined()
   })
 
   it('CT01: doughnut dataset has two segments (materiais and horas)', async () => {
@@ -169,10 +172,10 @@ describe('useChartsDashboard', () => {
 
     useChartsDashboard().buildCharts(SAMPLE_DATA, SAMPLE_COMPOSITION)
 
-    const calls = vi.mocked(Chart).mock.calls
-    const doughnutCall = calls.find(([, cfg]) => (cfg as any).type === 'doughnut')
-    expect(doughnutCall).toBeDefined()
-    const dataset = (doughnutCall![1] as any).data.datasets[0]
+    const calls = vi.mocked(Chart).mock.calls as [unknown, MockCfg][]
+    const doughnutConfig = getDoughnutConfig(calls)
+    expect(doughnutConfig).toBeDefined()
+    const dataset = doughnutConfig!.data!.datasets[0]
     expect(dataset.data).toHaveLength(2)
   })
 
@@ -184,9 +187,9 @@ describe('useChartsDashboard', () => {
 
     useChartsDashboard().buildCharts(SAMPLE_DATA, SAMPLE_COMPOSITION)
 
-    const calls = vi.mocked(Chart).mock.calls
-    const doughnutCall = calls.find(([, cfg]) => (cfg as any).type === 'doughnut')
-    const dataset = (doughnutCall![1] as any).data.datasets[0]
+    const calls = vi.mocked(Chart).mock.calls as [unknown, MockCfg][]
+    const doughnutConfig = getDoughnutConfig(calls)
+    const dataset = doughnutConfig!.data!.datasets[0]
     expect(dataset.data[0]).toBe(SAMPLE_COMPOSITION.custo_materiais)
     expect(dataset.data[1]).toBe(SAMPLE_COMPOSITION.custo_horas)
   })
@@ -197,9 +200,9 @@ describe('useChartsDashboard', () => {
 
     useChartsDashboard().buildCharts(SAMPLE_DATA)
 
-    const calls = vi.mocked(Chart).mock.calls
-    const doughnutCall = calls.find(([, cfg]) => (cfg as any).type === 'doughnut')
-    const dataset = (doughnutCall![1] as any).data.datasets[0]
+    const calls = vi.mocked(Chart).mock.calls as [unknown, MockCfg][]
+    const doughnutConfig = getDoughnutConfig(calls)
+    const dataset = doughnutConfig!.data!.datasets[0]
     const expectedMat = SAMPLE_DATA.reduce((s, r) => s + r.custoMateriais, 0)
     const expectedHoras = SAMPLE_DATA.reduce((s, r) => s + r.custoHoras, 0)
     expect(dataset.data[0]).toBe(expectedMat)
