@@ -382,6 +382,7 @@
 </template>
 
 <script setup lang="ts">
+<<<<<<< HEAD
 import { ref, computed, watch, onMounted, onUnmounted, nextTick } from "vue";
 import { RAW } from "@/data/materiais";
 import { useCharts } from "@/composables/useCharts";
@@ -395,6 +396,13 @@ import type {
   Categoria,
   Status,
 } from "@/types/materiais";
+=======
+import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
+import { useCharts } from '@/composables/useCharts'
+import type { Filters, SortKey, SortDir } from '@/types/materiais'
+import type { Material, Categoria, Status } from '@/types/materiais'
+import { CONFIG } from '@/utils/config'
+>>>>>>> 89e9698 (Implement filter endpoint by period on the materials dashboard)
 
 const PER_PAGE = 8;
 
@@ -416,15 +424,114 @@ const sortKey = ref<SortKey>("valorTotal");
 const sortDir = ref<SortDir>(-1);
 const page = ref(1);
 
+<<<<<<< HEAD
 // ─── Filter option lists (from static RAW for dropdown population) ────────────
 const periodos = [...new Set(RAW.map((r) => r.periodo))].sort();
 const programas = [...new Set(RAW.map((r) => r.programa))].sort();
 const projetos = [...new Set(RAW.map((r) => r.projeto))].sort();
 const categorias = [...new Set(RAW.map((r) => r.categoria))].sort();
 const fornecedores = [...new Set(RAW.map((r) => r.fornecedor))].sort();
+=======
+// ─── Filter option lists (derivados dos dados reais da API) ───────────────────
+const uniq = (key: keyof Material) =>
+  computed(() => [...new Set(tableData.value.map(r => String(r[key])).filter(Boolean))].sort())
+
+const periodos  = uniq('periodo')
+const programas = uniq('programa')
+const projetos  = uniq('projeto')
+const categorias= uniq('categoria')
+const statuses  = uniq('status')
+const areas     = uniq('area')
+
+// ─── Computed ─────────────────────────────────────────────────────────────────
+const filteredData = computed(() => {
+  const f = filters.value
+  let d = tableData.value.filter(r => {
+    if (f.periodo   && r.periodo   !== f.periodo)   return false
+    if (f.programa  && r.programa  !== f.programa)  return false
+    if (f.projeto   && r.projeto   !== f.projeto)   return false
+    if (f.categoria && r.categoria !== f.categoria) return false
+    if (f.status    && r.status    !== f.status)    return false
+    if (f.area      && r.area      !== f.area)      return false
+    if (f.search) {
+      const s = f.search.toLowerCase()
+      if (
+        !r.material.toLowerCase().includes(s) &&
+        !r.projeto.toLowerCase().includes(s) &&
+        !r.fornecedor.toLowerCase().includes(s)
+      ) return false
+    }
+    return true
+  })
+
+  return d.sort((a, b) => {
+    const av = a[sortKey.value]
+    const bv = b[sortKey.value]
+    return typeof av === 'string'
+      ? av.localeCompare(bv as string) * sortDir.value
+      : ((av as number) - (bv as number)) * sortDir.value
+  })
+})
+
+const totalCusto   = computed(() => filteredData.value.reduce((s, r) => s + r.valorTotal, 0))
+const custoMedio   = computed(() => filteredData.value.length ? totalCusto.value / filteredData.value.length : 0)
+const totalPages   = computed(() => Math.max(1, Math.ceil(filteredData.value.length / PER_PAGE)))
+const pagedData    = computed(() => filteredData.value.slice((page.value - 1) * PER_PAGE, page.value * PER_PAGE))
+const visiblePages = computed(() => {
+  const p = page.value, t = totalPages.value
+  const start = Math.max(1, p - 2), end = Math.min(t, p + 2)
+  return Array.from({ length: end - start + 1 }, (_, i) => start + i)
+})
+
+// ─── Watchers ─────────────────────────────────────────────────────────────────
+watch(filteredData, val => {
+  page.value = 1
+  nextTick(() => updateCharts(val))
+})
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+const fmt = (v: number) =>
+  'R$ ' + v.toLocaleString('pt-BR', { minimumFractionDigits: 2 })
+
+function sort(k: SortKey) {
+  if (sortKey.value === k) sortDir.value = (sortDir.value * -1) as SortDir
+  else { sortKey.value = k; sortDir.value = -1 }
+}
+
+const sortIcon = (k: SortKey) =>
+  sortKey.value !== k ? '↕' : sortDir.value > 0 ? '↑' : '↓'
+
+function badgeClass(c: string) {
+  const map: Record<string, string> = {
+    Hardware:  'badge badge-hw',
+    Storage:   'badge badge-st',
+    Cloud:     'badge badge-cl',
+    Segurança: 'badge badge-sg',
+    Software:  'badge badge-sw',
+    Rede:      'badge badge-rd',
+  }
+  return map[c] ?? 'badge badge-hw'
+}
+
+function exportCSV() {
+  const header = 'Material,Projeto,Programa,Quantidade,Valor Unitário,Valor Total,Período,Fornecedor,Categoria,Status,Área'
+  const rows = filteredData.value.map(r =>
+    [r.material, r.projeto, r.programa, r.quantidade, r.valorUnitario,
+     r.valorTotal, r.periodo, r.fornecedor, r.categoria, r.status, r.area].join(',')
+  )
+  const csv = [header, ...rows].join('\n')
+  const a = document.createElement('a')
+  a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv)
+  a.download = 'materiais.csv'
+  a.click()
+}
+
+// ─── Charts ───────────────────────────────────────────────────────────────────
+>>>>>>> 89e9698 (Implement filter endpoint by period on the materials dashboard)
 
 // ─── Data mapping ─────────────────────────────────────────────────────────────
 function normalizeCategoria(value: string): Categoria {
+<<<<<<< HEAD
   const allowed: Categoria[] = [
     "Hardware",
     "Storage",
@@ -436,6 +543,10 @@ function normalizeCategoria(value: string): Categoria {
   return allowed.includes(value as Categoria)
     ? (value as Categoria)
     : "Hardware";
+=======
+  const allowed: Categoria[] = ['Hardware', 'Storage', 'Cloud', 'Segurança', 'Software', 'Rede']
+  return allowed.includes(value as Categoria) ? (value as Categoria) : 'Hardware'
+>>>>>>> 89e9698 (Implement filter endpoint by period on the materials dashboard)
 }
 
 function mapApiRow(row: MaterialsApiRow): Material {
@@ -455,6 +566,7 @@ function mapApiRow(row: MaterialsApiRow): Material {
   };
 }
 
+<<<<<<< HEAD
 // ─── API call ──────────────────────────────────────────────────────────────────
 async function loadTableData() {
   tableLoading.value = true;
@@ -467,11 +579,30 @@ async function loadTableData() {
     console.error(error);
     tableError.value = "Não foi possível carregar a tabela de materiais.";
     tableData.value = [];
+=======
+async function loadTableData(periodo?: string) {
+  tableLoading.value = true
+  tableError.value = ''
+
+  try {
+    const url = new URL(`${CONFIG.API_BASE_URL}/compras/`)
+    if (periodo) url.searchParams.set('periodo', periodo)
+
+    const response = await fetch(url.toString())
+    if (!response.ok) throw new Error()
+
+    const data = (await response.json()) as MaterialsApiRow[]
+    tableData.value = data.map(mapApiRow)
+  } catch {
+    tableError.value = 'Não foi possível carregar a tabela de materiais.'
+    tableData.value = []
+>>>>>>> 89e9698 (Implement filter endpoint by period on the materials dashboard)
   } finally {
     tableLoading.value = false;
   }
 }
 
+<<<<<<< HEAD
 function createDebouncedFn<T extends (...args: never[]) => void>(
   fn: T,
   delay: number,
@@ -618,6 +749,19 @@ onUnmounted(() => {
   debouncedLoad.cancel();
   destroyCharts();
 });
+=======
+watch(() => filters.value.periodo, (novoPeriodo) => {
+  loadTableData(novoPeriodo || undefined)
+})
+
+const { buildCharts, updateCharts, destroyCharts } = useCharts()
+
+onMounted(async () => {
+  await loadTableData()
+  nextTick(() => buildCharts(filteredData.value))
+})
+onUnmounted(destroyCharts)
+>>>>>>> 89e9698 (Implement filter endpoint by period on the materials dashboard)
 </script>
 
 <style scoped>
