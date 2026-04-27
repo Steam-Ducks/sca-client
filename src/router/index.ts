@@ -1,80 +1,84 @@
-import { createRouter, createWebHistory } from 'vue-router'
-import { logger } from '@/utils/logger'
-import { trackMetric } from '@/utils/metrics'
+import { createRouter, createWebHistory } from "vue-router";
+import { logger } from "@/utils/logger";
+import { trackMetric } from "@/utils/metrics";
 
-let startTime = performance.now()
+let startTime = performance.now();
 
 const router = createRouter({
   history: createWebHistory(),
   routes: [
     {
-      path: '/',
-      redirect: '/materiais',
+      path: "/",
+      redirect: "/materiais",
     },
     {
-      path: '/materiais',
-      name: 'materiais',
-      component: () => import('@/views/GestaoMateriais.vue'),
+      path: "/materiais",
+      name: "materiais",
+      component: () => import("@/views/GestaoMateriais.vue"),
     },
     {
-      path: '/dashboard',
-      name: 'dashboard',
-      component: () => import('@/views/DashboardView.vue'),
+      path: "/dashboard",
+      name: "dashboard",
+      component: () => import("@/views/DashboardView.vue"),
     },
     {
-      path: '/horas',
-      name: 'horas',
-      component: () => import('@/views/HorasTecnicas.vue'),
+      path: "/horas",
+      name: "horas",
+      component: () => import("@/views/HorasTecnicas.vue"),
     },
     {
-      path: '/consolidado',
-      name: 'consolidado',
-      component: () => import('@/views/Consolidado.vue'),
+      path: "/consolidado",
+      name: "consolidado",
+      component: () => import("@/views/Consolidado.vue"),
     },
     {
-      path: '/auditoria',
-      name: 'auditoria',
-      component: () => import('@/views/Auditoria.vue'),
+      path: "/orcamento",
+      name: "orcamento",
+      component: () => import("@/views/OrcamentoSaudeFinanceira.vue"),
+    },
+    {
+      path: "/auditoria",
+      name: "auditoria",
+      component: () => import("@/views/Auditoria.vue"),
     },
   ],
-})
-
+});
 
 router.beforeEach((to, from, next) => {
-  startTime = performance.now()
-  next()
-})
+  startTime = performance.now();
+  next();
+});
 
 router.afterEach((to) => {
-  const duration = performance.now() - startTime
-  const correlationId = crypto.randomUUID()
+  const duration = performance.now() - startTime;
+  const correlationId = crypto.randomUUID();
 
   // LOG
-  logger.info('acessed the page', {
+  logger.info("acessed the page", {
     rota: to.path,
     duration,
     correlation_id: correlationId,
-  })
+  });
 
   // METRIC - page view
-  trackMetric('page_view', 1, {
+  trackMetric("page_view", 1, {
     page: to.path,
     correlation_id: correlationId,
-  })
+  });
 
   // METRIC - response time
-  trackMetric('page_load_time', duration, {
+  trackMetric("page_load_time", duration, {
     page: to.path,
     correlation_id: correlationId,
-  })
-})
+  });
+});
 
- //Errors in the router (lazy loading / chunk error)
+//Errors in the router (lazy loading / chunk error)
 router.onError((error) => {
-  logger.error('Router error', {
+  logger.error("Router error", {
     message: error.message,
     stack: error.stack,
-  })
-})
+  });
+});
 
-export default router
+export default router;

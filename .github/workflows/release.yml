@@ -3,11 +3,11 @@ name: Scheduled Merge to Main
 on:
   schedule:
     # 05/04/2026 - 12:00 UTC
-    - cron: '0 12 5 4 *'
+    - cron: "0 12 5 4 *"
     # 03/05/2026 - 12:00 UTC
-    - cron: '0 12 3 5 *'
+    - cron: "0 12 3 5 *"
     # 31/05/2026 - 12:00 UTC
-    - cron: '0 12 31 5 *'
+    - cron: "0 12 31 5 *"
   workflow_dispatch:
 
 permissions:
@@ -142,7 +142,7 @@ jobs:
         with:
           ref: main
           fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.PAT_TOKEN }}
 
       - name: Configure Git
         run: |

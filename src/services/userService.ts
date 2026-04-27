@@ -1,24 +1,24 @@
-import type { User } from '@/types/api'
-import { CONFIG } from '@/utils/config'
+import type { User } from "@/types/api";
+import { CONFIG } from "@/utils/config";
 
-const apiBaseUrl = CONFIG.API_BASE_URL
+const apiBaseUrl = CONFIG.API_BASE_URL;
 
 export const userService = {
   async fetchUsers(): Promise<User[]> {
-    const response = await fetch(`${apiBaseUrl}/users/`)
-    if (!response.ok) throw new Error('Erro ao buscar usuários')
-    return response.json()
+    const response = await fetch(`${apiBaseUrl}/users/`);
+    if (!response.ok) throw new Error("Erro ao buscar usuários");
+    return response.json();
   },
 
-  async createUser(userData: Omit<User, 'id' | 'date_joined'>): Promise<User> {
+  async createUser(userData: Omit<User, "id" | "date_joined">): Promise<User> {
     const response = await fetch(`${apiBaseUrl}/users/`, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
       body: JSON.stringify(userData),
-    })
-    if (!response.ok) throw new Error('Erro ao criar usuário')
-    return response.json()
+    });
+    if (!response.ok) throw new Error("Erro ao criar usuário");
+    return response.json();
   },
-}
+};
