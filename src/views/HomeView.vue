@@ -1,7 +1,9 @@
 <template>
   <section class="home-view">
     <h2>Home</h2>
-    <p class="lead">Projeto base em Vue 3 com páginas simples para evoluir a aplicação.</p>
+    <p class="lead">
+      Projeto base em Vue 3 com páginas simples para evoluir a aplicação.
+    </p>
 
     <div class="cards">
       <BaseCard
@@ -15,22 +17,22 @@
 </template>
 
 <script setup lang="ts">
-import BaseCard from '@/components/BaseCard.vue'
+import BaseCard from "@/components/BaseCard.vue";
 
 const cards = [
   {
-    title: 'Componentização',
-    description: 'Organize a interface em blocos pequenos e reutilizáveis.',
+    title: "Componentização",
+    description: "Organize a interface em blocos pequenos e reutilizáveis.",
   },
   {
-    title: 'Rotas',
-    description: 'Navegue entre telas mantendo a aplicação previsível.',
+    title: "Rotas",
+    description: "Navegue entre telas mantendo a aplicação previsível.",
   },
   {
-    title: 'Escalabilidade',
-    description: 'Estruture o projeto para crescer sem perder clareza.',
+    title: "Escalabilidade",
+    description: "Estruture o projeto para crescer sem perder clareza.",
   },
-]
+];
 </script>
 
 <style scoped>
