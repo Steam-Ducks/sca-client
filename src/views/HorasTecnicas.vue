@@ -652,8 +652,9 @@ const visiblePages = computed(() => {
 });
 
 // ─── Watchers ─────────────────────────────────────────────────────────────────
-watch(filteredData, () => {
+watch(filteredData, (data) => {
   page.value = 1;
+  updateCharts(data);
 });
 
 // ─── API load ─────────────────────────────────────────────────────────────────
@@ -738,11 +739,11 @@ function exportCSV() {
 }
 
 // ─── Charts ───────────────────────────────────────────────────────────────────
-const { buildCharts, destroyCharts } = useChartsTechnical();
+const { buildCharts, updateCharts, destroyCharts } = useChartsTechnical();
 
 onMounted(async () => {
   await loadData();
-  nextTick(() => buildCharts(MOCK));
+  nextTick(() => buildCharts(filteredData.value));
 });
 onUnmounted(destroyCharts);
 </script>
