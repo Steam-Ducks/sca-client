@@ -3,6 +3,33 @@ import { flushPromises, mount } from "@vue/test-utils";
 import { nextTick } from "vue";
 import HorasTecnicas from "@/views/HorasTecnicas.vue";
 
+interface Row {
+  id: number;
+  colaborador: string;
+  projeto: string;
+  programa: string;
+  horas: number;
+  custoPorHora: number;
+  custoTotal: number;
+  periodo: string;
+  tarefa: string;
+}
+
+interface VmType {
+  filters: {
+    periodo: string;
+    programa: string;
+    projeto: string;
+    colaborador: string;
+    tarefa: string;
+  };
+  sortKey: string;
+  sortDir: 1 | -1;
+  page: number;
+  filteredData: Row[];
+  kpis: { custoTotal: number; totalHoras: number; custoMedio: number };
+}
+
 // ── Mocks hoisted so they're available inside vi.mock factories ───────────────
 const { updateChartsMock, buildChartsMock } = vi.hoisted(() => ({
   updateChartsMock: vi.fn(),
@@ -71,7 +98,7 @@ describe("HorasTecnicas.vue", () => {
       await flushPromises();
       await nextTick();
 
-      const vm = wrapper.vm as any;
+      const vm = wrapper.vm as unknown as VmType;
       // total_horas = 40 + 52 = 92
       expect(vm.kpis.totalHoras).toBe(92);
       // custo_total = 16800 + 13000 = 29800
@@ -85,7 +112,7 @@ describe("HorasTecnicas.vue", () => {
       await flushPromises();
       await nextTick();
 
-      const vm = wrapper.vm as any;
+      const vm = wrapper.vm as unknown as VmType;
       expect(vm.filteredData.length).toBe(2);
     });
   });
@@ -117,7 +144,7 @@ describe("HorasTecnicas.vue", () => {
 
     it("define sortKey ao clicar no cabeçalho Colaborador", async () => {
       const wrapper = mount(HorasTecnicas);
-      const vm = wrapper.vm as any;
+      const vm = wrapper.vm as unknown as VmType;
 
       const th = wrapper
         .findAll("th")
@@ -129,7 +156,7 @@ describe("HorasTecnicas.vue", () => {
 
     it("inverte sortDir ao clicar duas vezes no mesmo cabeçalho", async () => {
       const wrapper = mount(HorasTecnicas);
-      const vm = wrapper.vm as any;
+      const vm = wrapper.vm as unknown as VmType;
 
       const th = wrapper
         .findAll("th")
@@ -164,7 +191,7 @@ describe("HorasTecnicas.vue", () => {
 
       updateChartsMock.mockClear();
 
-      const vm = wrapper.vm as any;
+      const vm = wrapper.vm as unknown as VmType;
       vm.filters.periodo = "2024-03";
       await nextTick();
 
@@ -178,11 +205,11 @@ describe("HorasTecnicas.vue", () => {
 
       updateChartsMock.mockClear();
 
-      const vm = wrapper.vm as any;
+      const vm = wrapper.vm as unknown as VmType;
       vm.filters.programa = "Cloud";
       await nextTick();
 
-      const chamadaArgs = updateChartsMock.mock.calls[0][0] as any[];
+      const chamadaArgs = updateChartsMock.mock.calls[0][0] as Row[];
       expect(chamadaArgs.length).toBe(1);
       expect(chamadaArgs[0].colaborador).toBe("Lucas Martins");
     });
@@ -192,7 +219,7 @@ describe("HorasTecnicas.vue", () => {
       await flushPromises();
       await nextTick();
 
-      const vm = wrapper.vm as any;
+      const vm = wrapper.vm as unknown as VmType;
       vm.page = 3;
       vm.filters.programa = "Cloud";
       await nextTick();
@@ -205,7 +232,7 @@ describe("HorasTecnicas.vue", () => {
       await flushPromises();
       await nextTick();
 
-      const vm = wrapper.vm as any;
+      const vm = wrapper.vm as unknown as VmType;
       vm.filters.programa = "Cloud";
       await nextTick();
 
@@ -218,7 +245,7 @@ describe("HorasTecnicas.vue", () => {
       await flushPromises();
       await nextTick();
 
-      const vm = wrapper.vm as any;
+      const vm = wrapper.vm as unknown as VmType;
       vm.filters.programa = "Cloud";
       await nextTick();
       vm.filters.programa = "";
