@@ -94,12 +94,13 @@
             v-model="filters.projeto"
             class="filter-select"
             data-testid="filter-projeto"
+            :disabled="availableProjects.length === 0"
           >
             <option value="">
               Todos os Projetos
             </option>
             <option
-              v-for="p in uniqueProjetos"
+              v-for="p in availableProjects"
               :key="p"
               :value="p"
             >
@@ -139,6 +140,14 @@
             </option>
           </select>
           <button
+            v-if="hasActiveFilters"
+            class="clear-btn"
+            data-testid="btn-clear-filters"
+            @click="clearFilters"
+          >
+            Limpar filtros
+          </button>
+          <button
             class="export-btn"
             data-testid="btn-export"
             @click="exportCSV"
@@ -162,6 +171,19 @@
             </svg>
             Exportar
           </button>
+        </div>
+        <div
+          v-if="hasActiveFilters"
+          class="active-filters"
+        >
+          <span class="active-filters-label">Filtros ativos</span>
+          <span
+            v-for="filter in activeFilterEntries"
+            :key="filter.key"
+            class="filter-chip"
+          >
+            {{ filter.label }}: {{ filter.value }}
+          </span>
         </div>
       </div>
 
@@ -602,9 +624,28 @@ const uniq = (key: keyof Row) =>
 
 const uniquePeriodos = uniq("periodo");
 const uniqueProgramas = uniq("programa");
-const uniqueProjetos = uniq("projeto");
 const uniqueColaboradores = uniq("colaborador");
 const uniqueTarefas = uniq("tarefa");
+const availableProjects = computed(() => {
+  const rows = filters.value.programa
+    ? tableData.value.filter((r) => r.programa === filters.value.programa)
+    : tableData.value;
+  return [...new Set(rows.map((r) => r.projeto))].sort();
+});
+const activeFilterEntries = computed(() =>
+  [
+    { key: "periodo", label: "Período", value: filters.value.periodo },
+    { key: "programa", label: "Programa", value: filters.value.programa },
+    { key: "projeto", label: "Projeto", value: filters.value.projeto },
+    {
+      key: "colaborador",
+      label: "Colaborador",
+      value: filters.value.colaborador,
+    },
+    { key: "tarefa", label: "Tarefa", value: filters.value.tarefa },
+  ].filter((entry) => Boolean(entry.value)),
+);
+const hasActiveFilters = computed(() => activeFilterEntries.value.length > 0);
 
 // ─── Computed ─────────────────────────────────────────────────────────────────
 const filteredData = computed(() => {
@@ -652,8 +693,9 @@ const visiblePages = computed(() => {
 });
 
 // ─── Watchers ─────────────────────────────────────────────────────────────────
-watch(filteredData, () => {
+watch(filteredData, (data) => {
   page.value = 1;
+  updateCharts(data);
 });
 
 // ─── API load ─────────────────────────────────────────────────────────────────
@@ -675,7 +717,13 @@ async function loadData() {
   tableLoading.value = true;
   tableError.value = "";
   try {
-    const res = await fetch(`${CONFIG.API_BASE_URL}/horas-tecnicas/`);
+    const params = new URLSearchParams();
+    if (filters.value.periodo) params.set("periodo", filters.value.periodo);
+    if (filters.value.programa) params.set("programa", filters.value.programa);
+    if (filters.value.projeto) params.set("projeto", filters.value.projeto);
+    const query = params.toString() ? `?${params.toString()}` : "";
+
+    const res = await fetch(`${CONFIG.API_BASE_URL}/horas-tecnicas/${query}`);
     if (!res.ok) throw new Error();
     const data = (await res.json()) as ApiRow[];
     tableData.value = data.map(mapApiRow);
@@ -686,6 +734,25 @@ async function loadData() {
     tableLoading.value = false;
   }
 }
+
+watch(
+  () => filters.value.programa,
+  () => {
+    if (
+      filters.value.projeto &&
+      !availableProjects.value.includes(filters.value.projeto)
+    ) {
+      filters.value.projeto = "";
+    }
+  },
+);
+
+watch(
+  () => [filters.value.periodo, filters.value.programa, filters.value.projeto],
+  () => {
+    void loadData();
+  },
+);
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const fmt = (v: number) =>
@@ -737,12 +804,22 @@ function exportCSV() {
   a.click();
 }
 
+function clearFilters() {
+  filters.value = {
+    periodo: "",
+    programa: "",
+    projeto: "",
+    colaborador: "",
+    tarefa: "",
+  };
+}
+
 // ─── Charts ───────────────────────────────────────────────────────────────────
-const { buildCharts, destroyCharts } = useChartsTechnical();
+const { buildCharts, updateCharts, destroyCharts } = useChartsTechnical();
 
 onMounted(async () => {
   await loadData();
-  nextTick(() => buildCharts(MOCK));
+  nextTick(() => buildCharts(filteredData.value));
 });
 onUnmounted(destroyCharts);
 </script>
@@ -917,6 +994,40 @@ onUnmounted(destroyCharts);
 .export-btn svg {
   width: 14px;
   height: 14px;
+}
+.clear-btn {
+  background: transparent;
+  border: 1px solid var(--border2);
+  color: var(--text2);
+  border-radius: 7px;
+  padding: 7px 12px;
+  font-size: 12px;
+  cursor: pointer;
+}
+.clear-btn:hover {
+  color: var(--text);
+  border-color: var(--blue2);
+}
+.active-filters {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-top: 12px;
+}
+.active-filters-label {
+  font-size: 11px;
+  color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.filter-chip {
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  color: var(--text);
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 11px;
 }
 
 /* ── Charts ───────────────────────────────────────────────────────────────── */

@@ -530,4 +530,24 @@ describe("DashboardView.vue", () => {
       end_date: "2024-01-31",
     });
   });
+
+  it("CT07: displays active filters and clears them", async () => {
+    const wrapper = mount(DashboardView);
+    await nextTick();
+    await nextTick();
+
+    const vm = wrapper.vm as unknown as {
+      filters: { periodo: string; programa: string; projeto: string };
+    };
+    vm.filters.programa = "Cloud";
+    await nextTick();
+
+    expect(wrapper.text()).toContain("Filtros ativos");
+    expect(wrapper.text()).toContain("Programa: Cloud");
+
+    await wrapper.find(".clear-btn").trigger("click");
+    await nextTick();
+
+    expect(vm.filters.programa).toBe("");
+  });
 });
