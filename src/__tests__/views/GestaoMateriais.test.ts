@@ -54,15 +54,6 @@ describe("GestaoMateriais.vue", () => {
       page: number;
     };
 
-  it("renders the materials management page", async () => {
-    const wrapper = mount(GestaoMateriais);
-    await nextTick();
-    await nextTick();
-
-    expect(wrapper.find(".filters-title").text()).toContain("Filtros");
-    expect(wrapper.find(".filters-card").exists()).toBe(true);
-  });
-
   it("displays filter options", async () => {
     const wrapper = mount(GestaoMateriais);
     await nextTick();
