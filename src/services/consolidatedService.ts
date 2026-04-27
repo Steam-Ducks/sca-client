@@ -84,14 +84,35 @@ function extractLastUpdatedAt(
   return headerTimestamp ?? null;
 }
 
+type ConsolidatedFilters = {
+  periodo?: string;
+  programa?: string;
+  projeto?: string;
+  status?: string;
+};
+
+function buildQuery(filters: ConsolidatedFilters = {}): string {
+  const params = new URLSearchParams();
+
+  if (filters.periodo) params.set("periodo", filters.periodo);
+  if (filters.programa) params.set("programa", filters.programa);
+  if (filters.projeto) params.set("projeto", filters.projeto);
+  if (filters.status) params.set("status", filters.status);
+
+  const query = params.toString();
+  return query ? `?${query}` : "";
+}
+
 export const consolidatedService = {
-  async fetchConsolidated(): Promise<ConsolidadoRow[]> {
-    const snapshot = await this.fetchConsolidatedSnapshot();
+  async fetchConsolidated(filters: ConsolidatedFilters = {}): Promise<ConsolidadoRow[]> {
+    const snapshot = await this.fetchConsolidatedSnapshot(filters);
     return snapshot.rows;
   },
 
-  async fetchConsolidatedSnapshot(): Promise<ConsolidatedSnapshot> {
-    const response = await fetch(`${apiBaseUrl}/consolidated/`);
+  async fetchConsolidatedSnapshot(
+    filters: ConsolidatedFilters = {},
+  ): Promise<ConsolidatedSnapshot> {
+    const response = await fetch(`${apiBaseUrl}/consolidated/${buildQuery(filters)}`);
     if (!response.ok) throw new Error("Erro ao buscar dados consolidados");
 
     const payload = (await response.json()) as

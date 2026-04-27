@@ -33,10 +33,23 @@
           <select v-model="filters.programa" class="filter-select">
             <option value="">Todos os Programas</option>
             <option v-for="p in programas" :key="p" :value="p">{{ p }}</option>
-          </select>
-          <select v-model="filters.projeto" class="filter-select">
-            <option value="">Todos os Projetos</option>
-            <option v-for="p in projetos" :key="p" :value="p">{{ p }}</option>
+          </select>         
+          <select
+            v-model="filters.projeto"
+            class="filter-select"
+            :disabled="availableProjects.length === 0"
+          >
+            <option value="">
+              Todos os Projetos
+            </option>
+            <option
+              v-for="p in availableProjects"
+              :key="p"
+              :value="p"
+            >
+              {{ p }}
+            </option>
+
           </select>
           <select v-model="filters.categoria" class="filter-select">
             <option value="">Todas as Categorias</option>
@@ -55,8 +68,23 @@
             </svg>
             <input v-model="filters.search" class="search-input" placeholder="Buscar material..." />
           </div>
-          <button class="export-btn" @click="exportCSV">
-            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <button
+            v-if="hasActiveFilters"
+            class="clear-btn"
+            @click="clearFilters"
+          >
+            Limpar filtros
+          </button>
+          <button
+            class="export-btn"
+            @click="exportCSV"
+          >
+            <svg
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+
               <path
                 d="M12 16l-4-4h3V4h2v8h3l-4 4z"
                 stroke-width="1.5"
@@ -67,6 +95,19 @@
             </svg>
             Exportar
           </button>
+        </div>
+        <div
+          v-if="hasActiveFilters"
+          class="active-filters"
+        >
+          <span class="active-filters-label">Filtros ativos</span>
+          <span
+            v-for="filter in activeFilterEntries"
+            :key="filter.key"
+            class="filter-chip"
+          >
+            {{ filter.label }}: {{ filter.value }}
+          </span>
         </div>
       </div>
 
@@ -219,9 +260,29 @@ const page = ref(1);
 // ─── Filter option lists (from static RAW for dropdown population) ────────────
 const periodos = [...new Set(RAW.map((r) => r.periodo))].sort();
 const programas = [...new Set(RAW.map((r) => r.programa))].sort();
-const projetos = [...new Set(RAW.map((r) => r.projeto))].sort();
 const categorias = [...new Set(RAW.map((r) => r.categoria))].sort();
 const fornecedores = [...new Set(RAW.map((r) => r.fornecedor))].sort();
+const availableProjects = computed(() => {
+  const rows = filters.value.programa
+    ? RAW.filter((r) => r.programa === filters.value.programa)
+    : RAW;
+  return [...new Set(rows.map((r) => r.projeto))].sort();
+});
+const activeFilterEntries = computed(() =>
+  [
+    { key: "periodo", label: "Período", value: filters.value.periodo },
+    { key: "programa", label: "Programa", value: filters.value.programa },
+    { key: "projeto", label: "Projeto", value: filters.value.projeto },
+    { key: "categoria", label: "Categoria", value: filters.value.categoria },
+    {
+      key: "fornecedor",
+      label: "Fornecedor",
+      value: filters.value.fornecedor,
+    },
+    { key: "search", label: "Busca", value: filters.value.search },
+  ].filter((entry) => Boolean(entry.value)),
+);
+const hasActiveFilters = computed(() => activeFilterEntries.value.length > 0);
 
 // ─── Data mapping ─────────────────────────────────────────────────────────────
 function normalizeCategoria(value: string): Categoria {
@@ -365,6 +426,18 @@ watch(
 );
 
 watch(
+  () => filters.value.programa,
+  () => {
+    if (
+      filters.value.projeto &&
+      !availableProjects.value.includes(filters.value.projeto)
+    ) {
+      filters.value.projeto = "";
+    }
+  },
+);
+
+watch(
   () => filters.value.search,
   () => {
     page.value = 1;
@@ -420,6 +493,19 @@ function exportCSV() {
   a.href = "data:text/csv;charset=utf-8," + encodeURIComponent(csv);
   a.download = "materiais.csv";
   a.click();
+}
+
+function clearFilters() {
+  filters.value = {
+    periodo: "",
+    programa: "",
+    projeto: "",
+    categoria: "",
+    fornecedor: "",
+    status: "",
+    area: "",
+    search: "",
+  };
 }
 
 // ─── Charts ───────────────────────────────────────────────────────────────────
@@ -633,6 +719,40 @@ onUnmounted(() => {
 .export-btn svg {
   width: 14px;
   height: 14px;
+}
+.clear-btn {
+  background: transparent;
+  border: 1px solid var(--border2);
+  color: var(--text2);
+  border-radius: 7px;
+  padding: 7px 12px;
+  font-size: 12px;
+  cursor: pointer;
+}
+.clear-btn:hover {
+  color: var(--text);
+  border-color: var(--blue2);
+}
+.active-filters {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-top: 12px;
+}
+.active-filters-label {
+  font-size: 11px;
+  color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.filter-chip {
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  color: var(--text);
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 11px;
 }
 
 /* ── Charts ───────────────────────────────────────────────────────────────── */
