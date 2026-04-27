@@ -265,4 +265,39 @@ describe("Consolidado.vue", () => {
     expect(exportBtn.exists()).toBe(true);
     expect(exportBtn.text()).toContain("Exportar");
   });
+
+  it("CT06: restricts project options when a program is selected", async () => {
+    const wrapper = mount(Consolidado);
+    await nextTick();
+    await nextTick();
+
+    const selects = wrapper.findAll("select");
+    await selects[1].setValue("Cloud");
+    await nextTick();
+
+    const projectOptions = selects[2].findAll("option").map((option) => option.text());
+    expect(projectOptions).toContain("Migração AWS");
+    expect(projectOptions).not.toContain("Storage Upgrade");
+  });
+
+  it("CT07: displays active filters, clears them, and refetches with filters", async () => {
+    const wrapper = mount(Consolidado);
+    await nextTick();
+    await nextTick();
+
+    const selects = wrapper.findAll("select");
+    await selects[1].setValue("Cloud");
+    await nextTick();
+
+    expect(wrapper.text()).toContain("Filtros ativos");
+    expect(wrapper.text()).toContain("Programa: Cloud");
+    expect(apiService.consolidated.fetchConsolidatedSnapshot).toHaveBeenLastCalledWith(
+      expect.objectContaining({ programa: "Cloud" }),
+    );
+
+    await wrapper.find(".clear-btn").trigger("click");
+    await nextTick();
+
+    expect(getVm(wrapper).filters.programa).toBe("");
+  });
 });

@@ -253,6 +253,44 @@ describe("HorasTecnicas.vue", () => {
 
       expect(vm.filteredData.length).toBe(2);
     });
+
+    it("recarrega o backend com programa na query string", async () => {
+      const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => API_ROWS });
+      vi.stubGlobal("fetch", fetchMock);
+
+      const wrapper = mount(HorasTecnicas);
+      await flushPromises();
+      await nextTick();
+
+      const vm = wrapper.vm as unknown as VmType;
+      vm.filters.programa = "Cloud";
+      await flushPromises();
+      await nextTick();
+
+      expect(fetchMock).toHaveBeenLastCalledWith(
+        expect.stringContaining("/horas-tecnicas/?programa=Cloud"),
+      );
+    });
+
+    it("restringe projetos ao programa selecionado e limpa filtros", async () => {
+      const wrapper = mount(HorasTecnicas);
+      await flushPromises();
+      await nextTick();
+
+      const selects = wrapper.findAll("select");
+      await selects[1].setValue("Cloud");
+      await nextTick();
+
+      const projectOptions = selects[2].findAll("option").map((option) => option.text());
+      expect(projectOptions).toContain("Migração AWS");
+      expect(projectOptions).not.toContain("Portal Web");
+
+      expect(wrapper.text()).toContain("Filtros ativos");
+
+      await wrapper.find('[data-testid="btn-clear-filters"]').trigger("click");
+      await nextTick();
+      expect((wrapper.vm as unknown as VmType).filters.programa).toBe("");
+    });
   });
 
   // ── CT04: formatação de valores ───────────────────────────────────────────────

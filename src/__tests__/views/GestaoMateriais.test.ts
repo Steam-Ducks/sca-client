@@ -152,4 +152,36 @@ describe("GestaoMateriais.vue", () => {
       expect(getVm(wrapper).page).toBe(2);
     }
   });
+
+  it("CT06: restricts project options when a program is selected", async () => {
+    const wrapper = mount(GestaoMateriais);
+    await nextTick();
+    await nextTick();
+
+    const selects = wrapper.findAll("select");
+    await selects[1].setValue("Cloud");
+    await nextTick();
+
+    const projectOptions = selects[2].findAll("option").map((option) => option.text());
+    expect(projectOptions).toContain("Migração AWS");
+    expect(projectOptions).not.toContain("Data Center Regional");
+  });
+
+  it("CT07: shows and clears active filters", async () => {
+    const wrapper = mount(GestaoMateriais);
+    await nextTick();
+    await nextTick();
+
+    const selects = wrapper.findAll("select");
+    await selects[1].setValue("Infraestrutura");
+    await nextTick();
+
+    expect(wrapper.text()).toContain("Filtros ativos");
+    expect(wrapper.text()).toContain("Programa: Infraestrutura");
+
+    await wrapper.find(".clear-btn").trigger("click");
+    await nextTick();
+
+    expect(getVm(wrapper).filters.programa).toBe("");
+  });
 });
