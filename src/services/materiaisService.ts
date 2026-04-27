@@ -14,6 +14,11 @@ export interface MaterialsApiRow {
   categoria: string;
 }
 
+export interface TopMaterial {
+  material: string;
+  total_cost: number;
+}
+
 function buildQueryParams(filters: Filters): string {
   const params = new URLSearchParams();
 
@@ -38,5 +43,19 @@ export const materiaisService = {
     }
 
     return response.json() as Promise<MaterialsApiRow[]>;
+  },
+
+  async fetchTopMaterials(filters: Filters): Promise<TopMaterial[]> {
+    const qs = buildQueryParams(filters);
+
+    const response = await fetch(
+      `${CONFIG.API_BASE_URL}/top-materials/${qs}`
+    );
+
+    if (!response.ok) {
+      throw new Error("Não foi possível carregar o ranking de materiais.");
+    }
+
+    return response.json() as Promise<TopMaterial[]>;
   },
 };

@@ -4,172 +4,66 @@
       <!-- METRICS -->
       <div class="metrics">
         <div class="metric-card">
-          <div class="metric-label">
-            Custo Total de Materiais
-          </div>
-          <div class="metric-value blue">
-            {{ fmt(totalCusto) }}
-          </div>
+          <div class="metric-label">Custo Total de Materiais</div>
+          <div class="metric-value blue">{{ fmt(totalCusto) }}</div>
         </div>
         <div class="metric-card">
-          <div class="metric-label">
-            Total de Itens
-          </div>
-          <div class="metric-value">
-            {{ sortedData.length }}
-          </div>
+          <div class="metric-label">Total de Itens</div>
+          <div class="metric-value">{{ sortedData.length }}</div>
         </div>
         <div class="metric-card">
-          <div class="metric-label">
-            Custo Médio por Item
-          </div>
-          <div class="metric-value green">
-            {{ fmt(custoMedio) }}
-          </div>
+          <div class="metric-label">Custo Médio por Item</div>
+          <div class="metric-value green">{{ fmt(custoMedio) }}</div>
         </div>
       </div>
 
       <!-- FILTERS -->
       <div class="filters-card">
         <div class="filters-title">
-          <svg
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              d="M3 4h18M7 10h10M11 16h2"
-              stroke-width="1.5"
-              stroke-linecap="round"
-            />
+          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path d="M3 4h18M7 10h10M11 16h2" stroke-width="1.5" stroke-linecap="round" />
           </svg>
           Filtros
         </div>
         <div class="filters-row">
-          <select
-            v-model="filters.periodo"
-            class="filter-select"
-          >
-            <option value="">
-              Todos os Períodos
-            </option>
-            <option
-              v-for="p in periodos"
-              :key="p"
-              :value="p"
-            >
-              {{ p }}
-            </option>
+          <select v-model="filters.periodo" class="filter-select">
+            <option value="">Todos os Períodos</option>
+            <option v-for="p in periodos" :key="p" :value="p">{{ p }}</option>
           </select>
-          <select
-            v-model="filters.programa"
-            class="filter-select"
-          >
-            <option value="">
-              Todos os Programas
-            </option>
-            <option
-              v-for="p in programas"
-              :key="p"
-              :value="p"
-            >
-              {{ p }}
-            </option>
+          <select v-model="filters.programa" class="filter-select">
+            <option value="">Todos os Programas</option>
+            <option v-for="p in programas" :key="p" :value="p">{{ p }}</option>
           </select>
-          <select
-            v-model="filters.projeto"
-            class="filter-select"
-          >
-            <option value="">
-              Todos os Projetos
-            </option>
-            <option
-              v-for="p in projetos"
-              :key="p"
-              :value="p"
-            >
-              {{ p }}
-            </option>
+          <select v-model="filters.projeto" class="filter-select">
+            <option value="">Todos os Projetos</option>
+            <option v-for="p in projetos" :key="p" :value="p">{{ p }}</option>
           </select>
-          <select
-            v-model="filters.categoria"
-            class="filter-select"
-          >
-            <option value="">
-              Todas as Categorias
-            </option>
-            <option
-              v-for="c in categorias"
-              :key="c"
-              :value="c"
-            >
-              {{ c }}
-            </option>
+          <select v-model="filters.categoria" class="filter-select">
+            <option value="">Todas as Categorias</option>
+            <option v-for="c in categorias" :key="c" :value="c">{{ c }}</option>
           </select>
-          <select
-            v-model="filters.fornecedor"
-            class="filter-select"
-          >
-            <option value="">
-              Todos os Fornecedores
-            </option>
-            <option
-              v-for="f in fornecedores"
-              :key="f"
-              :value="f"
-            >
-              {{ f }}
-            </option>
+          <select v-model="filters.fornecedor" class="filter-select">
+            <option value="">Todos os Fornecedores</option>
+            <option v-for="f in fornecedores" :key="f" :value="f">{{ f }}</option>
           </select>
         </div>
-        <div
-          class="filters-row"
-          style="margin-top: 10px"
-        >
+        <div class="filters-row" style="margin-top: 10px">
           <div class="search-wrap">
-            <svg
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <circle
-                cx="11"
-                cy="11"
-                r="8"
-                stroke-width="1.5"
-              />
-              <path
-                d="M21 21l-4.35-4.35"
-                stroke-width="1.5"
-                stroke-linecap="round"
-              />
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <circle cx="11" cy="11" r="8" stroke-width="1.5" />
+              <path d="M21 21l-4.35-4.35" stroke-width="1.5" stroke-linecap="round" />
             </svg>
-            <input
-              v-model="filters.search"
-              class="search-input"
-              placeholder="Buscar material..."
-            >
+            <input v-model="filters.search" class="search-input" placeholder="Buscar material..." />
           </div>
-          <button
-            class="export-btn"
-            @click="exportCSV"
-          >
-            <svg
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
+          <button class="export-btn" @click="exportCSV">
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path
                 d="M12 16l-4-4h3V4h2v8h3l-4 4z"
                 stroke-width="1.5"
                 stroke-linecap="round"
                 stroke-linejoin="round"
               />
-              <path
-                d="M4 20h16"
-                stroke-width="1.5"
-                stroke-linecap="round"
-              />
+              <path d="M4 20h16" stroke-width="1.5" stroke-linecap="round" />
             </svg>
             Exportar
           </button>
@@ -179,17 +73,13 @@
       <!-- TOP CHARTS -->
       <div class="charts-row">
         <div class="chart-card">
-          <div class="chart-title">
-            Top 10 – Custo por Material
-          </div>
+          <div class="chart-title">Top 10 Custo por Material</div>
           <div class="chart-wrap">
             <canvas id="chartCusto" />
           </div>
         </div>
         <div class="chart-card">
-          <div class="chart-title">
-            Top 10 – Quantidade Consumida
-          </div>
+          <div class="chart-title">Top 10 Quantidade Consumida</div>
           <div class="chart-wrap">
             <canvas id="chartQtd" />
           </div>
@@ -199,17 +89,13 @@
       <!-- BOTTOM CHARTS -->
       <div class="charts-row">
         <div class="chart-card">
-          <div class="chart-title">
-            Custo de Materiais por Projeto
-          </div>
+          <div class="chart-title">Custo de Materiais por Projeto</div>
           <div class="chart-wrap tall">
             <canvas id="chartProjeto" />
           </div>
         </div>
         <div class="chart-card">
-          <div class="chart-title">
-            Evolução Temporal do Custo
-          </div>
+          <div class="chart-title">Evolução Temporal do Custo</div>
           <div class="chart-wrap tall">
             <canvas id="chartTemporal" />
           </div>
@@ -225,46 +111,25 @@
           <table>
             <thead>
               <tr>
-                <th
-                  class="sort-col"
-                  @click="sort('material')"
-                >
+                <th class="sort-col" @click="sort('material')">
                   Material {{ sortIcon("material") }}
                 </th>
-                <th
-                  class="sort-col"
-                  @click="sort('projeto')"
-                >
+                <th class="sort-col" @click="sort('projeto')">
                   Projeto {{ sortIcon("projeto") }}
                 </th>
-                <th
-                  class="sort-col"
-                  @click="sort('programa')"
-                >
+                <th class="sort-col" @click="sort('programa')">
                   Programa {{ sortIcon("programa") }}
                 </th>
-                <th
-                  class="sort-col"
-                  @click="sort('quantidade')"
-                >
+                <th class="sort-col" @click="sort('quantidade')">
                   Quantidade {{ sortIcon("quantidade") }}
                 </th>
-                <th
-                  class="sort-col"
-                  @click="sort('valorUnitario')"
-                >
+                <th class="sort-col" @click="sort('valorUnitario')">
                   Valor Unitário {{ sortIcon("valorUnitario") }}
                 </th>
-                <th
-                  class="sort-col"
-                  @click="sort('valorTotal')"
-                >
+                <th class="sort-col" @click="sort('valorTotal')">
                   Valor Total {{ sortIcon("valorTotal") }}
                 </th>
-                <th
-                  class="sort-col"
-                  @click="sort('periodo')"
-                >
+                <th class="sort-col" @click="sort('periodo')">
                   Período {{ sortIcon("periodo") }}
                 </th>
                 <th>Fornecedor</th>
@@ -273,84 +138,35 @@
             </thead>
             <tbody>
               <tr v-if="tableLoading">
-                <td
-                  colspan="9"
-                  class="table-feedback muted"
-                >
-                  Carregando materiais...
-                </td>
+                <td colspan="9" class="table-feedback muted">Carregando materiais...</td>
               </tr>
               <tr v-else-if="tableError">
-                <td
-                  colspan="9"
-                  class="table-feedback error"
-                >
-                  {{ tableError }}
-                </td>
+                <td colspan="9" class="table-feedback error">{{ tableError }}</td>
               </tr>
               <tr v-else-if="pagedData.length === 0">
-                <td
-                  colspan="9"
-                  class="table-feedback muted"
-                >
-                  Nenhum material encontrado.
-                </td>
+                <td colspan="9" class="table-feedback muted">Nenhum material encontrado.</td>
               </tr>
-              <tr
-                v-for="row in pagedData"
-                :key="row.id"
-              >
-                <td class="material-name">
-                  {{ row.material }}
-                </td>
-                <td class="muted">
-                  {{ row.projeto }}
-                </td>
-                <td class="muted">
-                  {{ row.programa }}
-                </td>
-                <td class="mono right">
-                  {{ row.quantidade }}
-                </td>
-                <td class="mono">
-                  {{ fmt(row.valorUnitario) }}
-                </td>
-                <td class="total">
-                  {{ fmt(row.valorTotal) }}
-                </td>
-                <td class="mono">
-                  {{ row.periodo }}
-                </td>
-                <td class="muted">
-                  {{ row.fornecedor }}
-                </td>
+              <tr v-for="row in pagedData" :key="row.id">
+                <td class="material-name">{{ row.material }}</td>
+                <td class="muted">{{ row.projeto }}</td>
+                <td class="muted">{{ row.programa }}</td>
+                <td class="mono right">{{ row.quantidade }}</td>
+                <td class="mono">{{ fmt(row.valorUnitario) }}</td>
+                <td class="total">{{ fmt(row.valorTotal) }}</td>
+                <td class="mono">{{ row.periodo }}</td>
+                <td class="muted">{{ row.fornecedor }}</td>
                 <td>
-                  <span :class="badgeClass(row.categoria)">{{
-                    row.categoria
-                  }}</span>
+                  <span :class="badgeClass(row.categoria)">{{ row.categoria }}</span>
                 </td>
               </tr>
             </tbody>
           </table>
         </div>
         <div class="pagination">
-          <span>{{ sortedData.length }} registros · página {{ page }} de
-            {{ totalPages }}</span>
+          <span>{{ sortedData.length }} registros · página {{ page }} de {{ totalPages }}</span>
           <div class="pg-btns">
-            <button
-              class="pg-btn"
-              :disabled="page === 1"
-              @click="page = 1"
-            >
-              «
-            </button>
-            <button
-              class="pg-btn"
-              :disabled="page === 1"
-              @click="page--"
-            >
-              ‹
-            </button>
+            <button class="pg-btn" :disabled="page === 1" @click="page = 1">«</button>
+            <button class="pg-btn" :disabled="page === 1" @click="page--">‹</button>
             <button
               v-for="p in visiblePages"
               :key="p"
@@ -360,18 +176,8 @@
             >
               {{ p }}
             </button>
-            <button
-              class="pg-btn"
-              :disabled="page === totalPages"
-              @click="page++"
-            >
-              ›
-            </button>
-            <button
-              class="pg-btn"
-              :disabled="page === totalPages"
-              @click="page = totalPages"
-            >
+            <button class="pg-btn" :disabled="page === totalPages" @click="page++">›</button>
+            <button class="pg-btn" :disabled="page === totalPages" @click="page = totalPages">
               »
             </button>
           </div>
@@ -387,14 +193,7 @@ import { RAW } from "@/data/materiais";
 import { useCharts } from "@/composables/useCharts";
 import { materiaisService } from "@/services/materiaisService";
 import type { MaterialsApiRow } from "@/services/materiaisService";
-import type {
-  Filters,
-  SortKey,
-  SortDir,
-  Material,
-  Categoria,
-  Status,
-} from "@/types/materiais";
+import type { Filters, SortKey, SortDir, Material, Categoria, Status } from "@/types/materiais";
 
 const PER_PAGE = 8;
 
@@ -402,6 +201,7 @@ const PER_PAGE = 8;
 const tableData = ref<Material[]>([]);
 const tableLoading = ref(false);
 const tableError = ref("");
+const topMaterials = ref<Material[]>([]);
 const filters = ref<Filters>({
   periodo: "",
   programa: "",
@@ -425,17 +225,8 @@ const fornecedores = [...new Set(RAW.map((r) => r.fornecedor))].sort();
 
 // ─── Data mapping ─────────────────────────────────────────────────────────────
 function normalizeCategoria(value: string): Categoria {
-  const allowed: Categoria[] = [
-    "Hardware",
-    "Storage",
-    "Cloud",
-    "Segurança",
-    "Software",
-    "Rede",
-  ];
-  return allowed.includes(value as Categoria)
-    ? (value as Categoria)
-    : "Hardware";
+  const allowed: Categoria[] = ["Hardware", "Storage", "Cloud", "Segurança", "Software", "Rede"];
+  return allowed.includes(value as Categoria) ? (value as Categoria) : "Hardware";
 }
 
 function mapApiRow(row: MaterialsApiRow): Material {
@@ -472,10 +263,35 @@ async function loadTableData() {
   }
 }
 
-function createDebouncedFn<T extends (...args: never[]) => void>(
-  fn: T,
-  delay: number,
-) {
+function mapTopMaterial(row: any): Material {
+  return {
+    id: 0, // não usado no chart
+    material: row.material,
+    valorTotal: row.total_cost,
+    quantidade: 0, // placeholder
+    programa: "",
+    projeto: "",
+    periodo: "",
+    valorUnitario: 0,
+    fornecedor: "",
+    categoria: "Hardware",
+    status: "Ativo",
+    area: "Materiais",
+  };
+}
+
+async function loadTopMaterials() {
+  try {
+    const data = await materiaisService.fetchTopMaterials(filters.value);
+    console.log("TOP MATERIALS API:", data);
+    topMaterials.value = data.map(mapTopMaterial);
+  } catch (error) {
+    console.error("Erro ao carregar ranking", error);
+    topMaterials.value = [];
+  }
+}
+
+function createDebouncedFn<T extends (...args: never[]) => void>(fn: T, delay: number) {
   let timeoutId: ReturnType<typeof setTimeout> | null = null;
 
   const debounced = ((...args: Parameters<T>) => {
@@ -496,8 +312,10 @@ function createDebouncedFn<T extends (...args: never[]) => void>(
   return debounced;
 }
 
-// Debounce para o campo de busca livre (evita chamada a cada tecla)
-const debouncedLoad = createDebouncedFn(loadTableData, 400);
+const debouncedLoad = createDebouncedFn(() => {
+  loadTableData();
+  loadTopMaterials();
+}, 400);
 
 // ─── Computed ─────────────────────────────────────────────────────────────────
 const sortedData = computed(() =>
@@ -510,18 +328,18 @@ const sortedData = computed(() =>
   }),
 );
 
-const totalCusto = computed(() =>
-  sortedData.value.reduce((s, r) => s + r.valorTotal, 0),
-);
+const totalCusto = computed(() => sortedData.value.reduce((s, r) => s + r.valorTotal, 0));
+
 const custoMedio = computed(() =>
   sortedData.value.length ? totalCusto.value / sortedData.value.length : 0,
 );
-const totalPages = computed(() =>
-  Math.max(1, Math.ceil(sortedData.value.length / PER_PAGE)),
-);
+
+const totalPages = computed(() => Math.max(1, Math.ceil(sortedData.value.length / PER_PAGE)));
+
 const pagedData = computed(() =>
   sortedData.value.slice((page.value - 1) * PER_PAGE, page.value * PER_PAGE),
 );
+
 const visiblePages = computed(() => {
   const p = page.value,
     t = totalPages.value;
@@ -530,7 +348,7 @@ const visiblePages = computed(() => {
   return Array.from({ length: end - start + 1 }, (_, i) => start + i);
 });
 
-// ─── Watchers — re-fetch quando filtros de select mudam ──────────────────────
+// ─── Watchers ─────────────────────────────────────────────────────────────────
 watch(
   () => [
     filters.value.periodo,
@@ -542,10 +360,10 @@ watch(
   () => {
     page.value = 1;
     loadTableData();
+    loadTopMaterials();
   },
 );
 
-// Busca livre com debounce
 watch(
   () => filters.value.search,
   () => {
@@ -554,12 +372,10 @@ watch(
   },
 );
 
-// Atualiza charts quando dados mudam
-watch(sortedData, (val) => nextTick(() => updateCharts(val)));
+watch(topMaterials, (val) => nextTick(() => updateCharts(val)));
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-const fmt = (v: number) =>
-  "R$ " + v.toLocaleString("pt-BR", { minimumFractionDigits: 2 });
+const fmt = (v: number) => "R$ " + v.toLocaleString("pt-BR", { minimumFractionDigits: 2 });
 
 function sort(k: SortKey) {
   if (sortKey.value === k) sortDir.value = (sortDir.value * -1) as SortDir;
@@ -569,8 +385,7 @@ function sort(k: SortKey) {
   }
 }
 
-const sortIcon = (k: SortKey) =>
-  sortKey.value !== k ? "↕" : sortDir.value > 0 ? "↑" : "↓";
+const sortIcon = (k: SortKey) => (sortKey.value !== k ? "↕" : sortDir.value > 0 ? "↑" : "↓");
 
 function badgeClass(c: string) {
   const map: Record<string, string> = {
@@ -612,8 +427,10 @@ const { buildCharts, updateCharts, destroyCharts } = useCharts();
 
 onMounted(async () => {
   await loadTableData();
-  nextTick(() => buildCharts(RAW));
+  await loadTopMaterials();
+  nextTick(() => buildCharts(topMaterials.value));
 });
+
 onUnmounted(() => {
   debouncedLoad.cancel();
   destroyCharts();
@@ -742,7 +559,6 @@ onUnmounted(() => {
   flex-wrap: wrap;
   align-items: center;
 }
-
 .filter-select {
   background: var(--bg3);
   border: 1px solid var(--border);
@@ -763,7 +579,6 @@ onUnmounted(() => {
   outline: none;
   border-color: var(--blue2);
 }
-
 .search-wrap {
   flex: 1;
   position: relative;
@@ -796,7 +611,6 @@ onUnmounted(() => {
 .search-input::placeholder {
   color: var(--text3);
 }
-
 .export-btn {
   display: flex;
   align-items: center;
@@ -867,7 +681,6 @@ onUnmounted(() => {
 .table-wrap {
   overflow-x: auto;
 }
-
 table {
   width: 100%;
   border-collapse: collapse;
