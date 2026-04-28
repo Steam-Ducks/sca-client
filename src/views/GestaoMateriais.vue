@@ -14,31 +14,69 @@
       <h3>Filtros</h3>
 
       <select v-model="filters.periodo">
-        <option value="">Todos os Períodos</option>
-        <option v-for="p in periodos" :key="p">{{ p }}</option>
+        <option value="">
+          Todos os Períodos
+        </option>
+        <option
+          v-for="p in periodos"
+          :key="p"
+        >
+          {{ p }}
+        </option>
       </select>
 
       <select v-model="filters.programa">
-        <option value="">Todos os Programas</option>
-        <option v-for="p in programas" :key="p">{{ p }}</option>
+        <option value="">
+          Todos os Programas
+        </option>
+        <option
+          v-for="p in programas"
+          :key="p"
+        >
+          {{ p }}
+        </option>
       </select>
 
       <select v-model="filters.projeto">
-        <option value="">Todos os Projetos</option>
-        <option v-for="p in availableProjects" :key="p">{{ p }}</option>
+        <option value="">
+          Todos os Projetos
+        </option>
+        <option
+          v-for="p in availableProjects"
+          :key="p"
+        >
+          {{ p }}
+        </option>
       </select>
 
       <select v-model="filters.categoria">
-        <option value="">Todas as Categorias</option>
-        <option v-for="c in categorias" :key="c">{{ c }}</option>
+        <option value="">
+          Todas as Categorias
+        </option>
+        <option
+          v-for="c in categorias"
+          :key="c"
+        >
+          {{ c }}
+        </option>
       </select>
 
       <select v-model="filters.fornecedor">
-        <option value="">Todos os Fornecedores</option>
-        <option v-for="f in fornecedores" :key="f">{{ f }}</option>
+        <option value="">
+          Todos os Fornecedores
+        </option>
+        <option
+          v-for="f in fornecedores"
+          :key="f"
+        >
+          {{ f }}
+        </option>
       </select>
 
-      <button class="clear-btn" @click="clearFilters">
+      <button
+        class="clear-btn"
+        @click="clearFilters"
+      >
         Limpar filtros
       </button>
     </div>
@@ -46,27 +84,39 @@
     <!-- FILTROS ATIVOS -->
     <div v-if="activeFilters.length">
       <strong>Filtros ativos</strong>
-      <div v-for="f in activeFilters" :key="f.key">
+      <div
+        v-for="f in activeFilters"
+        :key="f.key"
+      >
         {{ f.label }}: {{ f.value }}
       </div>
     </div>
 
     <!-- CHARTS -->
-    <div class="chart-card">Chart 1</div>
-    <div class="chart-card">Chart 2</div>
+    <div class="chart-card">
+      Chart 1
+    </div>
+    <div class="chart-card">
+      Chart 2
+    </div>
 
     <!-- TABELA -->
     <table>
       <thead>
         <tr>
           <!-- SORT AQUI -->
-          <th @click="sortBy('material')">Material</th>
+          <th @click="sortBy('material')">
+            Material
+          </th>
           <th>Projeto</th>
           <th>Programa</th>
         </tr>
       </thead>
       <tbody>
-        <tr v-for="r in sortedData" :key="r.id">
+        <tr
+          v-for="r in sortedData"
+          :key="r.id"
+        >
           <td>{{ r.material }}</td>
           <td>{{ r.projeto }}</td>
           <td>{{ r.programa }}</td>
@@ -115,15 +165,15 @@ const tableData = ref(RAW);
 const sortedData = computed(() => {
   if (!sortKey.value) return tableData.value;
 
-  return [...tableData.value].sort((a: any, b: any) =>
+  return [...tableData.value].sort((a: Record<string, unknown>, b: Record<string, unknown>) =>
     String(a[sortKey.value]).localeCompare(String(b[sortKey.value]))
   );
 });
 
 /* METRICS */
 const totalCusto = computed(() =>
-  tableData.value.reduce((s, r: any) => s + r.valor_total, 0)
-);
+  tableData.value.reduce((s, r: Record<string, unknown>) =>  s + Number(r.valor_total), 0
+));
 
 const custoMedio = computed(() =>
   tableData.value.length ? totalCusto.value / tableData.value.length : 0
