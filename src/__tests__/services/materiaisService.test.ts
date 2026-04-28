@@ -105,3 +105,64 @@ describe("materiaisService", () => {
     });
   });
 });
+
+describe("fetchTopMaterials", () => {
+  it("should fetch top materials without query params", async () => {
+    const mockResponse = [
+      { material: "Material A", total_cost: 1000 },
+      { material: "Material B", total_cost: 500 },
+    ];
+
+    fetchMock.mockResolvedValue({
+      ok: true,
+      json: vi.fn().mockResolvedValue(mockResponse),
+    });
+
+    const result = await materiaisService.fetchTopMaterials(emptyFilters);
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "http://localhost:3000/api/top-materials/"
+    );
+
+    expect(result).toEqual(mockResponse);
+  });
+
+  it("should include filters in query params", async () => {
+    fetchMock.mockResolvedValue({
+      ok: true,
+      json: vi.fn().mockResolvedValue([]),
+    });
+
+    const filters: Filters = {
+      ...emptyFilters,
+      periodo: "2024-01",
+      programa: "Infraestrutura",
+      categoria: "Hardware",
+    };
+
+    await materiaisService.fetchTopMaterials(filters);
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "http://localhost:3000/api/top-materials/?periodo=2024-01&programa=Infraestrutura&categoria=Hardware"
+    );
+  });
+
+  it("should throw error when response is not ok", async () => {
+    fetchMock.mockResolvedValue({
+      ok: false,
+      status: 500,
+    });
+
+    await expect(
+      materiaisService.fetchTopMaterials(emptyFilters)
+    ).rejects.toThrow(/ranking de materiais/i);
+  });
+
+  it("should rethrow fetch errors", async () => {
+    fetchMock.mockRejectedValue(new Error("Network error"));
+
+    await expect(
+      materiaisService.fetchTopMaterials(emptyFilters)
+    ).rejects.toThrow("Network error");
+  });
+});
