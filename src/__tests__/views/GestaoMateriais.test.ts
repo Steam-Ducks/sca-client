@@ -142,7 +142,7 @@ describe("GestaoMateriais.vue", () => {
       await pageButton.trigger("click");
       expect(getVm(wrapper).page).toBe(2);
     }
-  }),
+  });
 
   it("CT06: restricts project options when a program is selected", async () => {
     const wrapper = mount(GestaoMateriais);
@@ -150,9 +150,17 @@ describe("GestaoMateriais.vue", () => {
     await nextTick();
 
     const selects = wrapper.findAll("select");
+
     await selects[1].setValue("Cloud");
     await nextTick();
-  },
+
+    const projectOptions = selects[2]
+      .findAll("option")
+      .map((option) => option.text());
+
+    expect(projectOptions.length).toBeGreaterThan(1);
+    expect(projectOptions).not.toContain("Data Center Regional");
+  });
 
   it("CT07: shows and clears active filters", async () => {
     const wrapper = mount(GestaoMateriais);
@@ -170,5 +178,5 @@ describe("GestaoMateriais.vue", () => {
     await nextTick();
 
     expect(getVm(wrapper).filters.programa).toBe("");
-  }));
+  });
 });
