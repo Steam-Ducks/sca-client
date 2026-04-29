@@ -532,9 +532,13 @@ function exportCSV() {
 }
 
 async function fetchBudgetSnapshot() {
-  const snapshot = await budgetService.fetchBudgetSnapshot();
-  allData.value = snapshot.rows;
-  lastUpdatedAt.value = snapshot.lastUpdatedAt;
+  try {
+    const snapshot = await budgetService.fetchBudgetSnapshot();
+    allData.value = snapshot.rows;
+    lastUpdatedAt.value = snapshot.lastUpdatedAt;
+  } catch {
+    // API indisponível — gráficos renderizam vazios aguardando dados
+  }
 }
 
 watch(filteredData, async () => {

@@ -8,12 +8,16 @@
 </template>
 
 <script setup lang="ts">
-import { RouterView } from "vue-router";
-import AppHeader from "@/components/AppHeader.vue";
+import { RouterView } from 'vue-router'
+import AppHeader from '@/components/AppHeader.vue'
+import { useTheme } from '@/composables/useTheme'
+
+useTheme()
 </script>
 
 <style>
-:root {
+:root,
+[data-theme="dark"] {
   --bg: #0d0f14;
   --bg2: #141720;
   --bg3: #1c2030;
@@ -29,6 +33,26 @@ import AppHeader from "@/components/AppHeader.vue";
   --amber: #f5a623;
   --red: #f55a5a;
   --purple: #9b7fff;
+  --nav-hover: rgba(255, 255, 255, 0.05);
+}
+
+[data-theme="light"] {
+  --bg: #f5f7fa;
+  --bg2: #ffffff;
+  --bg3: #eef0f6;
+  --bg4: #e4e8f2;
+  --border: #dde1ee;
+  --border2: #c8cde0;
+  --text: #1a1d2e;
+  --text2: #5a6180;
+  --text3: #9099b8;
+  --blue: #4d8fff;
+  --blue2: #3a7af5;
+  --green: #2dd4a0;
+  --amber: #f5a623;
+  --red: #f55a5a;
+  --purple: #9b7fff;
+  --nav-hover: rgba(0, 0, 0, 0.06);
 }
 
 * {
