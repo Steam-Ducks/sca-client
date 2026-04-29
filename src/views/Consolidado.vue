@@ -733,24 +733,7 @@ onUnmounted(destroyCharts);
 </script>
 
 <style scoped>
-/* ── Variables ────────────────────────────────────────────────────────────── */
 .app {
-  --bg: #0d0f14;
-  --bg2: #141720;
-  --bg3: #1c2030;
-  --bg4: #222639;
-  --border: #2a2f45;
-  --border2: #353c58;
-  --text: #e2e6f0;
-  --text2: #8b92aa;
-  --text3: #555d7a;
-  --blue: #4d8fff;
-  --blue2: #3a7af5;
-  --green: #2dd4a0;
-  --amber: #f5a623;
-  --red: #f55a5a;
-  --purple: #9b7fff;
-
   display: flex;
   flex-direction: column;
   min-height: 100vh;
