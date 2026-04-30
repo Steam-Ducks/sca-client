@@ -6,6 +6,13 @@ import type {
 } from "@/types/api";
 import { CONFIG } from "@/utils/config";
 
+export type BudgetFilters = {
+  periodo?: string;
+  programa?: string;
+  projeto?: string;
+  saude?: string;
+};
+
 function isValidDate(value: unknown): value is string {
   return typeof value === "string" && !Number.isNaN(Date.parse(value));
 }
@@ -62,8 +69,15 @@ function extractLastUpdatedAt(
 }
 
 export const budgetService = {
-  async fetchBudgetSnapshot(): Promise<BudgetSnapshot> {
-    const response = await fetch(`${CONFIG.API_BASE_URL}/budget/`);
+  async fetchBudgetSnapshot(filters: BudgetFilters = {}): Promise<BudgetSnapshot> {
+    const params = new URLSearchParams();
+    if (filters.periodo) params.set("periodo", filters.periodo);
+    if (filters.programa) params.set("programa", filters.programa);
+    if (filters.projeto) params.set("projeto", filters.projeto);
+    if (filters.saude) params.set("saude", filters.saude);
+
+    const query = params.toString() ? `?${params.toString()}` : "";
+    const response = await fetch(`${CONFIG.API_BASE_URL}/budget/${query}`);
     if (!response.ok) throw new Error("Erro ao buscar orçamento por projeto");
 
     const payload = (await response.json()) as BudgetApiResponse | BudgetApiRow[];

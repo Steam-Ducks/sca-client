@@ -37,7 +37,7 @@ const BASE_OPTS = {
       titleColor: "#8b92aa",
       bodyColor: "#fff",
       borderColor: "#353c58",
-      borderWidth: 1,
+      borderWidth: 0,
       padding: 10,
       titleFont: { family: "IBM Plex Sans" },
       bodyFont: { family: "IBM Plex Mono" },

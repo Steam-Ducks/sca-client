@@ -18,7 +18,7 @@ const baseOptions = (indexAxis: "x" | "y" = "y") => ({
     tooltip: {
       backgroundColor: "#1c2030",
       borderColor: "#2a2f45",
-      borderWidth: 1,
+      borderWidth: 0,
       titleColor: "#e2e6f0",
       bodyColor: "#8b92aa",
       titleFont: { family: FONT, size: 12 },
@@ -206,7 +206,7 @@ function buildCharts(data: ConsolidadoRow[]) {
             borderWidth: 2.5,
             pointBackgroundColor: "#9b7fff",
             pointBorderColor: "#141720",
-            pointBorderWidth: 2,
+            pointBorderWidth: 0,
             pointRadius: 5,
             pointHoverRadius: 7,
             fill: true,
