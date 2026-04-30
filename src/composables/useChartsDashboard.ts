@@ -208,22 +208,11 @@ function buildCharts(data: DashboardRow[], composition?: CompositionData, topPro
         datasets: [
           {
             data: periodos.map((p) => temporalMap[p]),
-<<<<<<< HEAD
-            borderColor: "#9b7fff",
-            backgroundColor: "rgba(155,127,255,0.12)",
-            borderWidth: 2.5,
-            pointBackgroundColor: "#9b7fff",
-            pointBorderColor: "#141720",
-            pointBorderWidth: 0,
-            pointRadius: 5,
-            pointHoverRadius: 7,
-            fill: true,
-            tension: 0.35,
-=======
             backgroundColor: "rgba(155,127,255,0.85)",
+            borderColor: "#9b7fff",
+            borderWidth: 1,
             borderRadius: 4,
             borderSkipped: false,
->>>>>>> caa45f5 (feat (SCA-271): added an endpoint for the top 10 total costs per project.)
           },
         ],
       },
