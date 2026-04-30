@@ -5,7 +5,6 @@
       <h1 class="sr-only">
         Dashboard Principal
       </h1>
-
       <!-- METRICS -->
       <div class="metrics">
         <div class="metric-card">
@@ -49,7 +48,6 @@
           </div>
         </div>
       </div>
-
       <!-- FILTERS -->
       <div class="filters-card">
         <div class="filters-title">
@@ -72,7 +70,7 @@
             class="filter-select"
           >
             <option value="">
-              Todos os Períodos
+              Todos os Status
             </option>
             <option
               v-for="p in uniquePeriodos"
@@ -158,7 +156,6 @@
           </span>
         </div>
       </div>
-
       <!-- TOP CHARTS -->
       <div class="charts-row">
         <div class="chart-card">
@@ -178,7 +175,6 @@
           </div>
         </div>
       </div>
-
       <!-- BOTTOM CHARTS -->
       <div class="charts-row">
         <div class="chart-card">
@@ -191,14 +187,13 @@
         </div>
         <div class="chart-card">
           <div class="chart-title">
-            Evolução Temporal do Custo
+            Custo Total por Status do Projeto
           </div>
           <div class="chart-wrap tall">
             <canvas id="chartTemporalDash" />
           </div>
         </div>
       </div>
-
       <!-- DETAILED TABLE -->
       <div class="table-card">
         <div class="table-header">
@@ -325,7 +320,6 @@
           </div>
         </div>
       </div>
-
       <!-- SUMMARY TABLE -->
       <div class="table-card">
         <div class="table-header">
@@ -429,7 +423,13 @@ import { useChartsDashboard } from "@/composables/useChartsDashboard";
 import type { DashboardRow } from "@/composables/useChartsDashboard";
 import { dashboardService } from "@/services/dashboardService";
 import { CONFIG } from "@/utils/config";
-import type { CompositionData, DashboardKPIs, DashboardFilters } from "@/types/api";
+import type {
+  CompositionData,
+  DashboardKPIs,
+  DashboardFilters,
+  DashboardSummaryRow,
+  TopProjectRow,
+} from "@/types/api";
 
 const PER_PAGE = 8;
 
@@ -444,9 +444,9 @@ const kpis = ref<DashboardKPIs>({
   total_projects: 0,
   total_programs: 0,
 });
-
 const compositionData = ref<CompositionData | null>(null);
-
+const topProjectsData = ref<TopProjectRow[]>([]);
+const summaryData = ref<DashboardSummaryRow[]>([]);
 const filters = ref({ periodo: "", programa: "", projeto: "" });
 const sortKey = ref<keyof DashboardRow>("custoTotal");
 const sortDir = ref<1 | -1>(-1);
@@ -467,7 +467,7 @@ const availableProjects = computed(() => {
 });
 const activeFilterEntries = computed(() =>
   [
-    { key: "periodo", label: "Período", value: filters.value.periodo },
+    { key: "periodo", label: "Status", value: filters.value.periodo },
     { key: "programa", label: "Programa", value: filters.value.programa },
     { key: "projeto", label: "Projeto", value: filters.value.projeto },
   ].filter((entry) => Boolean(entry.value)),
@@ -508,22 +508,20 @@ const visiblePages = computed(() => {
 });
 
 // ─── Buscar KPIs da API ───────────────────────────────────────────────────────
+function buildApiFilters(): DashboardFilters {
+  const f = filters.value;
+  const apiFilters: DashboardFilters = {};
+  // f.periodo holds a status value (e.g. "Em andamento") — send as status filter
+  if (f.periodo) apiFilters.status = f.periodo;
+  if (f.programa) apiFilters.program = f.programa;
+  if (f.projeto) apiFilters.project = f.projeto;
+  return apiFilters;
+}
+
 async function fetchKPIs() {
   kpisLoading.value = true;
   try {
-    const f = filters.value;
-    const apiFilters: DashboardFilters = {};
-
-    if (f.periodo) {
-      apiFilters.start_date = `${f.periodo}-01`;
-      const [y, m] = f.periodo.split("-").map(Number);
-      const lastDay = new Date(y, m, 0).getDate();
-      apiFilters.end_date = `${f.periodo}-${String(lastDay).padStart(2, "0")}`;
-    }
-    if (f.programa) apiFilters.program = f.programa;
-    if (f.projeto) apiFilters.project = f.projeto;
-
-    kpis.value = await dashboardService.fetchKPIs(apiFilters);
+    kpis.value = await dashboardService.fetchKPIs(buildApiFilters());
   } catch (err) {
     console.error("Erro ao buscar KPIs:", err);
   } finally {
@@ -535,26 +533,33 @@ async function fetchKPIs() {
 async function fetchTableData() {
   tableLoading.value = true;
   try {
-    const response = await fetch(`${CONFIG.API_BASE_URL}/consolidated/`);
+    // Build query for consolidated (uses Portuguese param names)
+    const f = filters.value;
+    const p = new URLSearchParams();
+    if (f.programa) p.append("programa", f.programa);
+    if (f.projeto)  p.append("projeto",  f.projeto);
+    if (f.periodo)  p.append("status",   f.periodo);
+    const qs = p.toString() ? `?${p.toString()}` : "";
+    const response = await fetch(`${CONFIG.API_BASE_URL}/consolidated/${qs}`);
     if (!response.ok)
       throw new Error(`Erro ao buscar tabela: ${response.status}`);
-
-    const data: {
+    // Consolidated returns { data: [...], last_updated_at: "..." }
+    const json = await response.json();
+    const rawData: {
       nome_projeto: string;
       programa: string | null;
       custo_materiais: number;
       custo_horas: number;
       custo_total: number;
       status: string | null;
-    }[] = await response.json();
-
-    tableData.value = data.map((row) => ({
+    }[] = Array.isArray(json) ? json : (json.data ?? json.results ?? []);
+    tableData.value = rawData.map((row) => ({
       projeto: row.nome_projeto ?? "",
       programa: row.programa ?? "",
       custoMateriais: row.custo_materiais,
       custoHoras: row.custo_horas,
       custoTotal: row.custo_total,
-      periodo: row.status ?? "",
+      periodo: row.status ?? "",  // status used as status filter (no date period in source)
     }));
   } catch (err) {
     console.error("Erro ao buscar tabela:", err);
@@ -566,48 +571,47 @@ async function fetchTableData() {
 // ─── Buscar composição de custos da API ───────────────────────────────────────
 async function fetchComposition() {
   try {
-    const f = filters.value;
-    const params = new URLSearchParams();
-
-    if (f.periodo) {
-      params.append("start_date", `${f.periodo}-01`);
-      const [y, m] = f.periodo.split("-").map(Number);
-      const lastDay = new Date(y, m, 0).getDate();
-      params.append(
-        "end_date",
-        `${f.periodo}-${String(lastDay).padStart(2, "0")}`,
-      );
-    }
-    if (f.programa) params.append("programa", f.programa);
-    if (f.projeto) params.append("projeto", f.projeto);
-
-    const query = params.toString() ? `?${params.toString()}` : "";
-    const response = await fetch(
-      `${CONFIG.API_BASE_URL}/main-dashboard/composition/${query}`,
-    );
-    if (!response.ok)
-      throw new Error(`Erro ao buscar composição: ${response.status}`);
-
-    compositionData.value = await response.json();
+    const apiFilters = buildApiFilters();
+    compositionData.value = await dashboardService.fetchComposition(apiFilters);
   } catch (err) {
     console.error("Erro ao buscar composição:", err);
+  }
+}
+
+async function fetchTopProjects() {
+  try {
+    const apiFilters = buildApiFilters();
+    topProjectsData.value = await dashboardService.fetchTopProjects(apiFilters);
+  } catch (err) {
+    console.error("Erro ao buscar top projetos:", err);
+  }
+}
+
+async function fetchSummary() {
+  try {
+    const apiFilters = buildApiFilters();
+    summaryData.value = await dashboardService.fetchSummary(apiFilters);
+  } catch (err) {
+    console.error("Erro ao buscar resumo por programa:", err);
   }
 }
 
 // ─── Watchers ────────────────────────────────────────────────────────────────
 watch(filteredData, (val) => {
   page.value = 1;
-  nextTick(() => updateCharts(val, compositionData.value ?? undefined));
+  nextTick(() => updateCharts(val, compositionData.value ?? undefined, topProjectsData.value, summaryData.value));
 });
-
 watch(
   filters,
   async () => {
-    await Promise.all([fetchKPIs(), fetchComposition()]);
+    await Promise.all([fetchKPIs(), fetchTableData(), fetchComposition(), fetchTopProjects(), fetchSummary()]);
+    // Re-render charts with fresh API data after async fetches complete
+    nextTick(() =>
+      updateCharts(filteredData.value, compositionData.value ?? undefined, topProjectsData.value, summaryData.value),
+    );
   },
   { deep: true },
 );
-
 watch(
   () => filters.value.programa,
   () => {
@@ -666,49 +670,21 @@ type SummaryRow = {
   custoHoras: number;
   custoTotal: number;
 };
-
 const summarySortKey = ref<keyof SummaryRow>("custoTotal");
 const summarySortDir = ref<1 | -1>(-1);
 
 const aggregateSummary = computed<SummaryRow[]>(() => {
-  const map = new Map<
-    string,
-    {
-      programa: string;
-      projetos: Set<string>;
-      custoMateriais: number;
-      custoHoras: number;
-      custoTotal: number;
-    }
-  >();
-
-  for (const row of filteredData.value) {
-    const prog = row.programa || "Sem Programa";
-    if (!map.has(prog)) {
-      map.set(prog, {
-        programa: prog,
-        projetos: new Set(),
-        custoMateriais: 0,
-        custoHoras: 0,
-        custoTotal: 0,
-      });
-    }
-    const entry = map.get(prog)!;
-    entry.projetos.add(row.projeto);
-    entry.custoMateriais += row.custoMateriais;
-    entry.custoHoras += row.custoHoras;
-    entry.custoTotal += row.custoTotal;
-  }
-
-  const rows: SummaryRow[] = [...map.values()].map((e) => ({
-    programa: e.programa,
-    qtdProjetos: e.projetos.size,
-    custoMateriais: e.custoMateriais,
-    custoHoras: e.custoHoras,
-    custoTotal: e.custoTotal,
+  // Use API data from /dashboard/summary/ mapped to SummaryRow shape
+  const rows: SummaryRow[] = summaryData.value.map((r) => ({
+    programa: r.programa,
+    qtdProjetos: r.qtd_projetos,
+    custoMateriais: r.custo_materiais,
+    custoHoras: r.custo_horas,
+    custoTotal: r.custo_total,
   }));
-
-  return rows.sort((a, b) => {
+  return rows
+  .filter((row) => !filters.value.programa || row.programa === filters.value.programa)
+  .sort((a, b) => {
     const av = a[summarySortKey.value];
     const bv = b[summarySortKey.value];
     return typeof av === "string"
@@ -742,8 +718,10 @@ const summarySortIcon = (k: keyof SummaryRow) =>
 const { buildCharts, updateCharts, destroyCharts } = useChartsDashboard();
 
 onMounted(async () => {
-  await Promise.all([fetchKPIs(), fetchTableData(), fetchComposition()]);
-  nextTick(() => buildCharts(tableData.value, compositionData.value ?? undefined));
+  await Promise.all([fetchKPIs(), fetchTableData(), fetchComposition(), fetchTopProjects(), fetchSummary()]);
+  nextTick(() =>
+    buildCharts(tableData.value, compositionData.value ?? undefined, topProjectsData.value, summaryData.value),
+  );
 });
 onUnmounted(destroyCharts);
 </script>
@@ -758,7 +736,6 @@ onUnmounted(destroyCharts);
   font-family: "IBM Plex Sans", sans-serif;
   font-size: 14px;
 }
-
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -770,7 +747,6 @@ onUnmounted(destroyCharts);
   background: var(--border2);
   border-radius: 3px;
 }
-
 .main {
   padding: 24px 28px;
   flex: 1;
@@ -778,7 +754,6 @@ onUnmounted(destroyCharts);
   flex-direction: column;
   gap: 20px;
 }
-
 /* ── Metrics ──────────────────────────────────────────────────────────────── */
 .metrics {
   display: grid;
@@ -825,7 +800,6 @@ onUnmounted(destroyCharts);
 .metric-value.green {
   color: var(--green);
 }
-
 /* ── Filters ──────────────────────────────────────────────────────────────── */
 .filters-card {
   background: var(--bg2);
@@ -854,7 +828,6 @@ onUnmounted(destroyCharts);
   flex-wrap: wrap;
   align-items: center;
 }
-
 .filter-select {
   background: var(--bg3);
   border: 1px solid var(--border);
@@ -875,7 +848,6 @@ onUnmounted(destroyCharts);
   outline: none;
   border-color: var(--blue2);
 }
-
 .export-btn {
   display: flex;
   align-items: center;
@@ -935,7 +907,6 @@ onUnmounted(destroyCharts);
   padding: 4px 10px;
   font-size: 11px;
 }
-
 /* ── Charts ───────────────────────────────────────────────────────────────── */
 .charts-row {
   display: grid;
@@ -962,7 +933,6 @@ onUnmounted(destroyCharts);
 .chart-wrap.tall {
   height: 360px;
 }
-
 /* ── Table ────────────────────────────────────────────────────────────────── */
 .table-card {
   background: var(--bg2);
@@ -982,7 +952,6 @@ onUnmounted(destroyCharts);
 .table-wrap {
   overflow-x: auto;
 }
-
 table {
   width: 100%;
   min-width: 760px;
@@ -1048,7 +1017,6 @@ td.total {
 .table-feedback.muted {
   color: var(--text3);
 }
-
 /* ── Summary tfoot ────────────────────────────────────────────────────────── */
 tfoot tr.totals-row {
   background: var(--bg3);
@@ -1073,7 +1041,6 @@ tfoot td.totals-value {
 tfoot td.total.totals-value {
   color: var(--green);
 }
-
 /* ── Pagination ───────────────────────────────────────────────────────────── */
 .pagination {
   display: flex;
@@ -1111,7 +1078,6 @@ tfoot td.total.totals-value {
   opacity: 0.3;
   cursor: not-allowed;
 }
-
 .sr-only {
   position: absolute;
   width: 1px;
@@ -1123,7 +1089,6 @@ tfoot td.total.totals-value {
   white-space: nowrap;
   border: 0;
 }
-
 @keyframes fadeIn {
   from {
     opacity: 0;

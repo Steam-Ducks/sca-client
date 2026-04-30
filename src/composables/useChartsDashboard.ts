@@ -1,11 +1,11 @@
+// src\composables\useChartsDashboard.ts
 import { Chart, registerables } from "chart.js";
-import type { CompositionData } from "@/types/api";
+import type { CompositionData, DashboardSummaryRow, TopProjectRow } from "@/types/api";
 
 Chart.register(...registerables);
 
 const FONT = "'IBM Plex Sans', sans-serif";
 const MONO = "'IBM Plex Mono', monospace";
-
 const gridColor = "rgba(42,47,69,0.8)";
 const textColor = "#555d7a";
 const text2Color = "#8b92aa";
@@ -77,18 +77,18 @@ function destroyAll() {
       null;
 }
 
-function buildCharts(data: DashboardRow[], composition?: CompositionData) {
+function buildCharts(data: DashboardRow[], composition?: CompositionData, topProjects?: TopProjectRow[], summary?: DashboardSummaryRow[]) {
   destroyAll();
 
-  // 1. Custo por Programa — horizontal bar, blue
-  const porPrograma = groupBy(
-    data,
-    (r) => r.programa,
-    (r) => r.custoTotal,
-  ).slice(0, 8);
+  // 1. Custo por Programa — uses /dashboard/summary/ when available
+  const porPrograma: [string, number][] = summary && summary.length > 0
+    ? summary.slice(0, 8).map((r) => [r.programa, r.custo_total])
+    : groupBy(data, (r) => r.programa, (r) => r.custoTotal).slice(0, 8);
+
   const ctxProg = (
     document.getElementById("chartCustoPrograma") as HTMLCanvasElement
   )?.getContext("2d");
+
   if (ctxProg) {
     chartCustoPrograma = new Chart(ctxProg, {
       type: "bar",
@@ -134,6 +134,7 @@ function buildCharts(data: DashboardRow[], composition?: CompositionData) {
   const ctxComp = (
     document.getElementById("chartComparativo") as HTMLCanvasElement
   )?.getContext("2d");
+
   if (ctxComp) {
     chartComparativo = new Chart(ctxComp, {
       type: "doughnut",
@@ -154,7 +155,7 @@ function buildCharts(data: DashboardRow[], composition?: CompositionData) {
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        cutout: "68%",
+        cutout: "55%",
         animation: { duration: 500 },
         plugins: {
           legend: {
@@ -162,8 +163,8 @@ function buildCharts(data: DashboardRow[], composition?: CompositionData) {
             position: "bottom",
             labels: {
               color: text2Color,
-              font: { family: FONT, size: 11 },
-              padding: 16,
+              font: { family: FONT, size: 12 },
+              padding: 20,
               usePointStyle: true,
               pointStyleWidth: 10,
             },
@@ -198,44 +199,27 @@ function buildCharts(data: DashboardRow[], composition?: CompositionData) {
   const ctxT = (
     document.getElementById("chartTemporalDash") as HTMLCanvasElement
   )?.getContext("2d");
+
   if (ctxT) {
     chartTemporal = new Chart(ctxT, {
-      type: "line",
+      type: "bar",
       data: {
         labels: periodos,
         datasets: [
           {
             data: periodos.map((p) => temporalMap[p]),
+            backgroundColor: "rgba(155,127,255,0.85)",
             borderColor: "#9b7fff",
-            backgroundColor: "rgba(155,127,255,0.12)",
-            borderWidth: 2.5,
-            pointBackgroundColor: "#9b7fff",
-            pointBorderColor: "#141720",
-            pointBorderWidth: 0,
-            pointRadius: 5,
-            pointHoverRadius: 7,
-            fill: true,
-            tension: 0.35,
+            borderWidth: 1,
+            borderRadius: 4,
+            borderSkipped: false,
           },
         ],
       },
       options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        animation: { duration: 500 },
-        plugins: {
-          legend: { display: false },
-          tooltip: {
-            ...baseOptions().plugins.tooltip,
-            callbacks: { label: (ctx) => ` ${fmtR$(ctx.parsed.y)}` },
-          },
-        },
+        ...baseOptions("y"),
         scales: {
           x: {
-            grid: { color: gridColor, drawBorder: false },
-            ticks: { color: text2Color, font: { family: FONT, size: 11 } },
-          },
-          y: {
             grid: { color: gridColor, drawBorder: false },
             ticks: {
               color: textColor,
@@ -243,20 +227,24 @@ function buildCharts(data: DashboardRow[], composition?: CompositionData) {
               callback: (v) => fmtR$(v as number),
             },
           },
+          y: {
+            grid: { display: false },
+            ticks: { color: text2Color, font: { family: FONT, size: 11 } },
+          },
         },
       },
     });
   }
 
   // 4. Top 10 Projetos por Custo — horizontal bar, amber
-  const topProjetos = groupBy(
-    data,
-    (r) => r.projeto,
-    (r) => r.custoTotal,
-  ).slice(0, 10);
+  const topProjetos: [string, number][] = topProjects
+    ? topProjects.map((r) => [r.project_name, r.total_cost])
+    : groupBy(data, (r) => r.projeto, (r) => r.custoTotal).slice(0, 10);
+
   const ctxTP = (
     document.getElementById("chartTopProjetos") as HTMLCanvasElement
   )?.getContext("2d");
+
   if (ctxTP) {
     chartTopProjetos = new Chart(ctxTP, {
       type: "bar",
@@ -292,12 +280,11 @@ function buildCharts(data: DashboardRow[], composition?: CompositionData) {
   }
 }
 
-function updateCharts(data: DashboardRow[], composition?: CompositionData) {
-  const porPrograma = groupBy(
-    data,
-    (r) => r.programa,
-    (r) => r.custoTotal,
-  ).slice(0, 8);
+function updateCharts(data: DashboardRow[], composition?: CompositionData, topProjects?: TopProjectRow[], summary?: DashboardSummaryRow[]) {
+  const porPrograma: [string, number][] = summary && summary.length > 0
+    ? summary.slice(0, 8).map((r) => [r.programa, r.custo_total])
+    : groupBy(data, (r) => r.programa, (r) => r.custoTotal).slice(0, 8);
+
   if (chartCustoPrograma) {
     chartCustoPrograma.data.labels = porPrograma.map(([l]) => l);
     chartCustoPrograma.data.datasets[0].data = porPrograma.map(([, v]) => v);
@@ -320,17 +307,17 @@ function updateCharts(data: DashboardRow[], composition?: CompositionData) {
     temporalMap[r.periodo] = (temporalMap[r.periodo] || 0) + r.custoTotal;
   });
   const periodos = Object.keys(temporalMap).sort();
+
   if (chartTemporal) {
     chartTemporal.data.labels = periodos;
     chartTemporal.data.datasets[0].data = periodos.map((p) => temporalMap[p]);
     chartTemporal.update();
   }
 
-  const topProjetos = groupBy(
-    data,
-    (r) => r.projeto,
-    (r) => r.custoTotal,
-  ).slice(0, 10);
+  const topProjetos: [string, number][] = topProjects
+    ? topProjects.map((r) => [r.project_name, r.total_cost])
+    : groupBy(data, (r) => r.projeto, (r) => r.custoTotal).slice(0, 10);
+
   if (chartTopProjetos) {
     chartTopProjetos.data.labels = topProjetos.map(([l]) => l);
     chartTopProjetos.data.datasets[0].data = topProjetos.map(([, v]) => v);

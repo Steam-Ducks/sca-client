@@ -75,65 +75,70 @@ function destroyAll() {
 function buildCharts(data: ConsolidadoRow[]) {
   destroyAll();
 
-  // 1. Distribuição de Custos (Materiais vs Horas) — stacked bar por projeto
-  const projetos = [...new Set(data.map((r) => r.projeto))].slice(0, 8);
-  const matData = projetos.map((p) =>
-    data
-      .filter((r) => r.projeto === p)
-      .reduce((s, r) => s + r.custoMateriais, 0),
-  );
-  const horasData = projetos.map((p) =>
-    data.filter((r) => r.projeto === p).reduce((s, r) => s + r.custoHoras, 0),
-  );
+  // 1. Composição de Custos — doughnut Materiais vs Horas Técnicas
+  const totalMat = data.reduce((s, r) => s + r.custoMateriais, 0);
+  const totalHoras = data.reduce((s, r) => s + r.custoHoras, 0);
+  const totalGeral = totalMat + totalHoras;
+  const pctMat = totalGeral > 0 ? +((totalMat / totalGeral) * 100).toFixed(1) : 0;
+  const pctHoras = totalGeral > 0 ? +((totalHoras / totalGeral) * 100).toFixed(1) : 0;
 
   const ctxDist = (
     document.getElementById("chartDistribuicao") as HTMLCanvasElement
   )?.getContext("2d");
   if (ctxDist) {
     chartDistribuicao = new Chart(ctxDist, {
-      type: "bar",
+      type: "doughnut",
       data: {
-        labels: projetos,
+        labels: ["Materiais", "Horas Técnicas"],
         datasets: [
           {
-            label: "Materiais",
-            data: matData,
-            backgroundColor: "rgba(77,143,255,0.85)",
-            borderRadius: 4,
-            borderSkipped: false,
-          },
-          {
-            label: "Horas Técnicas",
-            data: horasData,
-            backgroundColor: "rgba(45,212,160,0.85)",
-            borderRadius: 4,
-            borderSkipped: false,
+            data: [pctMat, pctHoras],
+            backgroundColor: ["rgba(77,143,255,0.85)", "rgba(45,212,160,0.85)"],
+            borderColor: ["rgba(77,143,255,1)", "rgba(45,212,160,1)"],
+            borderWidth: 2,
+            hoverOffset: 6,
           },
         ],
       },
       options: {
-        ...baseOptions("y"),
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: "55%",
+        animation: { duration: 500 },
+        layout: { padding: { top: 0, bottom: 4 } },
         plugins: {
-          ...baseOptions("y").plugins,
           legend: {
             display: true,
-            labels: { color: text2Color, font: { family: FONT, size: 11 } },
-          },
-        },
-        scales: {
-          x: {
-            stacked: true,
-            grid: { color: gridColor, drawBorder: false },
-            ticks: {
-              color: textColor,
-              font: { family: MONO, size: 11 },
-              callback: (v) => fmtR$(v as number),
+            position: "bottom",
+            labels: {
+              color: text2Color,
+              font: { family: FONT, size: 12 },
+              padding: 20,
+              usePointStyle: true,
+              pointStyle: "circle",
+              pointStyleWidth: 12,
+              generateLabels: (chart) => {
+                const dataset = chart.data.datasets[0];
+                return (chart.data.labels as string[]).map((label, i) => ({
+                  text: `${label}  ${dataset.data[i]}%`,
+                  fillStyle: (dataset.backgroundColor as string[])[i],
+                  strokeStyle: (dataset.borderColor as string[])[i],
+                  lineWidth: 1,
+                  hidden: false,
+                  index: i,
+                }));
+              },
             },
           },
-          y: {
-            stacked: true,
-            grid: { display: false },
-            ticks: { color: text2Color, font: { family: FONT, size: 11 } },
+          tooltip: {
+            ...baseOptions().plugins?.tooltip,
+            callbacks: {
+              label: (ctx) => {
+                const pct = ctx.parsed;
+                const val = ctx.dataIndex === 0 ? totalMat : totalHoras;
+                return ` ${ctx.label}: ${pct}% (${fmtR$(val)})`;
+              },
+            },
           },
         },
       },
@@ -288,17 +293,13 @@ function buildCharts(data: ConsolidadoRow[]) {
 }
 
 function updateCharts(data: ConsolidadoRow[]) {
-  const projetos = [...new Set(data.map((r) => r.projeto))].slice(0, 8);
   if (chartDistribuicao) {
-    chartDistribuicao.data.labels = projetos;
-    chartDistribuicao.data.datasets[0].data = projetos.map((p) =>
-      data
-        .filter((r) => r.projeto === p)
-        .reduce((s, r) => s + r.custoMateriais, 0),
-    );
-    chartDistribuicao.data.datasets[1].data = projetos.map((p) =>
-      data.filter((r) => r.projeto === p).reduce((s, r) => s + r.custoHoras, 0),
-    );
+    const updTotalMat = data.reduce((s, r) => s + r.custoMateriais, 0);
+    const updTotalHoras = data.reduce((s, r) => s + r.custoHoras, 0);
+    const updTotal = updTotalMat + updTotalHoras;
+    const updPctMat = updTotal > 0 ? +((updTotalMat / updTotal) * 100).toFixed(1) : 0;
+    const updPctHoras = updTotal > 0 ? +((updTotalHoras / updTotal) * 100).toFixed(1) : 0;
+    chartDistribuicao.data.datasets[0].data = [updPctMat, updPctHoras];
     chartDistribuicao.update();
   }
 
