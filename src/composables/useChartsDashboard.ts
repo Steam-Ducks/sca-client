@@ -155,7 +155,7 @@ function buildCharts(data: DashboardRow[], composition?: CompositionData, topPro
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        cutout: "68%",
+        cutout: "55%",
         animation: { duration: 500 },
         plugins: {
           legend: {
@@ -163,8 +163,8 @@ function buildCharts(data: DashboardRow[], composition?: CompositionData, topPro
             position: "bottom",
             labels: {
               color: text2Color,
-              font: { family: FONT, size: 11 },
-              padding: 16,
+              font: { family: FONT, size: 12 },
+              padding: 20,
               usePointStyle: true,
               pointStyleWidth: 10,
             },
