@@ -1,3 +1,4 @@
+// src/types/api.ts
 export interface User {
   id: number;
   email: string;
@@ -140,5 +141,12 @@ export interface DashboardSummaryRow {
 
 export interface TopProjectRow {
   project_name: string
+  total_cost: number
+}
+
+export interface CostEvolutionRow {
+  period: string
+  materials_cost: number
+  hours_cost: number
   total_cost: number
 }

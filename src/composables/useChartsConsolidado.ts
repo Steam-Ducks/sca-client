@@ -122,8 +122,8 @@ function buildCharts(data: ConsolidadoRow[]) {
                 return (chart.data.labels as string[]).map((label, i) => ({
                   text: `${label}  ${dataset.data[i]}%`,
                   fillStyle: (dataset.backgroundColor as string[])[i],
-                  strokeStyle: (dataset.borderColor as string[])[i],
-                  lineWidth: 1,
+                  strokeStyle: (dataset.backgroundColor as string[])[i],
+                  lineWidth: 0,
                   hidden: false,
                   index: i,
                 }));

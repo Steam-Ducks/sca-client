@@ -194,6 +194,16 @@
           </div>
         </div>
       </div>
+      <!-- COST EVOLUTION — full width -->
+      <div class="chart-card chart-card--full">
+        <div class="chart-title">
+          Evolução Temporal dos Custos
+        </div>
+        <div class="chart-wrap evolution">
+          <canvas id="chartCostEvolution" />
+        </div>
+      </div>
+
       <!-- DETAILED TABLE -->
       <div class="table-card">
         <div class="table-header">
@@ -429,6 +439,7 @@ import type {
   DashboardFilters,
   DashboardSummaryRow,
   TopProjectRow,
+  CostEvolutionRow,
 } from "@/types/api";
 
 const PER_PAGE = 8;
@@ -447,6 +458,7 @@ const kpis = ref<DashboardKPIs>({
 const compositionData = ref<CompositionData | null>(null);
 const topProjectsData = ref<TopProjectRow[]>([]);
 const summaryData = ref<DashboardSummaryRow[]>([]);
+const costEvolutionData = ref<CostEvolutionRow[]>([]);
 const filters = ref({ periodo: "", programa: "", projeto: "" });
 const sortKey = ref<keyof DashboardRow>("custoTotal");
 const sortDir = ref<1 | -1>(-1);
@@ -596,18 +608,27 @@ async function fetchSummary() {
   }
 }
 
+async function fetchCostEvolution() {
+  try {
+    const apiFilters = buildApiFilters();
+    costEvolutionData.value = await dashboardService.fetchCostEvolution(apiFilters);
+  } catch (err) {
+    console.error("Erro ao buscar evolução de custos:", err);
+  }
+}
+
 // ─── Watchers ────────────────────────────────────────────────────────────────
 watch(filteredData, (val) => {
   page.value = 1;
-  nextTick(() => updateCharts(val, compositionData.value ?? undefined, topProjectsData.value, summaryData.value));
+  nextTick(() => updateCharts(val, compositionData.value ?? undefined, topProjectsData.value, summaryData.value, costEvolutionData.value));
 });
 watch(
   filters,
   async () => {
-    await Promise.all([fetchKPIs(), fetchTableData(), fetchComposition(), fetchTopProjects(), fetchSummary()]);
+    await Promise.all([fetchKPIs(), fetchTableData(), fetchComposition(), fetchTopProjects(), fetchSummary(), fetchCostEvolution()]);
     // Re-render charts with fresh API data after async fetches complete
     nextTick(() =>
-      updateCharts(filteredData.value, compositionData.value ?? undefined, topProjectsData.value, summaryData.value),
+      updateCharts(filteredData.value, compositionData.value ?? undefined, topProjectsData.value, summaryData.value, costEvolutionData.value),
     );
   },
   { deep: true },
@@ -718,15 +739,16 @@ const summarySortIcon = (k: keyof SummaryRow) =>
 const { buildCharts, updateCharts, destroyCharts } = useChartsDashboard();
 
 onMounted(async () => {
-  await Promise.all([fetchKPIs(), fetchTableData(), fetchComposition(), fetchTopProjects(), fetchSummary()]);
+  await Promise.all([fetchKPIs(), fetchTableData(), fetchComposition(), fetchTopProjects(), fetchSummary(), fetchCostEvolution()]);
   nextTick(() =>
-    buildCharts(tableData.value, compositionData.value ?? undefined, topProjectsData.value, summaryData.value),
+    buildCharts(tableData.value, compositionData.value ?? undefined, topProjectsData.value, summaryData.value, costEvolutionData.value),
   );
 });
 onUnmounted(destroyCharts);
 </script>
 
 <style scoped>
+/* ── Variables ────────────────────────────────────────────────────────────── */
 .app {
   display: flex;
   flex-direction: column;
@@ -932,6 +954,12 @@ onUnmounted(destroyCharts);
 }
 .chart-wrap.tall {
   height: 360px;
+}
+.chart-card--full {
+  grid-column: 1 / -1;
+}
+.chart-wrap.evolution {
+  height: 280px;
 }
 /* ── Table ────────────────────────────────────────────────────────────────── */
 .table-card {

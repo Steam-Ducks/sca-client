@@ -1,6 +1,6 @@
 // src\composables\useChartsDashboard.ts
 import { Chart, registerables } from "chart.js";
-import type { CompositionData, DashboardSummaryRow, TopProjectRow } from "@/types/api";
+import type { CompositionData, CostEvolutionRow, DashboardSummaryRow, TopProjectRow } from "@/types/api";
 
 Chart.register(...registerables);
 
@@ -20,7 +20,7 @@ const baseOptions = (indexAxis: "x" | "y" = "y") => ({
     tooltip: {
       backgroundColor: "#1c2030",
       borderColor: "#2a2f45",
-      borderWidth: 0,
+      borderWidth: 1,
       titleColor: "#e2e6f0",
       bodyColor: "#8b92aa",
       titleFont: { family: FONT, size: 12 },
@@ -49,6 +49,7 @@ let chartCustoPrograma: Chart | null = null;
 let chartComparativo: Chart | null = null;
 let chartTemporal: Chart | null = null;
 let chartTopProjetos: Chart | null = null;
+let chartCostEvolution: Chart | null = null;
 
 function groupBy<T>(
   data: T[],
@@ -74,10 +75,11 @@ function destroyAll() {
     chartComparativo =
     chartTemporal =
     chartTopProjetos =
+    chartCostEvolution =
       null;
 }
 
-function buildCharts(data: DashboardRow[], composition?: CompositionData, topProjects?: TopProjectRow[], summary?: DashboardSummaryRow[]) {
+function buildCharts(data: DashboardRow[], composition?: CompositionData, topProjects?: TopProjectRow[], summary?: DashboardSummaryRow[], evolution?: CostEvolutionRow[]) {
   destroyAll();
 
   // 1. Custo por Programa — uses /dashboard/summary/ when available
@@ -109,7 +111,7 @@ function buildCharts(data: DashboardRow[], composition?: CompositionData, topPro
           x: {
             grid: { color: gridColor, drawBorder: false },
             ticks: {
-              color: textColor,
+              color: text2Color,
               font: { family: MONO, size: 11 },
               callback: (v) => fmtR$(v as number),
             },
@@ -130,6 +132,9 @@ function buildCharts(data: DashboardRow[], composition?: CompositionData, topPro
   const totalHoras =
     composition?.custo_horas ??
     data.reduce((s, r) => s + r.custoHoras, 0);
+  const totalGeral = totalMat + totalHoras;
+  const pctMat = totalGeral > 0 ? +((totalMat / totalGeral) * 100).toFixed(1) : 0;
+  const pctHoras = totalGeral > 0 ? +((totalHoras / totalGeral) * 100).toFixed(1) : 0;
 
   const ctxComp = (
     document.getElementById("chartComparativo") as HTMLCanvasElement
@@ -142,12 +147,16 @@ function buildCharts(data: DashboardRow[], composition?: CompositionData, topPro
         labels: ["Materiais", "Horas Técnicas"],
         datasets: [
           {
-            data: [totalMat, totalHoras],
+            data: [pctMat, pctHoras],
             backgroundColor: [
               "rgba(77,143,255,0.85)",
               "rgba(45,212,160,0.85)",
             ],
-            borderWidth: 0,
+            borderColor: [
+              "rgba(77,143,255,1)",
+              "rgba(45,212,160,1)",
+            ],
+            borderWidth: 2,
             hoverOffset: 8,
           },
         ],
@@ -163,10 +172,22 @@ function buildCharts(data: DashboardRow[], composition?: CompositionData, topPro
             position: "bottom",
             labels: {
               color: text2Color,
-              font: { family: FONT, size: 12 },
-              padding: 20,
+              font: { family: FONT, size: 13 },
+              padding: 16,
               usePointStyle: true,
-              pointStyleWidth: 10,
+              pointStyle: "circle",
+              pointStyleWidth: 12,
+              generateLabels: (chart) => {
+                const dataset = chart.data.datasets[0];
+                return (chart.data.labels as string[]).map((label, i) => ({
+                  text: `${label}  ${dataset.data[i]}%`,
+                  fillStyle: (dataset.backgroundColor as string[])[i],
+                  strokeStyle: (dataset.backgroundColor as string[])[i],
+                  lineWidth: 0,
+                  hidden: false,
+                  index: i,
+                }));
+              },
             },
           },
           tooltip: {
@@ -209,8 +230,6 @@ function buildCharts(data: DashboardRow[], composition?: CompositionData, topPro
           {
             data: periodos.map((p) => temporalMap[p]),
             backgroundColor: "rgba(155,127,255,0.85)",
-            borderColor: "#9b7fff",
-            borderWidth: 1,
             borderRadius: 4,
             borderSkipped: false,
           },
@@ -278,9 +297,113 @@ function buildCharts(data: DashboardRow[], composition?: CompositionData, topPro
       },
     });
   }
+
+  // 5. Cost Evolution — full-width line chart
+  const evoLabels = evolution ? evolution.map((r) => r.period) : [];
+  const evoTotal  = evolution ? evolution.map((r) => r.total_cost) : [];
+  const evoMat    = evolution ? evolution.map((r) => r.materials_cost) : [];
+  const evoHrs    = evolution ? evolution.map((r) => r.hours_cost) : [];
+
+  const ctxEvo = (
+    document.getElementById("chartCostEvolution") as HTMLCanvasElement
+  )?.getContext("2d");
+  if (ctxEvo) {
+    chartCostEvolution = new Chart(ctxEvo, {
+      type: "line",
+      data: {
+        labels: evoLabels,
+        datasets: [
+          {
+            label: "Custo Total",
+            data: evoTotal,
+            borderColor: "#f59e0b",
+            backgroundColor: "rgba(245,158,11,0.08)",
+            borderWidth: 2.5,
+            pointBackgroundColor: "#f59e0b",
+            pointBorderColor: "#f59e0b",
+            pointBorderWidth: 0,
+            pointRadius: 5,
+            pointHoverRadius: 7,
+            fill: true,
+            tension: 0.35,
+          },
+          {
+            label: "Materiais",
+            data: evoMat,
+            borderColor: "#4d8fff",
+            backgroundColor: "transparent",
+            borderWidth: 1.5,
+            borderDash: [5, 3],
+            pointBackgroundColor: "#4d8fff",
+            pointBorderColor: "#4d8fff",
+            pointBorderWidth: 0,
+            pointRadius: 4,
+            pointHoverRadius: 6,
+            fill: false,
+            tension: 0.35,
+          },
+          {
+            label: "Horas T\u00e9cnicas",
+            data: evoHrs,
+            borderColor: "#2dd4a0",
+            backgroundColor: "transparent",
+            borderWidth: 1.5,
+            borderDash: [5, 3],
+            pointBackgroundColor: "#2dd4a0",
+            pointBorderColor: "#2dd4a0",
+            pointBorderWidth: 0,
+            pointRadius: 4,
+            pointHoverRadius: 6,
+            fill: false,
+            tension: 0.35,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: { duration: 500 },
+        interaction: { mode: "index", intersect: false },
+        plugins: {
+          legend: {
+            display: true,
+            position: "top",
+            align: "end",
+            labels: {
+              color: text2Color,
+              font: { family: FONT, size: 11 },
+              usePointStyle: true,
+              pointStyleWidth: 10,
+              padding: 16,
+            },
+          },
+          tooltip: {
+            ...baseOptions().plugins?.tooltip,
+            callbacks: {
+              label: (ctx) => ` ${ctx.dataset.label}: ${fmtR$(ctx.parsed.y)}`,
+            },
+          },
+        },
+        scales: {
+          x: {
+            grid: { color: gridColor, drawBorder: false },
+            ticks: { color: text2Color, font: { family: FONT, size: 11 } },
+          },
+          y: {
+            grid: { color: gridColor, drawBorder: false },
+            ticks: {
+              color: text2Color,
+              font: { family: MONO, size: 11 },
+              callback: (v) => fmtR$(v as number),
+            },
+          },
+        },
+      },
+    });
+  }
 }
 
-function updateCharts(data: DashboardRow[], composition?: CompositionData, topProjects?: TopProjectRow[], summary?: DashboardSummaryRow[]) {
+function updateCharts(data: DashboardRow[], composition?: CompositionData, topProjects?: TopProjectRow[], summary?: DashboardSummaryRow[], evolution?: CostEvolutionRow[]) {
   const porPrograma: [string, number][] = summary && summary.length > 0
     ? summary.slice(0, 8).map((r) => [r.programa, r.custo_total])
     : groupBy(data, (r) => r.programa, (r) => r.custoTotal).slice(0, 8);
@@ -298,7 +421,10 @@ function updateCharts(data: DashboardRow[], composition?: CompositionData, topPr
     const totalHoras =
       composition?.custo_horas ??
       data.reduce((s, r) => s + r.custoHoras, 0);
-    chartComparativo.data.datasets[0].data = [totalMat, totalHoras];
+    const totalGeral = totalMat + totalHoras;
+    const pctMat = totalGeral > 0 ? +((totalMat / totalGeral) * 100).toFixed(1) : 0;
+    const pctHoras = totalGeral > 0 ? +((totalHoras / totalGeral) * 100).toFixed(1) : 0;
+    chartComparativo.data.datasets[0].data = [pctMat, pctHoras];
     chartComparativo.update();
   }
 
@@ -322,6 +448,14 @@ function updateCharts(data: DashboardRow[], composition?: CompositionData, topPr
     chartTopProjetos.data.labels = topProjetos.map(([l]) => l);
     chartTopProjetos.data.datasets[0].data = topProjetos.map(([, v]) => v);
     chartTopProjetos.update();
+  }
+
+  if (chartCostEvolution && evolution) {
+    chartCostEvolution.data.labels = evolution.map((r) => r.period);
+    chartCostEvolution.data.datasets[0].data = evolution.map((r) => r.total_cost);
+    chartCostEvolution.data.datasets[1].data = evolution.map((r) => r.materials_cost);
+    chartCostEvolution.data.datasets[2].data = evolution.map((r) => r.hours_cost);
+    chartCostEvolution.update();
   }
 }
 
