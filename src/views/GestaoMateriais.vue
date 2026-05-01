@@ -409,12 +409,14 @@ import type { MaterialsApiRow } from "@/services/materiaisService";
 import type { Filters, SortKey, SortDir, Material, Categoria, Status } from "@/types/materiais";
 
 const PER_PAGE = 8;
+const isMounted = ref(false);
 
 // ─── State ────────────────────────────────────────────────────────────────────
 const tableData = ref<Material[]>([]);
 const tableLoading = ref(false);
 const tableError = ref("");
 const topMaterials = ref<Material[]>([]);
+const costByProject = ref<Material[]>([]);
 const filters = ref<Filters>({
   periodo: "",
   programa: "",
@@ -458,6 +460,7 @@ function mapApiRow(row: MaterialsApiRow): Material {
     area: "Materiais",
   };
 }
+
 
 // ─── API call ──────────────────────────────────────────────────────────────────
 async function loadTableData() {
@@ -506,6 +509,32 @@ async function loadTopMaterials() {
   } catch (error) {
     console.error("Erro ao carregar ranking", error);
     topMaterials.value = [];
+  }
+}
+
+async function loadCostByProject() {
+  try {
+    const data = await materiaisService.fetchCostByProject(filters.value);
+
+    console.log("COST BY PROJECT:", data);
+
+    costByProject.value = data.map((item) => ({
+      id: 0,
+      material: "",
+      projeto: item.projeto,
+      programa: "",
+      quantidade: 0,
+      valorUnitario: 0,
+      valorTotal: item.total_cost,
+      periodo: "",
+      fornecedor: "",
+      categoria: "Hardware",
+      status: "Ativo",
+      area: "Materiais",
+    }));
+  } catch (error) {
+    console.error("Erro ao carregar projeto", error);
+    costByProject.value = [];
   }
 }
 
@@ -612,7 +641,20 @@ watch(
   },
 );
 
-watch(topMaterials, (val) => nextTick(() => updateCharts(val)));
+onMounted(async () => {
+  await loadTableData();
+  try { await loadTopMaterials(); } catch { /* ignore */ }
+  await loadCostByProject();
+  isMounted.value = true;
+
+  console.log("costByProject após load:", costByProject.value);  // ← add
+  console.log("topMaterials após load:", topMaterials.value);    // ← add
+
+  nextTick(() => { // ← add
+    buildCharts(topMaterials.value);
+    updateCharts(costByProject.value);
+  });
+});
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const fmt = (v: number) => "R$ " + v.toLocaleString("pt-BR", { minimumFractionDigits: 2 });
@@ -676,13 +718,12 @@ function exportCSV() {
   a.click();
 }
 
-// ─── Charts ───────────────────────────────────────────────────────────────────
+// ─── Charts ──────────────────────────────────────────────────────────────
 const { buildCharts, updateCharts, destroyCharts } = useCharts();
 
-onMounted(async () => {
-  await loadTableData();
-  await loadTopMaterials();
-  nextTick(() => buildCharts(topMaterials.value));
+watch(topMaterials, () => {
+  if (!isMounted.value) return;
+  nextTick(() => updateCharts(costByProject.value));
 });
 
 onUnmounted(() => {
