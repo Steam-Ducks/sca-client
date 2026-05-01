@@ -145,7 +145,7 @@ function buildCharts(data: ConsolidadoRow[]) {
     });
   }
 
-  // 2. Custo Total por Programa — horizontal bar, amber
+  // 2. Custo Total por Programa — vertical bar, amber
   const porPrograma = groupBy(
     data,
     (r) => r.programa,
@@ -169,19 +169,19 @@ function buildCharts(data: ConsolidadoRow[]) {
         ],
       },
       options: {
-        ...baseOptions("y"),
+        ...baseOptions("x"),
         scales: {
           x: {
+            grid: { display: false },
+            ticks: { color: text2Color, font: { family: FONT, size: 11 } },
+          },
+          y: {
             grid: { color: gridColor, drawBorder: false },
             ticks: {
               color: textColor,
               font: { family: MONO, size: 11 },
               callback: (v) => fmtR$(v as number),
             },
-          },
-          y: {
-            grid: { display: false },
-            ticks: { color: text2Color, font: { family: FONT, size: 11 } },
           },
         },
       },
