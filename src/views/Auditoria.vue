@@ -910,7 +910,7 @@ td {
 }
 td.material-name {
   font-weight: 500;
-  color: #fff;
+  color: var(--text);
   max-width: 280px;
   overflow: hidden;
   text-overflow: ellipsis;

@@ -1046,7 +1046,7 @@ td {
 }
 td.material-name {
   font-weight: 500;
-  color: #fff;
+  color: var(--text);
 }
 td.muted {
   color: var(--text2);
