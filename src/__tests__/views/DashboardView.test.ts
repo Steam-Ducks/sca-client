@@ -124,11 +124,11 @@ describe("DashboardView.vue", () => {
     expect(wrapper.find(".pagination").exists()).toBe(true);
   });
 
-  it("displays four chart cards", async () => {
+  it("displays five chart cards", async () => {
     const wrapper = mount(DashboardView);
     await nextTick();
 
-    expect(wrapper.findAll(".chart-card").length).toBe(4);
+    expect(wrapper.findAll(".chart-card").length).toBe(5);
   });
 
   it("export button is present", async () => {

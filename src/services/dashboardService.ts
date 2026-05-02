@@ -40,4 +40,9 @@ export const dashboardService = {
   fetchTopProjects(filters: DashboardFilters = {}): Promise<TopProjectRow[]> {
     return get<TopProjectRow[]>('/dashboard/top-projects/', filters)
   },
+
+  fetchCostEvolution(filters: DashboardFilters = {}): Promise<CostEvolutionRow[]> {
+    return get<CostEvolutionRow[]>('/dashboard/cost-evolution/', filters)
+  },
+
 }

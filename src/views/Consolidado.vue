@@ -385,6 +385,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted, nextTick } from "vue";
+import { useTheme } from "@/composables/useTheme";
 import { useChartsConsolidado } from "@/composables/useChartsConsolidado";
 import type { ConsolidadoRow } from "@/composables/useChartsConsolidado";
 import { apiService } from "@/services/apiService";
@@ -709,6 +710,11 @@ function clearFilters() {
 
 // ─── Charts ──────────────────────────────────────────────────────────────────
 const { buildCharts, updateCharts, destroyCharts } = useChartsConsolidado();
+const { theme } = useTheme();
+
+watch(theme, () => {
+  nextTick(() => buildCharts(tableData.value));
+});
 
 async function loadConsolidado() {
   try {
@@ -1040,7 +1046,7 @@ td {
 }
 td.material-name {
   font-weight: 500;
-  color: #fff;
+  color: var(--text);
 }
 td.muted {
   color: var(--text2);
