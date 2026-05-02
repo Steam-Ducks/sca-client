@@ -383,7 +383,6 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted, nextTick } from "vue";
-import { RAW } from "@/data/materiais";
 import { useCharts } from "@/composables/useCharts";
 import { materiaisService } from "@/services/materiaisService";
 import type { MaterialsApiRow } from "@/services/materiaisService";
@@ -400,6 +399,7 @@ const PER_PAGE = 8;
 
 // ─── State ────────────────────────────────────────────────────────────────────
 const tableData = ref<Material[]>([]);
+const allData = ref<Material[]>([]);
 const tableLoading = ref(false);
 const tableError = ref("");
 const filters = ref<Filters>({
@@ -416,12 +416,22 @@ const sortKey = ref<SortKey>("valorTotal");
 const sortDir = ref<SortDir>(-1);
 const page = ref(1);
 
-// ─── Filter option lists (from static RAW for dropdown population) ────────────
-const periodos = [...new Set(RAW.map((r) => r.periodo))].sort();
-const programas = [...new Set(RAW.map((r) => r.programa))].sort();
-const projetos = [...new Set(RAW.map((r) => r.projeto))].sort();
-const categorias = [...new Set(RAW.map((r) => r.categoria))].sort();
-const fornecedores = [...new Set(RAW.map((r) => r.fornecedor))].sort();
+// ─── Filter option lists (derived from real API data) ────────────────────────
+const periodos = computed(() =>
+  [...new Set(allData.value.map((r) => r.periodo).filter(Boolean))].sort(),
+);
+const programas = computed(() =>
+  [...new Set(allData.value.map((r) => r.programa).filter(Boolean))].sort(),
+);
+const projetos = computed(() =>
+  [...new Set(allData.value.map((r) => r.projeto).filter(Boolean))].sort(),
+);
+const categorias = computed(() =>
+  [...new Set(allData.value.map((r) => r.categoria).filter(Boolean))].sort(),
+);
+const fornecedores = computed(() =>
+  [...new Set(allData.value.map((r) => r.fornecedor).filter(Boolean))].sort(),
+);
 
 // ─── Data mapping ─────────────────────────────────────────────────────────────
 function normalizeCategoria(value: string): Categoria {
@@ -455,7 +465,16 @@ function mapApiRow(row: MaterialsApiRow): Material {
   };
 }
 
-// ─── API call ──────────────────────────────────────────────────────────────────
+// ─── API calls ────────────────────────────────────────────────────────────────
+async function loadAllData() {
+  const emptyFilters: Filters = {
+    periodo: "", programa: "", projeto: "", categoria: "",
+    fornecedor: "", status: "", area: "", search: "",
+  };
+  const data = await materiaisService.fetchMateriais(emptyFilters);
+  allData.value = data.map(mapApiRow);
+}
+
 async function loadTableData() {
   tableLoading.value = true;
   tableError.value = "";
@@ -613,6 +632,7 @@ const { buildCharts, updateCharts, destroyCharts } = useCharts();
 onMounted(async () => {
   await nextTick();
   buildCharts([]);
+  await loadAllData();
   await loadTableData();
 });
 onUnmounted(() => {

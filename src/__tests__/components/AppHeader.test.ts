@@ -9,6 +9,7 @@ import AboutView from "@/views/AboutView.vue";
 import GestaoMateriais from "@/views/GestaoMateriais.vue";
 import HorasTecnicas from "@/views/HorasTecnicas.vue";
 import Consolidado from "@/views/Consolidado.vue";
+import OrcamentoSaudeFinanceira from "@/views/OrcamentoSaudeFinanceira.vue";
 import Auditoria from "@/views/Auditoria.vue";
 
 const router = createRouter({
@@ -43,6 +44,11 @@ const router = createRouter({
       path: "/consolidado",
       name: "consolidado",
       component: Consolidado,
+    },
+    {
+      path: "/orcamento",
+      name: "orcamento",
+      component: OrcamentoSaudeFinanceira,
     },
     {
       path: "/auditoria",

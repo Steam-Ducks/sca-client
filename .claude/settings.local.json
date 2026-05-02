@@ -11,7 +11,10 @@
       "Bash(curl -sv \"http://localhost:8000/api/compras/\")",
       "Bash(python -m pytest materials/tests/ -v)",
       "Bash(python3 -m pytest materials/tests/ -v)",
-      "Bash(docker run *)"
+      "Bash(docker run *)",
+      "Bash(git -C /home/ahlesk/sca-server log --oneline -8)",
+      "Bash(git -C /home/ahlesk/sca-client log --oneline -8)",
+      "Bash(npm run *)"
     ]
   }
 }
