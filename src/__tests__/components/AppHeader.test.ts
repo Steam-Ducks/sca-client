@@ -1,60 +1,34 @@
-import { describe, it, expect } from "vitest";
-import { mount } from "@vue/test-utils";
-import App from "@/App.vue";
-import { createRouter, createWebHistory } from "vue-router";
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { mount } from '@vue/test-utils'
+import { ref } from 'vue'
+import App from '@/App.vue'
+import AppHeader from '@/components/AppHeader.vue'
+import { createRouter, createWebHistory } from 'vue-router'
 
-import HomeView from "@/views/HomeView.vue";
 import DashboardView from "@/views/DashboardView.vue";
-import AboutView from "@/views/AboutView.vue";
 import GestaoMateriais from "@/views/GestaoMateriais.vue";
 import HorasTecnicas from "@/views/HorasTecnicas.vue";
 import Consolidado from "@/views/Consolidado.vue";
 import OrcamentoSaudeFinanceira from "@/views/OrcamentoSaudeFinanceira.vue";
 import Auditoria from "@/views/Auditoria.vue";
 
+const mockToggle = vi.fn()
+const mockTheme = ref<'light' | 'dark'>('light')
+
+vi.mock('@/composables/useTheme', () => ({
+  useTheme: () => ({ theme: mockTheme, toggle: mockToggle }),
+}))
+
 const router = createRouter({
   history: createWebHistory(),
   routes: [
-    {
-      path: "/",
-      name: "home",
-      component: HomeView,
-    },
-    {
-      path: "/dashboard",
-      name: "dashboard",
-      component: DashboardView,
-    },
-    {
-      path: "/about",
-      name: "about",
-      component: AboutView,
-    },
-    {
-      path: "/materiais",
-      name: "materiais",
-      component: GestaoMateriais,
-    },
-    {
-      path: "/horas",
-      name: "horas",
-      component: HorasTecnicas,
-    },
-    {
-      path: "/consolidado",
-      name: "consolidado",
-      component: Consolidado,
-    },
-    {
-      path: "/orcamento",
-      name: "orcamento",
-      component: OrcamentoSaudeFinanceira,
-    },
-    {
-      path: "/auditoria",
-      name: "auditoria",
-      component: Auditoria,
-    },
+    { path: '/', component: { template: '<div />' } },
+    { path: '/dashboard', name: 'dashboard', component: DashboardView },
+    { path: '/materiais', name: 'materiais', component: GestaoMateriais },
+    { path: '/horas', name: 'horas', component: HorasTecnicas },
+    { path: '/consolidado', name: 'consolidado', component: Consolidado },
+    { path: '/orcamento', name: 'orcamento', component: OrcamentoSaudeFinanceira },
+    { path: '/auditoria', name: 'auditoria', component: Auditoria },
   ],
 });
 
@@ -69,8 +43,44 @@ describe("App.vue", () => {
       },
     });
 
-    expect(wrapper.find(".app-shell").exists()).toBe(true);
-    expect(wrapper.findComponent({ name: "AppHeader" }).exists()).toBe(true);
-    expect(wrapper.find(".page-container").exists()).toBe(true);
-  });
-});
+    expect(wrapper.find('.app-shell').exists()).toBe(true)
+    expect(wrapper.findComponent({ name: 'AppHeader' }).exists()).toBe(true)
+    expect(wrapper.find('.page-container').exists()).toBe(true)
+  })
+})
+
+describe('AppHeader - theme toggle button', () => {
+  beforeEach(() => {
+    mockToggle.mockClear()
+    mockTheme.value = 'light'
+  })
+
+  function mountHeader() {
+    return mount(AppHeader, { global: { plugins: [router] } })
+  }
+
+  it('renders the theme toggle button', () => {
+    const wrapper = mountHeader()
+    expect(wrapper.find('.nav-theme').exists()).toBe(true)
+  })
+
+  it('shows moon icon (title "Tema escuro") when theme is light', () => {
+    const wrapper = mountHeader()
+    const btn = wrapper.find('.nav-theme')
+    expect(btn.attributes('title')).toBe('Tema escuro')
+  })
+
+  it('shows sun icon (title "Tema claro") when theme is dark', async () => {
+    mockTheme.value = 'dark'
+    const wrapper = mountHeader()
+    await wrapper.vm.$nextTick()
+    const btn = wrapper.find('.nav-theme')
+    expect(btn.attributes('title')).toBe('Tema claro')
+  })
+
+  it('calls toggle when the theme button is clicked', async () => {
+    const wrapper = mountHeader()
+    await wrapper.find('.nav-theme').trigger('click')
+    expect(mockToggle).toHaveBeenCalledTimes(1)
+  })
+})

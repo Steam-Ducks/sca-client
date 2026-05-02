@@ -91,12 +91,13 @@
           <select
             v-model="filters.projeto"
             class="filter-select"
+            :disabled="availableProjects.length === 0"
           >
             <option value="">
               Todos os Projetos
             </option>
             <option
-              v-for="p in uniqueProjetos"
+              v-for="p in availableProjects"
               :key="p"
               :value="p"
             >
@@ -134,6 +135,13 @@
             </option>
           </select>
           <button
+            v-if="hasActiveFilters"
+            class="clear-btn"
+            @click="clearFilters"
+          >
+            Limpar filtros
+          </button>
+          <button
             class="export-btn"
             @click="exportCSV"
           >
@@ -156,6 +164,19 @@
             </svg>
             Exportar
           </button>
+        </div>
+        <div
+          v-if="hasActiveFilters"
+          class="active-filters"
+        >
+          <span class="active-filters-label">Filtros ativos</span>
+          <span
+            v-for="filter in activeFilterEntries"
+            :key="filter.key"
+            class="filter-chip"
+          >
+            {{ filter.label }}: {{ filter.value }}
+          </span>
         </div>
       </div>
 
@@ -355,220 +376,48 @@
 import { ref, computed, watch, onMounted, onUnmounted, nextTick } from "vue";
 import { useChartsAuditoria } from "@/composables/useChartsAuditoria";
 import type { AuditoriaRow } from "@/composables/useChartsAuditoria";
+import { CONFIG } from "@/utils/config";
 
 const PER_PAGE = 8;
 
-// ─── Mock data ───────────────────────────────────────────────────────────────
-const MOCK: AuditoriaRow[] = [
-  {
-    id: 1,
-    tipo: "Compra de Material",
-    descricao: "Aquisição de servidores Dell PowerEdge",
-    projeto: "Data Center Regional",
-    programa: "Infraestrutura",
-    responsavel: "João Silva",
-    dataRegistro: "2024-01-15",
-    dataRevisao: "2024-01-20",
-    status: "Aprovado",
-    valorImpacto: 185000,
+const API_URL = `${CONFIG.API_BASE_URL}/audit/`;
+
+interface ApiRow {
+  id: number;
+  operation: string;
+  status: string;
+  table_schema: string | null;
+  table_name: string | null;
+  affected_rows: number | null;
+  started_at: string;
+  finalized_at: string | null;
+  operation_metadata: Record<string, unknown> | null;
+}
+
+const STATUS_MAP: Record<string, string> = {
+  success: "Aprovado",
+  failed: "Rejeitado",
+  running: "Em Análise",
+  pending: "Pendente",
+};
+
+function toRow(r: ApiRow): AuditoriaRow {
+  const meta = r.operation_metadata ?? {};
+  const descricao = [r.table_schema, r.table_name].filter(Boolean).join(".");
+  return {
+    id: r.id,
+    tipo: r.operation,
+    descricao: descricao || r.operation,
+    projeto: String(meta.nome_projeto ?? meta.projeto ?? ""),
+    programa: String(meta.nome_programa ?? meta.programa ?? ""),
+    responsavel: String(meta.responsavel ?? ""),
+    dataRegistro: r.started_at ? r.started_at.split("T")[0] : "",
+    dataRevisao: r.finalized_at ? r.finalized_at.split("T")[0] : "",
+    status: STATUS_MAP[r.status] ?? r.status,
+    valorImpacto: r.affected_rows ?? 0,
     observacao: "",
-  },
-  {
-    id: 2,
-    tipo: "Horas Técnicas",
-    descricao: "Consultoria em arquitetura cloud",
-    projeto: "Migração AWS",
-    programa: "Cloud",
-    responsavel: "Lucas Martins",
-    dataRegistro: "2024-01-18",
-    dataRevisao: "2024-01-25",
-    status: "Aprovado",
-    valorImpacto: 168000,
-    observacao: "",
-  },
-  {
-    id: 3,
-    tipo: "Compra de Material",
-    descricao: "Licenças VMware vSphere Enterprise",
-    projeto: "Container Platform",
-    programa: "Cloud",
-    responsavel: "Beatriz Rocha",
-    dataRegistro: "2024-02-05",
-    dataRevisao: "2024-02-12",
-    status: "Aprovado",
-    valorImpacto: 98000,
-    observacao: "",
-  },
-  {
-    id: 4,
-    tipo: "Contrato",
-    descricao: "Contrato de suporte AWS Enterprise",
-    projeto: "Migração AWS",
-    programa: "Cloud",
-    responsavel: "Lucas Martins",
-    dataRegistro: "2024-02-10",
-    dataRevisao: "",
-    status: "Pendente",
-    valorImpacto: 240000,
-    observacao: "Aguardando aprovação diretoria",
-  },
-  {
-    id: 5,
-    tipo: "Horas Técnicas",
-    descricao: "Desenvolvimento módulo financeiro ERP",
-    projeto: "Sistema ERP",
-    programa: "Desenvolvimento",
-    responsavel: "Juliana Lima",
-    dataRegistro: "2024-02-14",
-    dataRevisao: "2024-02-20",
-    status: "Aprovado",
-    valorImpacto: 155800,
-    observacao: "",
-  },
-  {
-    id: 6,
-    tipo: "Compra de Material",
-    descricao: "Switches Cisco Catalyst 9300",
-    projeto: "Modernização de Rede",
-    programa: "Infraestrutura",
-    responsavel: "Diego Castillo",
-    dataRegistro: "2024-02-20",
-    dataRevisao: "2024-03-01",
-    status: "Rejeitado",
-    valorImpacto: 134500,
-    observacao: "Orçamento excedido",
-  },
-  {
-    id: 7,
-    tipo: "Ajuste Orçamentário",
-    descricao: "Remanejamento verba infraestrutura → cloud",
-    projeto: "Storage Upgrade",
-    programa: "Infraestrutura",
-    responsavel: "João Silva",
-    dataRegistro: "2024-03-01",
-    dataRevisao: "2024-03-05",
-    status: "Aprovado",
-    valorImpacto: 89000,
-    observacao: "",
-  },
-  {
-    id: 8,
-    tipo: "Horas Técnicas",
-    descricao: "Implementação regras SOC/SIEM",
-    projeto: "SOC Implementation",
-    programa: "Segurança",
-    responsavel: "Roberto Alves",
-    dataRegistro: "2024-03-05",
-    dataRevisao: "",
-    status: "Em Análise",
-    valorImpacto: 120000,
-    observacao: "Em revisão pelo comitê",
-  },
-  {
-    id: 9,
-    tipo: "Compra de Material",
-    descricao: "Firewalls Palo Alto PA-5200",
-    projeto: "Firewall Corporativo",
-    programa: "Segurança",
-    responsavel: "Roberto Alves",
-    dataRegistro: "2024-03-08",
-    dataRevisao: "2024-03-15",
-    status: "Aprovado",
-    valorImpacto: 142000,
-    observacao: "",
-  },
-  {
-    id: 10,
-    tipo: "Contrato",
-    descricao: "Renovação licenças Microsoft 365",
-    projeto: "Sistema ERP",
-    programa: "Desenvolvimento",
-    responsavel: "Fernanda Torres",
-    dataRegistro: "2024-03-10",
-    dataRevisao: "",
-    status: "Pendente",
-    valorImpacto: 67000,
-    observacao: "Análise de custo-benefício",
-  },
-  {
-    id: 11,
-    tipo: "Horas Técnicas",
-    descricao: "Design UX portal institucional",
-    projeto: "Portal Web",
-    programa: "Desenvolvimento",
-    responsavel: "Camila Nunes",
-    dataRegistro: "2024-01-22",
-    dataRevisao: "2024-01-28",
-    status: "Aprovado",
-    valorImpacto: 72800,
-    observacao: "",
-  },
-  {
-    id: 12,
-    tipo: "Ajuste Orçamentário",
-    descricao: "Aumento de verba para segurança",
-    projeto: "SOC Implementation",
-    programa: "Segurança",
-    responsavel: "Marcos Pereira",
-    dataRegistro: "2024-03-12",
-    dataRevisao: "",
-    status: "Pendente",
-    valorImpacto: 95000,
-    observacao: "Pendente aprovação financeiro",
-  },
-  {
-    id: 13,
-    tipo: "Compra de Material",
-    descricao: "Storage NetApp AFF A400",
-    projeto: "Storage Upgrade",
-    programa: "Infraestrutura",
-    responsavel: "Ricardo Souza",
-    dataRegistro: "2024-01-10",
-    dataRevisao: "2024-01-18",
-    status: "Aprovado",
-    valorImpacto: 189000,
-    observacao: "",
-  },
-  {
-    id: 14,
-    tipo: "Horas Técnicas",
-    descricao: "Configuração pipeline CI/CD",
-    projeto: "DevOps Pipeline",
-    programa: "Desenvolvimento",
-    responsavel: "Pedro Costa",
-    dataRegistro: "2024-03-15",
-    dataRevisao: "2024-03-20",
-    status: "Aprovado",
-    valorImpacto: 87000,
-    observacao: "",
-  },
-  {
-    id: 15,
-    tipo: "Contrato",
-    descricao: "SLA suporte Palo Alto Networks",
-    projeto: "Firewall Corporativo",
-    programa: "Segurança",
-    responsavel: "Roberto Alves",
-    dataRegistro: "2024-02-25",
-    dataRevisao: "2024-03-02",
-    status: "Rejeitado",
-    valorImpacto: 56000,
-    observacao: "SLA inadequado",
-  },
-  {
-    id: 16,
-    tipo: "Compra de Material",
-    descricao: "Módulos de memória para CRM",
-    projeto: "CRM Customizado",
-    programa: "Desenvolvimento",
-    responsavel: "Thiago Ramos",
-    dataRegistro: "2024-03-18",
-    dataRevisao: "",
-    status: "Em Análise",
-    valorImpacto: 45000,
-    observacao: "Verificando compatibilidade",
-  },
-];
+  };
+}
 
 // ─── State ───────────────────────────────────────────────────────────────────
 const tableData = ref<AuditoriaRow[]>([]);
@@ -590,15 +439,32 @@ const uniqueTipos = computed(() =>
 const uniqueStatuses = computed(() =>
   [...new Set(tableData.value.map((r) => r.status))].sort(),
 );
-const uniqueProjetos = computed(() =>
-  [...new Set(tableData.value.map((r) => r.projeto))].sort(),
-);
+const availableProjects = computed(() => {
+  const rows = filters.value.programa
+    ? tableData.value.filter((r) => r.programa === filters.value.programa)
+    : tableData.value;
+  return [...new Set(rows.map((r) => r.projeto))].sort();
+});
 const uniqueResponsaveis = computed(() =>
   [...new Set(tableData.value.map((r) => r.responsavel))].sort(),
 );
 const uniqueProgramas = computed(() =>
   [...new Set(tableData.value.map((r) => r.programa))].sort(),
 );
+const activeFilterEntries = computed(() =>
+  [
+    { key: "tipo", label: "Tipo", value: filters.value.tipo },
+    { key: "status", label: "Status", value: filters.value.status },
+    { key: "programa", label: "Programa", value: filters.value.programa },
+    { key: "projeto", label: "Projeto", value: filters.value.projeto },
+    {
+      key: "responsavel",
+      label: "Responsável",
+      value: filters.value.responsavel,
+    },
+  ].filter((entry) => Boolean(entry.value)),
+);
+const hasActiveFilters = computed(() => activeFilterEntries.value.length > 0);
 
 // ─── Computed ────────────────────────────────────────────────────────────────
 const filteredData = computed(() => {
@@ -651,6 +517,18 @@ watch(filteredData, (val) => {
   page.value = 1;
   nextTick(() => updateCharts(val));
 });
+
+watch(
+  () => filters.value.programa,
+  () => {
+    if (
+      filters.value.projeto &&
+      !availableProjects.value.includes(filters.value.projeto)
+    ) {
+      filters.value.projeto = "";
+    }
+  },
+);
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 const fmt = (v: number) =>
@@ -709,35 +587,48 @@ function exportCSV() {
   a.click();
 }
 
+function clearFilters() {
+  filters.value = {
+    tipo: "",
+    status: "",
+    projeto: "",
+    responsavel: "",
+    programa: "",
+  };
+}
+
 // ─── Charts ──────────────────────────────────────────────────────────────────
 const { buildCharts, updateCharts, destroyCharts } = useChartsAuditoria();
 
-onMounted(() => {
-  tableData.value = MOCK;
-  nextTick(() => buildCharts(MOCK));
+async function loadData() {
+  try {
+    const params = new URLSearchParams();
+    if (filters.value.programa) params.set("programa", filters.value.programa);
+    if (filters.value.projeto) params.set("projeto", filters.value.projeto);
+    const query = params.toString() ? `?${params.toString()}` : "";
+    const res = await fetch(`${API_URL}${query}`);
+    if (!res.ok) return;
+    const raw: ApiRow[] = await res.json();
+    tableData.value = raw.map(toRow);
+  } catch {
+    // keep existing data on error
+  }
+}
+
+watch(
+  () => [filters.value.programa, filters.value.projeto],
+  () => { void loadData(); },
+);
+
+onMounted(async () => {
+  await loadData();
+  nextTick(() => buildCharts(tableData.value));
 });
 onUnmounted(destroyCharts);
 </script>
 
 <style scoped>
-/* ── Variables ────────────────────────────────────────────────────────────── */
 .app {
-  --bg: #0d0f14;
-  --bg2: #141720;
-  --bg3: #1c2030;
-  --bg4: #222639;
-  --border: #2a2f45;
-  --border2: #353c58;
-  --text: #e2e6f0;
-  --text2: #8b92aa;
-  --text3: #555d7a;
-  --blue: #4d8fff;
-  --blue2: #3a7af5;
-  --green: #2dd4a0;
-  --amber: #f5a623;
-  --red: #f55a5a;
-  --purple: #9b7fff;
-
   display: flex;
   flex-direction: column;
   min-height: 100vh;
@@ -894,6 +785,40 @@ onUnmounted(destroyCharts);
   width: 14px;
   height: 14px;
 }
+.clear-btn {
+  background: transparent;
+  border: 1px solid var(--border2);
+  color: var(--text2);
+  border-radius: 7px;
+  padding: 7px 12px;
+  font-size: 12px;
+  cursor: pointer;
+}
+.clear-btn:hover {
+  color: var(--text);
+  border-color: var(--blue2);
+}
+.active-filters {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-top: 12px;
+}
+.active-filters-label {
+  font-size: 11px;
+  color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.filter-chip {
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  color: var(--text);
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 11px;
+}
 
 /* ── Charts ───────────────────────────────────────────────────────────────── */
 .charts-row {
@@ -985,7 +910,7 @@ td {
 }
 td.material-name {
   font-weight: 500;
-  color: #fff;
+  color: var(--text);
   max-width: 280px;
   overflow: hidden;
   text-overflow: ellipsis;

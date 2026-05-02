@@ -5,6 +5,32 @@
         Consolidado
       </h1>
 
+      <div
+        class="update-banner"
+        data-testid="last-update-banner"
+      >
+        <svg
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <circle
+            cx="12"
+            cy="12"
+            r="8"
+            stroke-width="1.5"
+          />
+          <path
+            d="M12 8v5l3 2"
+            stroke-width="1.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+        <span class="update-label">Última importação</span>
+        <strong class="update-value">{{ formattedLastUpdatedAt }}</strong>
+      </div>
+
       <!-- METRICS -->
       <div class="metrics">
         <div class="metric-card">
@@ -91,12 +117,13 @@
           <select
             v-model="filters.projeto"
             class="filter-select"
+            :disabled="availableProjects.length === 0"
           >
             <option value="">
               Todos os Projetos
             </option>
             <option
-              v-for="p in uniqueProjetos"
+              v-for="p in availableProjects"
               :key="p"
               :value="p"
             >
@@ -118,6 +145,13 @@
               {{ s }}
             </option>
           </select>
+          <button
+            v-if="hasActiveFilters"
+            class="clear-btn"
+            @click="clearFilters"
+          >
+            Limpar filtros
+          </button>
           <button
             class="export-btn"
             @click="exportCSV"
@@ -141,6 +175,19 @@
             </svg>
             Exportar
           </button>
+        </div>
+        <div
+          v-if="hasActiveFilters"
+          class="active-filters"
+        >
+          <span class="active-filters-label">Filtros ativos</span>
+          <span
+            v-for="filter in activeFilterEntries"
+            :key="filter.key"
+            class="filter-chip"
+          >
+            {{ filter.label }}: {{ filter.value }}
+          </span>
         </div>
       </div>
 
@@ -338,6 +385,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted, nextTick } from "vue";
+import { useTheme } from "@/composables/useTheme";
 import { useChartsConsolidado } from "@/composables/useChartsConsolidado";
 import type { ConsolidadoRow } from "@/composables/useChartsConsolidado";
 import { apiService } from "@/services/apiService";
@@ -494,6 +542,7 @@ const MOCK: ConsolidadoRow[] = [
 
 // ─── State ───────────────────────────────────────────────────────────────────
 const tableData = ref<ConsolidadoRow[]>([]);
+const lastUpdatedAt = ref<string | null>(null);
 const filters = ref({ periodo: "", programa: "", projeto: "", status: "" });
 const sortKey = ref<keyof ConsolidadoRow>("custoTotal");
 const sortDir = ref<1 | -1>(-1);
@@ -506,12 +555,24 @@ const uniquePeriodos = computed(() =>
 const uniqueProgramas = computed(() =>
   [...new Set(tableData.value.map((r) => r.programa))].sort(),
 );
-const uniqueProjetos = computed(() =>
-  [...new Set(tableData.value.map((r) => r.projeto))].sort(),
-);
+const availableProjects = computed(() => {
+  const rows = filters.value.programa
+    ? tableData.value.filter((r) => r.programa === filters.value.programa)
+    : tableData.value;
+  return [...new Set(rows.map((r) => r.projeto))].sort();
+});
 const uniqueStatuses = computed(() =>
   [...new Set(tableData.value.map((r) => r.status))].sort(),
 );
+const activeFilterEntries = computed(() =>
+  [
+    { key: "periodo", label: "Período", value: filters.value.periodo },
+    { key: "programa", label: "Programa", value: filters.value.programa },
+    { key: "projeto", label: "Projeto", value: filters.value.projeto },
+    { key: "status", label: "Status", value: filters.value.status },
+  ].filter((entry) => Boolean(entry.value)),
+);
+const hasActiveFilters = computed(() => activeFilterEntries.value.length > 0);
 
 // ─── Computed ────────────────────────────────────────────────────────────────
 const filteredData = computed(() => {
@@ -557,11 +618,44 @@ const visiblePages = computed(() => {
   return Array.from({ length: e - s + 1 }, (_, i) => s + i);
 });
 
+const formattedLastUpdatedAt = computed(() => {
+  if (!lastUpdatedAt.value) return "Não informado";
+
+  return new Intl.DateTimeFormat("pt-BR", {
+    dateStyle: "short",
+    timeStyle: "short",
+  }).format(new Date(lastUpdatedAt.value));
+});
+
 // ─── Watchers ────────────────────────────────────────────────────────────────
 watch(filteredData, (val) => {
   page.value = 1;
   nextTick(() => updateCharts(val));
 });
+
+watch(
+  () => filters.value.programa,
+  () => {
+    if (
+      filters.value.projeto &&
+      !availableProjects.value.includes(filters.value.projeto)
+    ) {
+      filters.value.projeto = "";
+    }
+  },
+);
+
+watch(
+  () => [
+    filters.value.periodo,
+    filters.value.programa,
+    filters.value.projeto,
+    filters.value.status,
+  ],
+  () => {
+    void loadConsolidado();
+  },
+);
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 const fmt = (v: number) =>
@@ -610,15 +704,29 @@ function exportCSV() {
   a.click();
 }
 
+function clearFilters() {
+  filters.value = { periodo: "", programa: "", projeto: "", status: "" };
+}
+
 // ─── Charts ──────────────────────────────────────────────────────────────────
 const { buildCharts, updateCharts, destroyCharts } = useChartsConsolidado();
+const { theme } = useTheme();
+
+watch(theme, () => {
+  nextTick(() => buildCharts(tableData.value));
+});
 
 async function loadConsolidado() {
   try {
-    tableData.value = await apiService.consolidated.fetchConsolidated();
+    const snapshot = await apiService.consolidated.fetchConsolidatedSnapshot(
+      filters.value,
+    );
+    tableData.value = snapshot.rows;
+    lastUpdatedAt.value = snapshot.lastUpdatedAt;
   } catch (error) {
     console.error(error);
     tableData.value = MOCK;
+    lastUpdatedAt.value = null;
   }
 
   nextTick(() => buildCharts(tableData.value));
@@ -631,24 +739,7 @@ onUnmounted(destroyCharts);
 </script>
 
 <style scoped>
-/* ── Variables ────────────────────────────────────────────────────────────── */
 .app {
-  --bg: #0d0f14;
-  --bg2: #141720;
-  --bg3: #1c2030;
-  --bg4: #222639;
-  --border: #2a2f45;
-  --border2: #353c58;
-  --text: #e2e6f0;
-  --text2: #8b92aa;
-  --text3: #555d7a;
-  --blue: #4d8fff;
-  --blue2: #3a7af5;
-  --green: #2dd4a0;
-  --amber: #f5a623;
-  --red: #f55a5a;
-  --purple: #9b7fff;
-
   display: flex;
   flex-direction: column;
   min-height: 100vh;
@@ -676,6 +767,37 @@ onUnmounted(destroyCharts);
   display: flex;
   flex-direction: column;
   gap: 20px;
+}
+
+.update-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  background: linear-gradient(90deg, rgba(77, 143, 255, 0.12), var(--bg2));
+  border: 1px solid rgba(77, 143, 255, 0.28);
+  border-radius: 10px;
+  color: var(--text);
+}
+
+.update-banner svg {
+  width: 16px;
+  height: 16px;
+  color: var(--blue);
+  flex-shrink: 0;
+}
+
+.update-label {
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text2);
+}
+
+.update-value {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 13px;
+  color: var(--blue);
 }
 
 /* ── Metrics ──────────────────────────────────────────────────────────────── */
@@ -799,6 +921,40 @@ onUnmounted(destroyCharts);
   width: 14px;
   height: 14px;
 }
+.clear-btn {
+  background: transparent;
+  border: 1px solid var(--border2);
+  color: var(--text2);
+  border-radius: 7px;
+  padding: 7px 12px;
+  font-size: 12px;
+  cursor: pointer;
+}
+.clear-btn:hover {
+  color: var(--text);
+  border-color: var(--blue2);
+}
+.active-filters {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-top: 12px;
+}
+.active-filters-label {
+  font-size: 11px;
+  color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.filter-chip {
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  color: var(--text);
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 11px;
+}
 
 /* ── Charts ───────────────────────────────────────────────────────────────── */
 .charts-row {
@@ -890,7 +1046,7 @@ td {
 }
 td.material-name {
   font-weight: 500;
-  color: #fff;
+  color: var(--text);
 }
 td.muted {
   color: var(--text2);

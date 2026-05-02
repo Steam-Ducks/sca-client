@@ -5,7 +5,6 @@
       <h1 class="sr-only">
         Dashboard Principal
       </h1>
-
       <!-- METRICS -->
       <div class="metrics">
         <div class="metric-card">
@@ -49,7 +48,6 @@
           </div>
         </div>
       </div>
-
       <!-- FILTERS -->
       <div class="filters-card">
         <div class="filters-title">
@@ -72,7 +70,7 @@
             class="filter-select"
           >
             <option value="">
-              Todos os Períodos
+              Todos os Status
             </option>
             <option
               v-for="p in uniquePeriodos"
@@ -100,18 +98,26 @@
           <select
             v-model="filters.projeto"
             class="filter-select"
+            :disabled="availableProjects.length === 0"
           >
             <option value="">
               Todos os Projetos
             </option>
             <option
-              v-for="p in uniqueProjetos"
+              v-for="p in availableProjects"
               :key="p"
               :value="p"
             >
               {{ p }}
             </option>
           </select>
+          <button
+            v-if="hasActiveFilters"
+            class="clear-btn"
+            @click="clearFilters"
+          >
+            Limpar filtros
+          </button>
           <button
             class="export-btn"
             @click="exportCSV"
@@ -136,8 +142,20 @@
             Exportar
           </button>
         </div>
+        <div
+          v-if="hasActiveFilters"
+          class="active-filters"
+        >
+          <span class="active-filters-label">Filtros ativos</span>
+          <span
+            v-for="filter in activeFilterEntries"
+            :key="filter.key"
+            class="filter-chip"
+          >
+            {{ filter.label }}: {{ filter.value }}
+          </span>
+        </div>
       </div>
-
       <!-- TOP CHARTS -->
       <div class="charts-row">
         <div class="chart-card">
@@ -150,14 +168,13 @@
         </div>
         <div class="chart-card">
           <div class="chart-title">
-            Comparativo: Materiais vs Horas Técnicas
+            Composição do Custo: Materiais vs Horas Técnicas
           </div>
           <div class="chart-wrap tall">
             <canvas id="chartComparativo" />
           </div>
         </div>
       </div>
-
       <!-- BOTTOM CHARTS -->
       <div class="charts-row">
         <div class="chart-card">
@@ -170,15 +187,24 @@
         </div>
         <div class="chart-card">
           <div class="chart-title">
-            Evolução Temporal do Custo
+            Custo Total por Status do Projeto
           </div>
           <div class="chart-wrap tall">
             <canvas id="chartTemporalDash" />
           </div>
         </div>
       </div>
+      <!-- COST EVOLUTION — full width -->
+      <div class="chart-card chart-card--full">
+        <div class="chart-title">
+          Evolução Temporal dos Custos
+        </div>
+        <div class="chart-wrap evolution">
+          <canvas id="chartCostEvolution" />
+        </div>
+      </div>
 
-      <!-- TABLE -->
+      <!-- DETAILED TABLE -->
       <div class="table-card">
         <div class="table-header">
           <h2>Resumo por Projeto</h2>
@@ -304,17 +330,118 @@
           </div>
         </div>
       </div>
+      <!-- SUMMARY TABLE -->
+      <div class="table-card">
+        <div class="table-header">
+          <h2>Resumo Agregado por Programa</h2>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th
+                  class="sort-col"
+                  @click="sortSummaryBy('programa')"
+                >
+                  Programa {{ summarySortIcon("programa") }}
+                </th>
+                <th
+                  class="sort-col"
+                  @click="sortSummaryBy('qtdProjetos')"
+                >
+                  Qtd. Projetos {{ summarySortIcon("qtdProjetos") }}
+                </th>
+                <th
+                  class="sort-col"
+                  @click="sortSummaryBy('custoMateriais')"
+                >
+                  Custo Materiais {{ summarySortIcon("custoMateriais") }}
+                </th>
+                <th
+                  class="sort-col"
+                  @click="sortSummaryBy('custoHoras')"
+                >
+                  Custo Horas {{ summarySortIcon("custoHoras") }}
+                </th>
+                <th
+                  class="sort-col"
+                  @click="sortSummaryBy('custoTotal')"
+                >
+                  Custo Total {{ summarySortIcon("custoTotal") }}
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-if="aggregateSummary.length === 0">
+                <td
+                  colspan="5"
+                  class="table-feedback muted"
+                >
+                  Nenhum registro encontrado.
+                </td>
+              </tr>
+              <tr
+                v-for="row in aggregateSummary"
+                :key="row.programa"
+              >
+                <td class="material-name">
+                  {{ row.programa }}
+                </td>
+                <td class="mono">
+                  {{ row.qtdProjetos }}
+                </td>
+                <td class="mono">
+                  {{ fmt(row.custoMateriais) }}
+                </td>
+                <td class="mono">
+                  {{ fmt(row.custoHoras) }}
+                </td>
+                <td class="total">
+                  {{ fmt(row.custoTotal) }}
+                </td>
+              </tr>
+            </tbody>
+            <tfoot>
+              <tr class="totals-row">
+                <td class="totals-label">
+                  Total
+                </td>
+                <td class="mono totals-value">
+                  {{ summaryTotals.qtdProjetos }}
+                </td>
+                <td class="mono totals-value">
+                  {{ fmt(summaryTotals.custoMateriais) }}
+                </td>
+                <td class="mono totals-value">
+                  {{ fmt(summaryTotals.custoHoras) }}
+                </td>
+                <td class="total totals-value">
+                  {{ fmt(summaryTotals.custoTotal) }}
+                </td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
     </main>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted, nextTick } from "vue";
+import { useTheme } from "@/composables/useTheme";
 import { useChartsDashboard } from "@/composables/useChartsDashboard";
 import type { DashboardRow } from "@/composables/useChartsDashboard";
 import { dashboardService } from "@/services/dashboardService";
 import { CONFIG } from "@/utils/config";
-import type { DashboardKPIs, DashboardFilters } from "@/types/api";
+import type {
+  CompositionData,
+  DashboardKPIs,
+  DashboardFilters,
+  DashboardSummaryRow,
+  TopProjectRow,
+  CostEvolutionRow,
+} from "@/types/api";
 
 const PER_PAGE = 8;
 
@@ -329,7 +456,10 @@ const kpis = ref<DashboardKPIs>({
   total_projects: 0,
   total_programs: 0,
 });
-
+const compositionData = ref<CompositionData | null>(null);
+const topProjectsData = ref<TopProjectRow[]>([]);
+const summaryData = ref<DashboardSummaryRow[]>([]);
+const costEvolutionData = ref<CostEvolutionRow[]>([]);
 const filters = ref({ periodo: "", programa: "", projeto: "" });
 const sortKey = ref<keyof DashboardRow>("custoTotal");
 const sortDir = ref<1 | -1>(-1);
@@ -342,9 +472,20 @@ const uniquePeriodos = computed(() =>
 const uniqueProgramas = computed(() =>
   [...new Set(tableData.value.map((r) => r.programa))].sort(),
 );
-const uniqueProjetos = computed(() =>
-  [...new Set(tableData.value.map((r) => r.projeto))].sort(),
+const availableProjects = computed(() => {
+  const rows = filters.value.programa
+    ? tableData.value.filter((r) => r.programa === filters.value.programa)
+    : tableData.value;
+  return [...new Set(rows.map((r) => r.projeto))].sort();
+});
+const activeFilterEntries = computed(() =>
+  [
+    { key: "periodo", label: "Status", value: filters.value.periodo },
+    { key: "programa", label: "Programa", value: filters.value.programa },
+    { key: "projeto", label: "Projeto", value: filters.value.projeto },
+  ].filter((entry) => Boolean(entry.value)),
 );
+const hasActiveFilters = computed(() => activeFilterEntries.value.length > 0);
 
 // ─── Tabela filtrada localmente ───────────────────────────────────────────────
 const filteredData = computed(() => {
@@ -380,22 +521,20 @@ const visiblePages = computed(() => {
 });
 
 // ─── Buscar KPIs da API ───────────────────────────────────────────────────────
+function buildApiFilters(): DashboardFilters {
+  const f = filters.value;
+  const apiFilters: DashboardFilters = {};
+  // f.periodo holds a status value (e.g. "Em andamento") — send as status filter
+  if (f.periodo) apiFilters.status = f.periodo;
+  if (f.programa) apiFilters.program = f.programa;
+  if (f.projeto) apiFilters.project = f.projeto;
+  return apiFilters;
+}
+
 async function fetchKPIs() {
   kpisLoading.value = true;
   try {
-    const f = filters.value;
-    const apiFilters: DashboardFilters = {};
-
-    if (f.periodo) {
-      apiFilters.start_date = `${f.periodo}-01`;
-      const [y, m] = f.periodo.split("-").map(Number);
-      const lastDay = new Date(y, m, 0).getDate();
-      apiFilters.end_date = `${f.periodo}-${String(lastDay).padStart(2, "0")}`;
-    }
-    if (f.programa) apiFilters.program = f.programa;
-    if (f.projeto) apiFilters.project = f.projeto;
-
-    kpis.value = await dashboardService.fetchKPIs(apiFilters);
+    kpis.value = await dashboardService.fetchKPIs(buildApiFilters());
   } catch (err) {
     console.error("Erro ao buscar KPIs:", err);
   } finally {
@@ -407,26 +546,33 @@ async function fetchKPIs() {
 async function fetchTableData() {
   tableLoading.value = true;
   try {
-    const response = await fetch(`${CONFIG.API_BASE_URL}/consolidated/`);
+    // Build query for consolidated (uses Portuguese param names)
+    const f = filters.value;
+    const p = new URLSearchParams();
+    if (f.programa) p.append("programa", f.programa);
+    if (f.projeto)  p.append("projeto",  f.projeto);
+    if (f.periodo)  p.append("status",   f.periodo);
+    const qs = p.toString() ? `?${p.toString()}` : "";
+    const response = await fetch(`${CONFIG.API_BASE_URL}/consolidated/${qs}`);
     if (!response.ok)
       throw new Error(`Erro ao buscar tabela: ${response.status}`);
-
-    const data: {
+    // Consolidated returns { data: [...], last_updated_at: "..." }
+    const json = await response.json();
+    const rawData: {
       nome_projeto: string;
       programa: string | null;
       custo_materiais: number;
       custo_horas: number;
       custo_total: number;
       status: string | null;
-    }[] = await response.json();
-
-    tableData.value = data.map((row) => ({
+    }[] = Array.isArray(json) ? json : (json.data ?? json.results ?? []);
+    tableData.value = rawData.map((row) => ({
       projeto: row.nome_projeto ?? "",
       programa: row.programa ?? "",
       custoMateriais: row.custo_materiais,
       custoHoras: row.custo_horas,
       custoTotal: row.custo_total,
-      periodo: row.status ?? "",
+      periodo: row.status ?? "",  // status used as status filter (no date period in source)
     }));
   } catch (err) {
     console.error("Erro ao buscar tabela:", err);
@@ -435,13 +581,70 @@ async function fetchTableData() {
   }
 }
 
+// ─── Buscar composição de custos da API ───────────────────────────────────────
+async function fetchComposition() {
+  try {
+    const apiFilters = buildApiFilters();
+    compositionData.value = await dashboardService.fetchComposition(apiFilters);
+  } catch (err) {
+    console.error("Erro ao buscar composição:", err);
+  }
+}
+
+async function fetchTopProjects() {
+  try {
+    const apiFilters = buildApiFilters();
+    topProjectsData.value = await dashboardService.fetchTopProjects(apiFilters);
+  } catch (err) {
+    console.error("Erro ao buscar top projetos:", err);
+  }
+}
+
+async function fetchSummary() {
+  try {
+    const apiFilters = buildApiFilters();
+    summaryData.value = await dashboardService.fetchSummary(apiFilters);
+  } catch (err) {
+    console.error("Erro ao buscar resumo por programa:", err);
+  }
+}
+
+async function fetchCostEvolution() {
+  try {
+    const apiFilters = buildApiFilters();
+    costEvolutionData.value = await dashboardService.fetchCostEvolution(apiFilters);
+  } catch (err) {
+    console.error("Erro ao buscar evolução de custos:", err);
+  }
+}
+
 // ─── Watchers ────────────────────────────────────────────────────────────────
 watch(filteredData, (val) => {
   page.value = 1;
-  nextTick(() => updateCharts(val));
+  nextTick(() => updateCharts(val, compositionData.value ?? undefined, topProjectsData.value, summaryData.value, costEvolutionData.value));
 });
-
-watch(filters, () => fetchKPIs(), { deep: true });
+watch(
+  filters,
+  async () => {
+    await Promise.all([fetchKPIs(), fetchTableData(), fetchComposition(), fetchTopProjects(), fetchSummary(), fetchCostEvolution()]);
+    // Re-render charts with fresh API data after async fetches complete
+    nextTick(() =>
+      updateCharts(filteredData.value, compositionData.value ?? undefined, topProjectsData.value, summaryData.value, costEvolutionData.value),
+    );
+  },
+  { deep: true },
+);
+watch(
+  () => filters.value.programa,
+  () => {
+    if (
+      filters.value.projeto &&
+      !availableProjects.value.includes(filters.value.projeto)
+    ) {
+      filters.value.projeto = "";
+    }
+  },
+);
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 const fmt = (v: number) =>
@@ -477,12 +680,75 @@ function exportCSV() {
   a.click();
 }
 
+function clearFilters() {
+  filters.value = { periodo: "", programa: "", projeto: "" };
+}
+
+// ─── Summary aggregate table ──────────────────────────────────────────────────
+type SummaryRow = {
+  programa: string;
+  qtdProjetos: number;
+  custoMateriais: number;
+  custoHoras: number;
+  custoTotal: number;
+};
+const summarySortKey = ref<keyof SummaryRow>("custoTotal");
+const summarySortDir = ref<1 | -1>(-1);
+
+const aggregateSummary = computed<SummaryRow[]>(() => {
+  // Use API data from /dashboard/summary/ mapped to SummaryRow shape
+  const rows: SummaryRow[] = summaryData.value.map((r) => ({
+    programa: r.programa,
+    qtdProjetos: r.qtd_projetos,
+    custoMateriais: r.custo_materiais,
+    custoHoras: r.custo_horas,
+    custoTotal: r.custo_total,
+  }));
+  return rows
+  .filter((row) => !filters.value.programa || row.programa === filters.value.programa)
+  .sort((a, b) => {
+    const av = a[summarySortKey.value];
+    const bv = b[summarySortKey.value];
+    return typeof av === "string"
+      ? av.localeCompare(bv as string) * summarySortDir.value
+      : ((av as number) - (bv as number)) * summarySortDir.value;
+  });
+});
+
+const summaryTotals = computed(() => ({
+  qtdProjetos: aggregateSummary.value.reduce((s, r) => s + r.qtdProjetos, 0),
+  custoMateriais: aggregateSummary.value.reduce(
+    (s, r) => s + r.custoMateriais,
+    0,
+  ),
+  custoHoras: aggregateSummary.value.reduce((s, r) => s + r.custoHoras, 0),
+  custoTotal: aggregateSummary.value.reduce((s, r) => s + r.custoTotal, 0),
+}));
+
+function sortSummaryBy(k: keyof SummaryRow) {
+  if (summarySortKey.value === k)
+    summarySortDir.value = (summarySortDir.value * -1) as 1 | -1;
+  else {
+    summarySortKey.value = k;
+    summarySortDir.value = -1;
+  }
+}
+const summarySortIcon = (k: keyof SummaryRow) =>
+  summarySortKey.value !== k ? "↕" : summarySortDir.value > 0 ? "↑" : "↓";
+
 // ─── Charts ──────────────────────────────────────────────────────────────────
 const { buildCharts, updateCharts, destroyCharts } = useChartsDashboard();
+const { theme } = useTheme();
+
+watch(theme, () => {
+  nextTick(() => buildCharts(tableData.value, compositionData.value ?? undefined, topProjectsData.value, summaryData.value, costEvolutionData.value));
+});
 
 onMounted(async () => {
-  await Promise.all([fetchKPIs(), fetchTableData()]);
-  nextTick(() => buildCharts(tableData.value));
+  await Promise.all([fetchKPIs(), fetchTableData(), fetchComposition(), fetchTopProjects(), fetchSummary(), fetchCostEvolution()]);
+  nextTick(() =>
+    buildCharts(tableData.value, compositionData.value ?? undefined, topProjectsData.value, summaryData.value, costEvolutionData.value),
+  );
 });
 onUnmounted(destroyCharts);
 </script>
@@ -490,22 +756,6 @@ onUnmounted(destroyCharts);
 <style scoped>
 /* ── Variables ────────────────────────────────────────────────────────────── */
 .app {
-  --bg: #0d0f14;
-  --bg2: #141720;
-  --bg3: #1c2030;
-  --bg4: #222639;
-  --border: #2a2f45;
-  --border2: #353c58;
-  --text: #e2e6f0;
-  --text2: #8b92aa;
-  --text3: #555d7a;
-  --blue: #4d8fff;
-  --blue2: #3a7af5;
-  --green: #2dd4a0;
-  --amber: #f5a623;
-  --red: #f55a5a;
-  --purple: #9b7fff;
-
   display: flex;
   flex-direction: column;
   min-height: 100vh;
@@ -514,7 +764,6 @@ onUnmounted(destroyCharts);
   font-family: "IBM Plex Sans", sans-serif;
   font-size: 14px;
 }
-
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -526,7 +775,6 @@ onUnmounted(destroyCharts);
   background: var(--border2);
   border-radius: 3px;
 }
-
 .main {
   padding: 24px 28px;
   flex: 1;
@@ -534,7 +782,6 @@ onUnmounted(destroyCharts);
   flex-direction: column;
   gap: 20px;
 }
-
 /* ── Metrics ──────────────────────────────────────────────────────────────── */
 .metrics {
   display: grid;
@@ -581,7 +828,6 @@ onUnmounted(destroyCharts);
 .metric-value.green {
   color: var(--green);
 }
-
 /* ── Filters ──────────────────────────────────────────────────────────────── */
 .filters-card {
   background: var(--bg2);
@@ -610,7 +856,6 @@ onUnmounted(destroyCharts);
   flex-wrap: wrap;
   align-items: center;
 }
-
 .filter-select {
   background: var(--bg3);
   border: 1px solid var(--border);
@@ -631,7 +876,6 @@ onUnmounted(destroyCharts);
   outline: none;
   border-color: var(--blue2);
 }
-
 .export-btn {
   display: flex;
   align-items: center;
@@ -656,7 +900,41 @@ onUnmounted(destroyCharts);
   width: 14px;
   height: 14px;
 }
-
+.clear-btn {
+  background: transparent;
+  border: 1px solid var(--border2);
+  color: var(--text2);
+  border-radius: 7px;
+  padding: 7px 12px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.clear-btn:hover {
+  color: var(--text);
+  border-color: var(--blue2);
+}
+.active-filters {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-top: 12px;
+}
+.active-filters-label {
+  font-size: 11px;
+  color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.filter-chip {
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  color: var(--text);
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 11px;
+}
 /* ── Charts ───────────────────────────────────────────────────────────────── */
 .charts-row {
   display: grid;
@@ -683,7 +961,12 @@ onUnmounted(destroyCharts);
 .chart-wrap.tall {
   height: 360px;
 }
-
+.chart-card--full {
+  grid-column: 1 / -1;
+}
+.chart-wrap.evolution {
+  height: 280px;
+}
 /* ── Table ────────────────────────────────────────────────────────────────── */
 .table-card {
   background: var(--bg2);
@@ -703,7 +986,6 @@ onUnmounted(destroyCharts);
 .table-wrap {
   overflow-x: auto;
 }
-
 table {
   width: 100%;
   min-width: 760px;
@@ -747,7 +1029,7 @@ td {
 }
 td.material-name {
   font-weight: 500;
-  color: #fff;
+  color: var(--text);
 }
 td.muted {
   color: var(--text2);
@@ -769,7 +1051,30 @@ td.total {
 .table-feedback.muted {
   color: var(--text3);
 }
-
+/* ── Summary tfoot ────────────────────────────────────────────────────────── */
+tfoot tr.totals-row {
+  background: var(--bg3);
+  border-top: 2px solid var(--border2);
+}
+tfoot td {
+  padding: 11px 16px;
+  white-space: nowrap;
+}
+tfoot td.totals-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text2);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+}
+tfoot td.totals-value {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+}
+tfoot td.total.totals-value {
+  color: var(--green);
+}
 /* ── Pagination ───────────────────────────────────────────────────────────── */
 .pagination {
   display: flex;
@@ -807,7 +1112,6 @@ td.total {
   opacity: 0.3;
   cursor: not-allowed;
 }
-
 .sr-only {
   position: absolute;
   width: 1px;
@@ -819,7 +1123,6 @@ td.total {
   white-space: nowrap;
   border: 0;
 }
-
 @keyframes fadeIn {
   from {
     opacity: 0;

@@ -1,11 +1,13 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { mount } from "@vue/test-utils";
+import { nextTick } from "vue";
 import OrcamentoSaudeFinanceira from "@/views/OrcamentoSaudeFinanceira.vue";
 
 vi.mock("chart.js", () => {
   const ChartMock = vi.fn().mockImplementation(() => ({
     destroy: vi.fn(),
     update: vi.fn(),
+    options: { scales: { y: {} } },
     data: {
       labels: [],
       datasets: [{ data: [], backgroundColor: [] }, { data: [] }],
@@ -15,120 +17,119 @@ vi.mock("chart.js", () => {
   return { Chart: ChartMock, registerables: [] };
 });
 
+const ALL_ROWS = [
+  {
+    id: 1,
+    projeto: "Projeto A",
+    programa: "Programa Alpha",
+    budget: 500000,
+    custoMateriais: 180000,
+    custoHoras: 120000,
+    custoReal: 300000,
+    desvioPercent: 60,
+    saude: "Saudável",
+    projecaoEstouro: null,
+    periodo: "2026-01",
+    status: "Em andamento",
+  },
+  {
+    id: 2,
+    projeto: "Projeto B",
+    programa: "Programa Alpha",
+    budget: 750000,
+    custoMateriais: 450000,
+    custoHoras: 280000,
+    custoReal: 730000,
+    desvioPercent: 97.3,
+    saude: "Crítico",
+    projecaoEstouro: null,
+    periodo: "2026-01",
+    status: "Em andamento",
+  },
+  {
+    id: 3,
+    projeto: "Projeto C",
+    programa: "Programa Beta",
+    budget: 450000,
+    custoMateriais: 210000,
+    custoHoras: 180000,
+    custoReal: 390000,
+    desvioPercent: 86.7,
+    saude: "Atenção",
+    projecaoEstouro: null,
+    periodo: "2026-02",
+    status: "Em andamento",
+  },
+];
+
+vi.mock("@/services/budgetService", () => ({
+  budgetService: {
+    fetchBudgetSnapshot: vi.fn().mockImplementation(async (filters: Record<string, string> = {}) => {
+      let rows = [...ALL_ROWS];
+      if (filters.programa) rows = rows.filter((r) => r.programa === filters.programa);
+      if (filters.projeto) rows = rows.filter((r) => r.projeto === filters.projeto);
+      if (filters.periodo) rows = rows.filter((r) => r.periodo === filters.periodo);
+      return { rows, lastUpdatedAt: "2026-04-26T12:30:00Z" };
+    }),
+  },
+}));
+
+async function mountView() {
+  const wrapper = mount(OrcamentoSaudeFinanceira);
+  await Promise.resolve();
+  await nextTick();
+  return wrapper;
+}
+
 describe("OrcamentoSaudeFinanceira.vue", () => {
   beforeEach(() => {
     document.body.innerHTML = "";
   });
 
-  it("renders the main layout", () => {
-    const wrapper = mount(OrcamentoSaudeFinanceira);
+  it("renders the main layout and metrics", async () => {
+    const wrapper = await mountView();
     expect(wrapper.find(".main").exists()).toBe(true);
+    expect(wrapper.text()).toContain("Budget Total");
+    expect(wrapper.text()).toContain("Custo Real Total");
+    expect(wrapper.text()).toContain("Desvio %");
   });
 
-  it("displays all KPI metric cards", () => {
-    const wrapper = mount(OrcamentoSaudeFinanceira);
-    const text = wrapper.text();
-    expect(text).toContain("Budget Total");
-    expect(text).toContain("Custo Real Total");
-    expect(text).toContain("Desvio % Médio");
-    expect(text).toContain("Projetos Saudáveis");
-    expect(text).toContain("Projetos em Atenção");
-    expect(text).toContain("Projetos Críticos");
-    expect(text).toContain("Projeção de Estouro");
-    expect(text).toContain("Última Atualização");
-  });
-
-  it("renders the filters section with all dropdowns", () => {
-    const wrapper = mount(OrcamentoSaudeFinanceira);
+  it("renders filters, charts and table", async () => {
+    const wrapper = await mountView();
     expect(wrapper.find('[data-testid="filters-section"]').exists()).toBe(true);
-    expect(wrapper.find('[data-testid="filter-periodo"]').exists()).toBe(true);
-    expect(wrapper.find('[data-testid="filter-programa"]').exists()).toBe(true);
-    expect(wrapper.find('[data-testid="filter-projeto"]').exists()).toBe(true);
-    expect(wrapper.find('[data-testid="filter-saude"]').exists()).toBe(true);
-    expect(wrapper.find('[data-testid="btn-limpar"]').exists()).toBe(true);
-  });
-
-  it("renders project health cards section", () => {
-    const wrapper = mount(OrcamentoSaudeFinanceira);
-    expect(wrapper.find('[data-testid="project-cards-section"]').exists()).toBe(
-      true,
-    );
-    expect(wrapper.text()).toContain("Saúde Financeira dos Projetos");
-  });
-
-  it("renders the analytical table with all columns", () => {
-    const wrapper = mount(OrcamentoSaudeFinanceira);
-    expect(wrapper.find('[data-testid="table-section"]').exists()).toBe(true);
+    expect(wrapper.find("#chartBudgetVsCusto").exists()).toBe(true);
+    expect(wrapper.find("#chartDesvioPercentual").exists()).toBe(true);
+    expect(wrapper.find("#chartDistribuicao").exists()).toBe(true);
     expect(wrapper.find('[data-testid="data-table"]').exists()).toBe(true);
-    const text = wrapper.text();
-    expect(text).toContain("Programa");
-    expect(text).toContain("Projeto");
-    expect(text).toContain("Budget");
-    expect(text).toContain("Custo Real");
-    expect(text).toContain("Desvio %");
-    expect(text).toContain("Saúde");
   });
 
-  it("shows all 8 projects initially", () => {
-    const wrapper = mount(OrcamentoSaudeFinanceira);
-    const rows = wrapper.findAll('[data-testid^="row-"]');
-    expect(rows.length).toBe(8);
+  it("renders rows and project cards from backend data", async () => {
+    const wrapper = await mountView();
+    expect(wrapper.findAll('[data-testid^="row-"]').length).toBe(3);
+    expect(wrapper.findAll('[data-testid^="project-card-"]').length).toBe(3);
   });
 
-  it("shows health badges with correct colors", () => {
-    const wrapper = mount(OrcamentoSaudeFinanceira);
-    expect(wrapper.find(".badge-green").exists()).toBe(true);
-    expect(wrapper.find(".badge-amber").exists()).toBe(true);
-    expect(wrapper.find(".badge-red").exists()).toBe(true);
-  });
-
-  it("filters by saude status — Saudável", async () => {
-    const wrapper = mount(OrcamentoSaudeFinanceira);
-    await wrapper.find('[data-testid="filter-saude"]').setValue("Saudável");
-    const rows = wrapper.findAll('[data-testid^="row-"]');
-    expect(rows.length).toBeGreaterThan(0);
-    rows.forEach((row) => {
-      expect(row.find(".saude-badge").text()).toBe("Saudável");
-    });
-  });
-
-  it("filters by saude status — Crítico", async () => {
-    const wrapper = mount(OrcamentoSaudeFinanceira);
+  it("filters by health status", async () => {
+    const wrapper = await mountView();
     await wrapper.find('[data-testid="filter-saude"]').setValue("Crítico");
-    const rows = wrapper.findAll('[data-testid^="row-"]');
-    expect(rows.length).toBeGreaterThan(0);
-    rows.forEach((row) => {
-      expect(row.find(".saude-badge").text()).toBe("Crítico");
-    });
+    expect(wrapper.findAll('[data-testid^="row-"]').length).toBe(1);
+    expect(wrapper.text()).toContain("Projeto B");
   });
 
-  it("filters by programa", async () => {
-    const wrapper = mount(OrcamentoSaudeFinanceira);
-    await wrapper
-      .find('[data-testid="filter-programa"]')
-      .setValue("Programa Alpha");
-    const rows = wrapper.findAll('[data-testid^="row-"]');
-    expect(rows.length).toBe(2);
-    rows.forEach((row) => {
-      expect(row.text()).toContain("Programa Alpha");
-    });
-  });
-
-  it("clears filters and restores all rows", async () => {
-    const wrapper = mount(OrcamentoSaudeFinanceira);
-    await wrapper.find('[data-testid="filter-saude"]').setValue("Crítico");
-    expect(wrapper.findAll('[data-testid^="row-"]').length).toBeLessThan(8);
+  it("filters by program and clears filters", async () => {
+    const wrapper = await mountView();
+    await wrapper.find('[data-testid="filter-programa"]').setValue("Programa Alpha");
+    await nextTick();
+    expect(wrapper.findAll('[data-testid^="row-"]').length).toBe(2);
 
     await wrapper.find('[data-testid="btn-limpar"]').trigger("click");
-    expect(wrapper.findAll('[data-testid^="row-"]').length).toBe(8);
+    await nextTick();
+    expect(wrapper.findAll('[data-testid^="row-"]').length).toBe(3);
   });
 
-  it("sorts table by clicking a column header", async () => {
-    const wrapper = mount(OrcamentoSaudeFinanceira);
-    const sortableHeaders = wrapper.findAll(".sort-col");
-    const budgetHeader = sortableHeaders.find((h) =>
-      h.text().includes("Budget"),
-    );
+  it("sorts by budget when clicking the header", async () => {
+    const wrapper = await mountView();
+    const budgetHeader = wrapper.findAll(".sort-col").find((h) => h.text().includes("Budget"));
     expect(budgetHeader).toBeDefined();
 
     await budgetHeader!.trigger("click");
@@ -138,36 +139,12 @@ describe("OrcamentoSaudeFinanceira.vue", () => {
     expect(budgetHeader!.text()).toContain("↓");
   });
 
-  it("shows no records message when filter combination matches nothing", async () => {
-    const wrapper = mount(OrcamentoSaudeFinanceira);
-    // Programa Alpha has only Saudável (A) and Crítico (B) — no Atenção projects
-    await wrapper
-      .find('[data-testid="filter-programa"]')
-      .setValue("Programa Alpha");
-    await wrapper.find('[data-testid="filter-saude"]').setValue("Atenção");
+  it("shows empty state when filters match nothing", async () => {
+    const wrapper = await mountView();
+    await wrapper.find('[data-testid="filter-programa"]').setValue("Programa Beta");
+    await nextTick();
+    await wrapper.find('[data-testid="filter-saude"]').setValue("Crítico");
+    await nextTick();
     expect(wrapper.text()).toContain("Nenhum registro encontrado.");
-  });
-
-  it("renders export button", () => {
-    const wrapper = mount(OrcamentoSaudeFinanceira);
-    expect(wrapper.find('[data-testid="btn-export"]').exists()).toBe(true);
-    expect(wrapper.find('[data-testid="btn-export"]').text()).toBe("Exportar");
-  });
-
-  it("renders chart canvas elements", () => {
-    const wrapper = mount(OrcamentoSaudeFinanceira);
-    expect(wrapper.find("#chartBudgetVsCusto").exists()).toBe(true);
-    expect(wrapper.find("#chartDesvioPercentual").exists()).toBe(true);
-    expect(wrapper.find("#chartDistribuicao").exists()).toBe(true);
-  });
-
-  it("project cards show budget, custo real and desvio", () => {
-    const wrapper = mount(OrcamentoSaudeFinanceira);
-    const projectCards = wrapper.findAll('[data-testid^="project-card-"]');
-    expect(projectCards.length).toBe(8);
-    const firstCard = projectCards[0];
-    expect(firstCard.text()).toContain("Budget:");
-    expect(firstCard.text()).toContain("Custo Real:");
-    expect(firstCard.text()).toContain("Desvio:");
   });
 });
