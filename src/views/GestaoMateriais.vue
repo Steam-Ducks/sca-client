@@ -586,11 +586,11 @@ const debouncedLoad = createDebouncedFn(() => {
 // ─── Computed ─────────────────────────────────────────────────────────────────
 const projetosFiltered = computed(() => {
   if (!filters.value.programa) {
-    return projetos;
+    return projetos.value;
   }
   return [
     ...new Set(
-      RAW.filter((r) => r.programa === filters.value.programa).map((r) => r.projeto),
+      allData.value.filter((r) => r.programa === filters.value.programa).map((r) => r.projeto),
     ),
   ].sort();
 });
