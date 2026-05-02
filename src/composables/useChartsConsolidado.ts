@@ -4,9 +4,8 @@ Chart.register(...registerables);
 const FONT = "'IBM Plex Sans', sans-serif";
 const MONO = "'IBM Plex Mono', monospace";
 
-const gridColor = "rgba(42,47,69,0.8)";
-const textColor = "#555d7a";
-const text2Color = "#8b92aa";
+const css = (v: string) =>
+  getComputedStyle(document.documentElement).getPropertyValue(v).trim();
 
 const baseOptions = (indexAxis: "x" | "y" = "y") => ({
   indexAxis,
@@ -16,11 +15,11 @@ const baseOptions = (indexAxis: "x" | "y" = "y") => ({
   plugins: {
     legend: { display: false },
     tooltip: {
-      backgroundColor: "#1c2030",
-      borderColor: "#2a2f45",
+      backgroundColor: css("--bg3"),
+      borderColor: css("--border"),
       borderWidth: 0,
-      titleColor: "#e2e6f0",
-      bodyColor: "#8b92aa",
+      titleColor: css("--text"),
+      bodyColor: css("--text2"),
       titleFont: { family: FONT, size: 12 },
       bodyFont: { family: MONO, size: 12 },
       padding: 10,
@@ -74,6 +73,9 @@ function destroyAll() {
 
 function buildCharts(data: ConsolidadoRow[]) {
   destroyAll();
+  const gridColor = css("--border");
+  const textColor = css("--text3");
+  const text2Color = css("--text2");
 
   // 1. Composição de Custos — doughnut Materiais vs Horas Técnicas
   const totalMat = data.reduce((s, r) => s + r.custoMateriais, 0);
@@ -111,7 +113,7 @@ function buildCharts(data: ConsolidadoRow[]) {
             display: true,
             position: "bottom",
             labels: {
-              color: text2Color,
+              color: css("--text"),
               font: { family: FONT, size: 12 },
               padding: 20,
               usePointStyle: true,
@@ -119,10 +121,12 @@ function buildCharts(data: ConsolidadoRow[]) {
               pointStyleWidth: 12,
               generateLabels: (chart) => {
                 const dataset = chart.data.datasets[0];
+                const labelColor = css("--text");
                 return (chart.data.labels as string[]).map((label, i) => ({
                   text: `${label}  ${dataset.data[i]}%`,
                   fillStyle: (dataset.backgroundColor as string[])[i],
                   strokeStyle: (dataset.backgroundColor as string[])[i],
+                  fontColor: labelColor,
                   lineWidth: 0,
                   hidden: false,
                   index: i,

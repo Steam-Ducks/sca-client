@@ -429,6 +429,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted, nextTick } from "vue";
+import { useTheme } from "@/composables/useTheme";
 import { useChartsDashboard } from "@/composables/useChartsDashboard";
 import type { DashboardRow } from "@/composables/useChartsDashboard";
 import { dashboardService } from "@/services/dashboardService";
@@ -737,6 +738,11 @@ const summarySortIcon = (k: keyof SummaryRow) =>
 
 // ─── Charts ──────────────────────────────────────────────────────────────────
 const { buildCharts, updateCharts, destroyCharts } = useChartsDashboard();
+const { theme } = useTheme();
+
+watch(theme, () => {
+  nextTick(() => buildCharts(tableData.value, compositionData.value ?? undefined, topProjectsData.value, summaryData.value, costEvolutionData.value));
+});
 
 onMounted(async () => {
   await Promise.all([fetchKPIs(), fetchTableData(), fetchComposition(), fetchTopProjects(), fetchSummary(), fetchCostEvolution()]);
