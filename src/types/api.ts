@@ -1,3 +1,4 @@
+// src/types/api.ts
 export interface User {
   id: number;
   email: string;
@@ -122,4 +123,30 @@ export interface BudgetProjectRow {
 export interface BudgetSnapshot {
   rows: BudgetProjectRow[];
   lastUpdatedAt: string | null;
+}
+
+export interface DashboardProjectRow {
+  id: number
+  nome_projeto: string
+  status: string
+}
+
+export interface DashboardSummaryRow {
+  programa: string
+  qtd_projetos: number
+  custo_materiais: number
+  custo_horas: number
+  custo_total: number
+}
+
+export interface TopProjectRow {
+  project_name: string
+  total_cost: number
+}
+
+export interface CostEvolutionRow {
+  period: string
+  materials_cost: number
+  hours_cost: number
+  total_cost: number
 }

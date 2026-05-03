@@ -79,13 +79,12 @@
           <select
             v-model="filters.projeto"
             class="filter-select"
-            :disabled="availableProjects.length === 0"
           >
             <option value="">
               Todos os Projetos
             </option>
             <option
-              v-for="p in availableProjects"
+              v-for="p in projetosFiltered"
               :key="p"
               :value="p"
             >
@@ -124,6 +123,28 @@
           </select>
         </div>
         <div
+          v-if="hasActiveFilters"
+          class="active-filters"
+        >
+          <div class="active-filters-title">
+            Filtros ativos
+          </div>
+          <div class="active-filters-list">
+            <span v-if="filters.periodo">Período: {{ filters.periodo }}</span>
+            <span v-if="filters.programa">Programa: {{ filters.programa }}</span>
+            <span v-if="filters.projeto">Projeto: {{ filters.projeto }}</span>
+            <span v-if="filters.categoria">Categoria: {{ filters.categoria }}</span>
+            <span v-if="filters.fornecedor">Fornecedor: {{ filters.fornecedor }}</span>
+            <span v-if="filters.search">Busca: {{ filters.search }}</span>
+          </div>
+          <button
+            class="clear-btn"
+            @click="clearFilters"
+          >
+            Limpar Filtros
+          </button>
+        </div>
+        <div
           class="filters-row"
           style="margin-top: 10px"
         >
@@ -152,13 +173,6 @@
             >
           </div>
           <button
-            v-if="hasActiveFilters"
-            class="clear-btn"
-            @click="clearFilters"
-          >
-            Limpar filtros
-          </button>
-          <button
             class="export-btn"
             @click="exportCSV"
           >
@@ -182,26 +196,13 @@
             Exportar
           </button>
         </div>
-        <div
-          v-if="hasActiveFilters"
-          class="active-filters"
-        >
-          <span class="active-filters-label">Filtros ativos</span>
-          <span
-            v-for="filter in activeFilterEntries"
-            :key="filter.key"
-            class="filter-chip"
-          >
-            {{ filter.label }}: {{ filter.value }}
-          </span>
-        </div>
       </div>
 
       <!-- TOP CHARTS -->
       <div class="charts-row">
         <div class="chart-card">
           <div class="chart-title">
-            Top 10 – Custo por Material
+            Top 10 Custo por Material
           </div>
           <div class="chart-wrap">
             <canvas id="chartCusto" />
@@ -209,7 +210,7 @@
         </div>
         <div class="chart-card">
           <div class="chart-title">
-            Top 10 – Quantidade Consumida
+            Top 10 Quantidade Consumida
           </div>
           <div class="chart-wrap">
             <canvas id="chartQtd" />
@@ -346,17 +347,14 @@
                   {{ row.fornecedor }}
                 </td>
                 <td>
-                  <span :class="badgeClass(row.categoria)">{{
-                    row.categoria
-                  }}</span>
+                  <span :class="badgeClass(row.categoria)">{{ row.categoria }}</span>
                 </td>
               </tr>
             </tbody>
           </table>
         </div>
         <div class="pagination">
-          <span>{{ sortedData.length }} registros · página {{ page }} de
-            {{ totalPages }}</span>
+          <span>{{ sortedData.length }} registros · página {{ page }} de {{ totalPages }}</span>
           <div class="pg-btns">
             <button
               class="pg-btn"
@@ -408,21 +406,17 @@ import { RAW } from "@/data/materiais";
 import { useCharts } from "@/composables/useCharts";
 import { materiaisService } from "@/services/materiaisService";
 import type { MaterialsApiRow } from "@/services/materiaisService";
-import type {
-  Filters,
-  SortKey,
-  SortDir,
-  Material,
-  Categoria,
-  Status,
-} from "@/types/materiais";
+import type { Filters, SortKey, SortDir, Material, Categoria, Status } from "@/types/materiais";
 
 const PER_PAGE = 8;
+const isMounted = ref(false);
 
 // ─── State ────────────────────────────────────────────────────────────────────
 const tableData = ref<Material[]>([]);
 const tableLoading = ref(false);
 const tableError = ref("");
+const topMaterials = ref<Material[]>([]);
+const costByProject = ref<Material[]>([]);
 const filters = ref<Filters>({
   periodo: "",
   programa: "",
@@ -440,43 +434,14 @@ const page = ref(1);
 // ─── Filter option lists (from static RAW for dropdown population) ────────────
 const periodos = [...new Set(RAW.map((r) => r.periodo))].sort();
 const programas = [...new Set(RAW.map((r) => r.programa))].sort();
+const projetos = [...new Set(RAW.map((r) => r.projeto))].sort();
 const categorias = [...new Set(RAW.map((r) => r.categoria))].sort();
 const fornecedores = [...new Set(RAW.map((r) => r.fornecedor))].sort();
-const availableProjects = computed(() => {
-  const rows = filters.value.programa
-    ? RAW.filter((r) => r.programa === filters.value.programa)
-    : RAW;
-  return [...new Set(rows.map((r) => r.projeto))].sort();
-});
-const activeFilterEntries = computed(() =>
-  [
-    { key: "periodo", label: "Período", value: filters.value.periodo },
-    { key: "programa", label: "Programa", value: filters.value.programa },
-    { key: "projeto", label: "Projeto", value: filters.value.projeto },
-    { key: "categoria", label: "Categoria", value: filters.value.categoria },
-    {
-      key: "fornecedor",
-      label: "Fornecedor",
-      value: filters.value.fornecedor,
-    },
-    { key: "search", label: "Busca", value: filters.value.search },
-  ].filter((entry) => Boolean(entry.value)),
-);
-const hasActiveFilters = computed(() => activeFilterEntries.value.length > 0);
 
 // ─── Data mapping ─────────────────────────────────────────────────────────────
 function normalizeCategoria(value: string): Categoria {
-  const allowed: Categoria[] = [
-    "Hardware",
-    "Storage",
-    "Cloud",
-    "Segurança",
-    "Software",
-    "Rede",
-  ];
-  return allowed.includes(value as Categoria)
-    ? (value as Categoria)
-    : "Hardware";
+  const allowed: Categoria[] = ["Hardware", "Storage", "Cloud", "Segurança", "Software", "Rede"];
+  return allowed.includes(value as Categoria) ? (value as Categoria) : "Hardware";
 }
 
 function mapApiRow(row: MaterialsApiRow): Material {
@@ -496,6 +461,7 @@ function mapApiRow(row: MaterialsApiRow): Material {
   };
 }
 
+
 // ─── API call ──────────────────────────────────────────────────────────────────
 async function loadTableData() {
   tableLoading.value = true;
@@ -513,10 +479,66 @@ async function loadTableData() {
   }
 }
 
-function createDebouncedFn<T extends (...args: never[]) => void>(
-  fn: T,
-  delay: number,
-) {
+type TopMaterialApi = {
+  material: string;
+  total_cost: number;
+};
+
+function mapTopMaterial(row: TopMaterialApi): Material {
+  return {
+    id: 0, // não usado no chart
+    material: row.material,
+    valorTotal: row.total_cost,
+    quantidade: 0, // placeholder
+    programa: "",
+    projeto: "",
+    periodo: "",
+    valorUnitario: 0,
+    fornecedor: "",
+    categoria: "Hardware",
+    status: "Ativo",
+    area: "Materiais",
+  };
+}
+
+async function loadTopMaterials() {
+  try {
+    const data = await materiaisService.fetchTopMaterials(filters.value);
+    console.log("TOP MATERIALS API:", data);
+    topMaterials.value = data.map(mapTopMaterial);
+  } catch (error) {
+    console.error("Erro ao carregar ranking", error);
+    topMaterials.value = [];
+  }
+}
+
+async function loadCostByProject() {
+  try {
+    const data = await materiaisService.fetchCostByProject(filters.value);
+
+    console.log("COST BY PROJECT:", data);
+
+    costByProject.value = data.map((item) => ({
+      id: 0,
+      material: "",
+      projeto: item.projeto,
+      programa: "",
+      quantidade: 0,
+      valorUnitario: 0,
+      valorTotal: item.total_cost,
+      periodo: "",
+      fornecedor: "",
+      categoria: "Hardware",
+      status: "Ativo",
+      area: "Materiais",
+    }));
+  } catch (error) {
+    console.error("Erro ao carregar projeto", error);
+    costByProject.value = [];
+  }
+}
+
+function createDebouncedFn<T extends (...args: never[]) => void>(fn: T, delay: number) {
   let timeoutId: ReturnType<typeof setTimeout> | null = null;
 
   const debounced = ((...args: Parameters<T>) => {
@@ -537,10 +559,34 @@ function createDebouncedFn<T extends (...args: never[]) => void>(
   return debounced;
 }
 
-// Debounce para o campo de busca livre (evita chamada a cada tecla)
-const debouncedLoad = createDebouncedFn(loadTableData, 400);
+const debouncedLoad = createDebouncedFn(() => {
+  loadTableData();
+  loadTopMaterials();
+}, 400);
 
 // ─── Computed ─────────────────────────────────────────────────────────────────
+const projetosFiltered = computed(() => {
+  if (!filters.value.programa) {
+    return projetos;
+  }
+  return [
+    ...new Set(
+      RAW.filter((r) => r.programa === filters.value.programa).map((r) => r.projeto),
+    ),
+  ].sort();
+});
+
+const hasActiveFilters = computed(() => {
+  return (
+    filters.value.periodo !== "" ||
+    filters.value.programa !== "" ||
+    filters.value.projeto !== "" ||
+    filters.value.categoria !== "" ||
+    filters.value.fornecedor !== "" ||
+    filters.value.search !== ""
+  );
+});
+
 const sortedData = computed(() =>
   [...tableData.value].sort((a, b) => {
     const av = a[sortKey.value];
@@ -551,18 +597,18 @@ const sortedData = computed(() =>
   }),
 );
 
-const totalCusto = computed(() =>
-  sortedData.value.reduce((s, r) => s + r.valorTotal, 0),
-);
+const totalCusto = computed(() => sortedData.value.reduce((s, r) => s + r.valorTotal, 0));
+
 const custoMedio = computed(() =>
   sortedData.value.length ? totalCusto.value / sortedData.value.length : 0,
 );
-const totalPages = computed(() =>
-  Math.max(1, Math.ceil(sortedData.value.length / PER_PAGE)),
-);
+
+const totalPages = computed(() => Math.max(1, Math.ceil(sortedData.value.length / PER_PAGE)));
+
 const pagedData = computed(() =>
   sortedData.value.slice((page.value - 1) * PER_PAGE, page.value * PER_PAGE),
 );
+
 const visiblePages = computed(() => {
   const p = page.value,
     t = totalPages.value;
@@ -571,7 +617,7 @@ const visiblePages = computed(() => {
   return Array.from({ length: end - start + 1 }, (_, i) => start + i);
 });
 
-// ─── Watchers — re-fetch quando filtros de select mudam ──────────────────────
+// ─── Watchers ─────────────────────────────────────────────────────────────────
 watch(
   () => [
     filters.value.periodo,
@@ -583,22 +629,10 @@ watch(
   () => {
     page.value = 1;
     loadTableData();
+    loadTopMaterials();
   },
 );
 
-watch(
-  () => filters.value.programa,
-  () => {
-    if (
-      filters.value.projeto &&
-      !availableProjects.value.includes(filters.value.projeto)
-    ) {
-      filters.value.projeto = "";
-    }
-  },
-);
-
-// Busca livre com debounce
 watch(
   () => filters.value.search,
   () => {
@@ -607,12 +641,23 @@ watch(
   },
 );
 
-// Atualiza charts quando dados mudam
-watch(sortedData, (val) => nextTick(() => updateCharts(val)));
+onMounted(async () => {
+  await loadTableData();
+  try { await loadTopMaterials(); } catch { /* ignore */ }
+  await loadCostByProject();
+  isMounted.value = true;
+
+  console.log("costByProject após load:", costByProject.value);  // ← add
+  console.log("topMaterials após load:", topMaterials.value);    // ← add
+
+  nextTick(() => { // ← add
+    buildCharts(topMaterials.value);
+    updateCharts(costByProject.value);
+  });
+});
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-const fmt = (v: number) =>
-  "R$ " + v.toLocaleString("pt-BR", { minimumFractionDigits: 2 });
+const fmt = (v: number) => "R$ " + v.toLocaleString("pt-BR", { minimumFractionDigits: 2 });
 
 function sort(k: SortKey) {
   if (sortKey.value === k) sortDir.value = (sortDir.value * -1) as SortDir;
@@ -622,8 +667,7 @@ function sort(k: SortKey) {
   }
 }
 
-const sortIcon = (k: SortKey) =>
-  sortKey.value !== k ? "↕" : sortDir.value > 0 ? "↑" : "↓";
+const sortIcon = (k: SortKey) => (sortKey.value !== k ? "↕" : sortDir.value > 0 ? "↑" : "↓");
 
 function badgeClass(c: string) {
   const map: Record<string, string> = {
@@ -635,6 +679,20 @@ function badgeClass(c: string) {
     Rede: "badge badge-rd",
   };
   return map[c] ?? "badge badge-hw";
+}
+
+function clearFilters() {
+  filters.value = {
+    periodo: "",
+    programa: "",
+    projeto: "",
+    categoria: "",
+    fornecedor: "",
+    status: "",
+    area: "",
+    search: "",
+  };
+  page.value = 1;
 }
 
 function exportCSV() {
@@ -660,26 +718,14 @@ function exportCSV() {
   a.click();
 }
 
-function clearFilters() {
-  filters.value = {
-    periodo: "",
-    programa: "",
-    projeto: "",
-    categoria: "",
-    fornecedor: "",
-    status: "",
-    area: "",
-    search: "",
-  };
-}
-
-// ─── Charts ───────────────────────────────────────────────────────────────────
+// ─── Charts ──────────────────────────────────────────────────────────────
 const { buildCharts, updateCharts, destroyCharts } = useCharts();
 
-onMounted(async () => {
-  await loadTableData();
-  nextTick(() => buildCharts(RAW));
+watch(topMaterials, () => {
+  if (!isMounted.value) return;
+  nextTick(() => updateCharts(costByProject.value));
 });
+
 onUnmounted(() => {
   debouncedLoad.cancel();
   destroyCharts();
@@ -687,24 +733,7 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-/* ── Variables ────────────────────────────────────────────────────────────── */
 .app {
-  --bg: #0d0f14;
-  --bg2: #141720;
-  --bg3: #1c2030;
-  --bg4: #222639;
-  --border: #2a2f45;
-  --border2: #353c58;
-  --text: #e2e6f0;
-  --text2: #8b92aa;
-  --text3: #555d7a;
-  --blue: #4d8fff;
-  --blue2: #3a7af5;
-  --green: #2dd4a0;
-  --amber: #f5a623;
-  --red: #f55a5a;
-  --purple: #9b7fff;
-
   display: flex;
   flex-direction: column;
   min-height: 100vh;
@@ -808,7 +837,6 @@ onUnmounted(() => {
   flex-wrap: wrap;
   align-items: center;
 }
-
 .filter-select {
   background: var(--bg3);
   border: 1px solid var(--border);
@@ -829,7 +857,6 @@ onUnmounted(() => {
   outline: none;
   border-color: var(--blue2);
 }
-
 .search-wrap {
   flex: 1;
   position: relative;
@@ -862,7 +889,6 @@ onUnmounted(() => {
 .search-input::placeholder {
   color: var(--text3);
 }
-
 .export-btn {
   display: flex;
   align-items: center;
@@ -885,40 +911,6 @@ onUnmounted(() => {
 .export-btn svg {
   width: 14px;
   height: 14px;
-}
-.clear-btn {
-  background: transparent;
-  border: 1px solid var(--border2);
-  color: var(--text2);
-  border-radius: 7px;
-  padding: 7px 12px;
-  font-size: 12px;
-  cursor: pointer;
-}
-.clear-btn:hover {
-  color: var(--text);
-  border-color: var(--blue2);
-}
-.active-filters {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  align-items: center;
-  margin-top: 12px;
-}
-.active-filters-label {
-  font-size: 11px;
-  color: var(--text3);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-}
-.filter-chip {
-  background: var(--bg3);
-  border: 1px solid var(--border2);
-  color: var(--text);
-  border-radius: 999px;
-  padding: 4px 10px;
-  font-size: 11px;
 }
 
 /* ── Charts ───────────────────────────────────────────────────────────────── */
@@ -967,7 +959,6 @@ onUnmounted(() => {
 .table-wrap {
   overflow-x: auto;
 }
-
 table {
   width: 100%;
   border-collapse: collapse;
@@ -1010,7 +1001,7 @@ td {
 }
 td.material-name {
   font-weight: 500;
-  color: #fff;
+  color: var(--text);
 }
 td.muted {
   color: var(--text2);

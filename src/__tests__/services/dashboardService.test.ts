@@ -23,9 +23,7 @@ describe("dashboardService", () => {
         json: () => Promise.resolve(KPIS_MOCK),
       }),
     );
-
     await dashboardService.fetchKPIs();
-
     expect(fetch).toHaveBeenCalledWith(
       expect.stringContaining("/dashboard/kpis/"),
     );
@@ -39,9 +37,7 @@ describe("dashboardService", () => {
         json: () => Promise.resolve(KPIS_MOCK),
       }),
     );
-
     const result = await dashboardService.fetchKPIs();
-
     expect(result.total_consolidated_cost).toBe(750000.0);
     expect(result.total_materials_cost).toBe(450000.0);
     expect(result.total_hours_cost).toBe(300000.0);
@@ -57,9 +53,7 @@ describe("dashboardService", () => {
         json: () => Promise.resolve(KPIS_MOCK),
       }),
     );
-
     await dashboardService.fetchKPIs({ start_date: "2024-01-01" });
-
     expect(fetch).toHaveBeenCalledWith(
       expect.stringContaining("start_date=2024-01-01"),
     );
@@ -73,9 +67,7 @@ describe("dashboardService", () => {
         json: () => Promise.resolve(KPIS_MOCK),
       }),
     );
-
     await dashboardService.fetchKPIs({ end_date: "2024-12-31" });
-
     expect(fetch).toHaveBeenCalledWith(
       expect.stringContaining("end_date=2024-12-31"),
     );
@@ -89,9 +81,7 @@ describe("dashboardService", () => {
         json: () => Promise.resolve(KPIS_MOCK),
       }),
     );
-
     await dashboardService.fetchKPIs({ status: "Em andamento" });
-
     expect(fetch).toHaveBeenCalledWith(
       expect.stringContaining("status=Em+andamento"),
     );
@@ -105,9 +95,8 @@ describe("dashboardService", () => {
         status: 500,
       }),
     );
-
     await expect(dashboardService.fetchKPIs()).rejects.toThrow(
-      "Error fetching KPIs: 500",
+      "Error fetching /dashboard/kpis/: 500",
     );
   });
 
@@ -119,9 +108,7 @@ describe("dashboardService", () => {
         json: () => Promise.resolve(KPIS_MOCK),
       }),
     );
-
     await dashboardService.fetchKPIs({});
-
     const url = (fetch as ReturnType<typeof vi.fn>).mock.calls[0][0] as string;
     expect(url.includes("?")).toBe(false);
   });

@@ -6,6 +6,19 @@
       </h1>
 
       <div
+        v-if="isLoading"
+        class="loading-banner"
+      >
+        Carregando dados...
+      </div>
+      <div
+        v-if="errorMsg"
+        class="error-banner"
+      >
+        {{ errorMsg }}
+      </div>
+
+      <div
         class="metrics"
         data-testid="metrics-section"
       >
@@ -387,6 +400,8 @@ const { buildChartsOrcamento, updateChartsOrcamento, destroyChartsOrcamento } =
 
 const allData = ref<BudgetProjectRow[]>([]);
 const lastUpdatedAt = ref<string | null>(null);
+const isLoading = ref(false);
+const errorMsg = ref<string | null>(null);
 
 const filters = ref({
   periodo: "",
@@ -398,24 +413,27 @@ const filters = ref({
 const sortKey = ref<keyof BudgetProjectRow>("programa");
 const sortDir = ref<1 | -1>(1);
 
+// Opções dinâmicas derivadas dos dados carregados (sem aplicar filtro de saúde
+// para que o dropdown de saúde sempre mostre as 3 opções fixas)
 const uniquePeriodos = computed(() =>
-  [...new Set(allData.value.map((p) => p.periodo))].sort(),
+  [...new Set(allData.value.map((p) => p.periodo).filter((p) => p !== "Sem periodo"))].sort(),
 );
 const uniqueProgramas = computed(() =>
   [...new Set(allData.value.map((p) => p.programa))].sort(),
 );
-const uniqueProjetos = computed(() =>
-  [...new Set(allData.value.map((p) => p.projeto))].sort(),
-);
+const uniqueProjetos = computed(() => {
+  const base = filters.value.programa
+    ? allData.value.filter((p) => p.programa === filters.value.programa)
+    : allData.value;
+  return [...new Set(base.map((p) => p.projeto))].sort();
+});
 
+// filteredData aplica client-side o filtro de saúde (o backend no caminho
+// silver não filtra por saúde; o caminho gold sim)
 const filteredData = computed(() => {
   const f = filters.value;
   return allData.value.filter(
-    (p) =>
-      (!f.periodo || p.periodo === f.periodo) &&
-      (!f.programa || p.programa === f.programa) &&
-      (!f.projeto || p.projeto === f.projeto) &&
-      (!f.saude || p.saude === f.saude),
+    (p) => (!f.saude || p.saude === f.saude),
   );
 });
 
@@ -450,11 +468,13 @@ const kpis = computed(() => {
 });
 
 const ultimaAtualizacao = computed(() => {
-  const date = lastUpdatedAt.value ? new Date(lastUpdatedAt.value) : new Date();
-  return date.toLocaleDateString("pt-BR", {
+  if (!lastUpdatedAt.value) return "Não informado";
+  return new Date(lastUpdatedAt.value).toLocaleDateString("pt-BR", {
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
   });
 });
 
@@ -463,7 +483,6 @@ function sortBy(key: keyof BudgetProjectRow) {
     sortDir.value = sortDir.value === 1 ? -1 : 1;
     return;
   }
-
   sortKey.value = key;
   sortDir.value = 1;
 }
@@ -477,7 +496,8 @@ function fmtBRL(v: number): string {
   return new Intl.NumberFormat("pt-BR", {
     style: "currency",
     currency: "BRL",
-    maximumFractionDigits: 0,
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
   }).format(v);
 }
 
@@ -499,31 +519,14 @@ function clearFilters() {
 
 function exportCSV() {
   const headers = [
-    "Programa",
-    "Projeto",
-    "Budget",
-    "Custo Materiais",
-    "Custo Horas",
-    "Custo Real",
-    "Desvio %",
-    "Saude",
-    "Projecao Estouro",
-    "Periodo",
+    "Programa", "Projeto", "Budget", "Custo Materiais", "Custo Horas",
+    "Custo Real", "Desvio %", "Saude", "Projecao Estouro", "Periodo",
   ];
-
   const rows = sortedData.value.map((p) => [
-    p.programa,
-    p.projeto,
-    p.budget,
-    p.custoMateriais,
-    p.custoHoras,
-    p.custoReal,
-    `${p.desvioPercent.toFixed(1)}%`,
-    p.saude,
-    p.projecaoEstouro ?? "-",
-    p.periodo,
+    p.programa, p.projeto, p.budget, p.custoMateriais, p.custoHoras,
+    p.custoReal, `${p.desvioPercent.toFixed(1)}%`, p.saude,
+    p.projecaoEstouro ?? "-", p.periodo,
   ]);
-
   const csv = [headers, ...rows].map((r) => r.join(",")).join("\n");
   const a = document.createElement("a");
   a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
@@ -531,19 +534,59 @@ function exportCSV() {
   a.click();
 }
 
-async function fetchBudgetSnapshot() {
-  const snapshot = await budgetService.fetchBudgetSnapshot();
-  allData.value = snapshot.rows;
-  lastUpdatedAt.value = snapshot.lastUpdatedAt;
+// Busca dados do backend com os filtros server-side (periodo, programa, projeto, saude).
+// O filtro de saúde é enviado ao backend; no caminho gold é aplicado server-side,
+// no caminho silver é ignorado e aplicado client-side em filteredData.
+async function loadData() {
+  isLoading.value = true;
+  errorMsg.value = null;
+  try {
+    const f = filters.value;
+    const snapshot = await budgetService.fetchBudgetSnapshot({
+      periodo: f.periodo || undefined,
+      programa: f.programa || undefined,
+      projeto: f.projeto || undefined,
+      saude: f.saude || undefined,
+    });
+    allData.value = snapshot.rows;
+    lastUpdatedAt.value = snapshot.lastUpdatedAt;
+  } catch {
+    errorMsg.value = "Não foi possível conectar ao servidor. Verifique se o backend está em execução.";
+    allData.value = [];
+  } finally {
+    isLoading.value = false;
+  }
 }
 
-watch(filteredData, async () => {
-  await nextTick();
-  updateChartsOrcamento(filteredData.value);
-});
+// Quando filtros server-side (período, programa, projeto) mudam: refaz a busca
+// na API. O filtro saúde (client-side) é tratado apenas em filteredData.
+watch(
+  () => [filters.value.periodo, filters.value.programa, filters.value.projeto],
+  async () => {
+    // Limpa projeto se não é mais válido para o programa selecionado
+    if (
+      filters.value.projeto &&
+      !uniqueProjetos.value.includes(filters.value.projeto)
+    ) {
+      filters.value.projeto = "";
+    }
+    await loadData();
+    await nextTick();
+    buildChartsOrcamento(filteredData.value);
+  },
+);
+
+// Quando saúde muda: apenas filtra client-side (sem refetch)
+watch(
+  () => filters.value.saude,
+  async () => {
+    await nextTick();
+    updateChartsOrcamento(filteredData.value);
+  },
+);
 
 onMounted(async () => {
-  await fetchBudgetSnapshot();
+  await loadData();
   await nextTick();
   buildChartsOrcamento(filteredData.value);
 });
@@ -578,6 +621,24 @@ onUnmounted(() => {
   overflow: hidden;
   clip: rect(0, 0, 0, 0);
   border: 0;
+}
+
+.loading-banner {
+  padding: 12px 16px;
+  background: rgba(77, 143, 255, 0.1);
+  border: 1px solid rgba(77, 143, 255, 0.3);
+  border-radius: 8px;
+  color: var(--blue);
+  font-size: 13px;
+}
+
+.error-banner {
+  padding: 12px 16px;
+  background: rgba(245, 90, 90, 0.1);
+  border: 1px solid rgba(245, 90, 90, 0.3);
+  border-radius: 8px;
+  color: var(--red);
+  font-size: 13px;
 }
 
 .metrics {

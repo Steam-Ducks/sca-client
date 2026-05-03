@@ -17,54 +17,59 @@ vi.mock("chart.js", () => {
   return { Chart: ChartMock, registerables: [] };
 });
 
+const ALL_ROWS = [
+  {
+    id: 1,
+    projeto: "Projeto A",
+    programa: "Programa Alpha",
+    budget: 500000,
+    custoMateriais: 180000,
+    custoHoras: 120000,
+    custoReal: 300000,
+    desvioPercent: 60,
+    saude: "Saudável",
+    projecaoEstouro: null,
+    periodo: "2026-01",
+    status: "Em andamento",
+  },
+  {
+    id: 2,
+    projeto: "Projeto B",
+    programa: "Programa Alpha",
+    budget: 750000,
+    custoMateriais: 450000,
+    custoHoras: 280000,
+    custoReal: 730000,
+    desvioPercent: 97.3,
+    saude: "Crítico",
+    projecaoEstouro: null,
+    periodo: "2026-01",
+    status: "Em andamento",
+  },
+  {
+    id: 3,
+    projeto: "Projeto C",
+    programa: "Programa Beta",
+    budget: 450000,
+    custoMateriais: 210000,
+    custoHoras: 180000,
+    custoReal: 390000,
+    desvioPercent: 86.7,
+    saude: "Atenção",
+    projecaoEstouro: null,
+    periodo: "2026-02",
+    status: "Em andamento",
+  },
+];
+
 vi.mock("@/services/budgetService", () => ({
   budgetService: {
-    fetchBudgetSnapshot: vi.fn().mockResolvedValue({
-      rows: [
-        {
-          id: 1,
-          projeto: "Projeto A",
-          programa: "Programa Alpha",
-          budget: 500000,
-          custoMateriais: 180000,
-          custoHoras: 120000,
-          custoReal: 300000,
-          desvioPercent: 60,
-          saude: "Saudável",
-          projecaoEstouro: null,
-          periodo: "2026-01",
-          status: "Em andamento",
-        },
-        {
-          id: 2,
-          projeto: "Projeto B",
-          programa: "Programa Alpha",
-          budget: 750000,
-          custoMateriais: 450000,
-          custoHoras: 280000,
-          custoReal: 730000,
-          desvioPercent: 97.3,
-          saude: "Crítico",
-          projecaoEstouro: null,
-          periodo: "2026-01",
-          status: "Em andamento",
-        },
-        {
-          id: 3,
-          projeto: "Projeto C",
-          programa: "Programa Beta",
-          budget: 450000,
-          custoMateriais: 210000,
-          custoHoras: 180000,
-          custoReal: 390000,
-          desvioPercent: 86.7,
-          saude: "Atenção",
-          projecaoEstouro: null,
-          periodo: "2026-02",
-          status: "Em andamento",
-        },
-      ],
-      lastUpdatedAt: "2026-04-26T12:30:00Z",
+    fetchBudgetSnapshot: vi.fn().mockImplementation(async (filters: Record<string, string> = {}) => {
+      let rows = [...ALL_ROWS];
+      if (filters.programa) rows = rows.filter((r) => r.programa === filters.programa);
+      if (filters.projeto) rows = rows.filter((r) => r.projeto === filters.projeto);
+      if (filters.periodo) rows = rows.filter((r) => r.periodo === filters.periodo);
+      return { rows, lastUpdatedAt: "2026-04-26T12:30:00Z" };
     }),
   },
 }));
@@ -114,9 +119,11 @@ describe("OrcamentoSaudeFinanceira.vue", () => {
   it("filters by program and clears filters", async () => {
     const wrapper = await mountView();
     await wrapper.find('[data-testid="filter-programa"]').setValue("Programa Alpha");
+    await nextTick();
     expect(wrapper.findAll('[data-testid^="row-"]').length).toBe(2);
 
     await wrapper.find('[data-testid="btn-limpar"]').trigger("click");
+    await nextTick();
     expect(wrapper.findAll('[data-testid^="row-"]').length).toBe(3);
   });
 
@@ -135,7 +142,9 @@ describe("OrcamentoSaudeFinanceira.vue", () => {
   it("shows empty state when filters match nothing", async () => {
     const wrapper = await mountView();
     await wrapper.find('[data-testid="filter-programa"]').setValue("Programa Beta");
+    await nextTick();
     await wrapper.find('[data-testid="filter-saude"]').setValue("Crítico");
+    await nextTick();
     expect(wrapper.text()).toContain("Nenhum registro encontrado.");
   });
 });
