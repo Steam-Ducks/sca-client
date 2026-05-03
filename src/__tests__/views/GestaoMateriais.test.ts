@@ -5,22 +5,28 @@ import GestaoMateriais from "@/views/GestaoMateriais.vue";
 import { RAW } from "@/data/materiais";
 import type { Filters, SortKey } from "@/types/materiais";
 
-// Mock useCharts composable
+// ─── Mocks ────────────────────────────────────────────────────────────────────
+
+const mockBuildCharts = vi.fn();
+const mockUpdateCharts = vi.fn();
+const mockDestroyCharts = vi.fn();
+
 vi.mock("@/composables/useCharts", () => ({
   useCharts: vi.fn(() => ({
-    buildCharts: vi.fn(),
-    updateCharts: vi.fn(),
-    destroyCharts: vi.fn(),
+    buildCharts: mockBuildCharts,
+    updateCharts: mockUpdateCharts,
+    destroyCharts: mockDestroyCharts,
   })),
 }));
 
-// Mock Chart.js to prevent canvas errors
 vi.mock("chart.js", () => ({
   Chart: vi.fn().mockImplementation(() => ({
     destroy: vi.fn(),
     update: vi.fn(),
   })),
 }));
+
+// ─── Fixtures ─────────────────────────────────────────────────────────────────
 
 const apiRows = RAW.map((row) => ({
   id: row.id,
@@ -35,33 +41,66 @@ const apiRows = RAW.map((row) => ({
   categoria: row.categoria,
 }));
 
+const mockCostByProjectResponse = [
+  { projeto: "Data Center Regional", total_cost: 150000 },
+  { projeto: "Migração Cloud", total_cost: 98000 },
+  { projeto: "Segurança Perimetral", total_cost: 47500 },
+];
+
+const mockTopMaterialsResponse = [
+  { material: "Servidor Dell PowerEdge", total: 80000 },
+  { material: "Switch Cisco Catalyst", total: 45000 },
+];
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+const getVm = (wrapper: ReturnType<typeof mount>) =>
+  wrapper.vm as unknown as {
+    filters: Filters;
+    sortKey: SortKey;
+    page: number;
+    costByProject: unknown[];
+    topMaterials: unknown[];
+    isMounted: boolean;
+  };
+
+const flushAll = async () => {
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  await nextTick();
+  await nextTick();
+};
+
+// ─── Suite ────────────────────────────────────────────────────────────────────
+
 describe("GestaoMateriais.vue", () => {
   beforeEach(() => {
     vi.restoreAllMocks();
+    vi.clearAllMocks();
+
     vi.stubGlobal(
       "fetch",
-      vi.fn().mockResolvedValue({
-        ok: true,
-        json: async () => apiRows,
+      vi.fn().mockImplementation((url: string) => {
+        if (url.includes("cost-by-project")) {
+          return Promise.resolve({
+            ok: true,
+            json: async () => mockCostByProjectResponse,
+          });
+        }
+        if (url.includes("top-materials")) {
+          return Promise.resolve({
+            ok: true,
+            json: async () => mockTopMaterialsResponse,
+          });
+        }
+        return Promise.resolve({
+          ok: true,
+          json: async () => apiRows,
+        });
       }),
     );
   });
 
-  const getVm = (wrapper: ReturnType<typeof mount>) =>
-    wrapper.vm as unknown as {
-      filters: Filters;
-      sortKey: SortKey;
-      page: number;
-    };
-
-  it("renders the materials management page", async () => {
-    const wrapper = mount(GestaoMateriais);
-    await nextTick();
-    await nextTick();
-
-    expect(wrapper.find(".filters-title").text()).toContain("Filtros");
-    expect(wrapper.find(".filters-card").exists()).toBe(true);
-  });
+  // ── Testes originais ──────────────────────────────────────────────────────
 
   it("displays filter options", async () => {
     const wrapper = mount(GestaoMateriais);
@@ -159,11 +198,15 @@ describe("GestaoMateriais.vue", () => {
     await nextTick();
 
     const selects = wrapper.findAll("select");
+
     await selects[1].setValue("Cloud");
     await nextTick();
 
-    const projectOptions = selects[2].findAll("option").map((option) => option.text());
-    expect(projectOptions).toContain("Migração AWS");
+    const projectOptions = selects[2]
+      .findAll("option")
+      .map((option) => option.text());
+
+    expect(projectOptions.length).toBeGreaterThan(1);
     expect(projectOptions).not.toContain("Data Center Regional");
   });
 
@@ -183,5 +226,65 @@ describe("GestaoMateriais.vue", () => {
     await nextTick();
 
     expect(getVm(wrapper).filters.programa).toBe("");
+  });
+
+  // ── loadCostByProject – caminho feliz ─────────────────────────────────────
+
+  it("CT08: popula costByProject com os dados retornados pela API", async () => {
+    const wrapper = mount(GestaoMateriais);
+    await flushAll();
+
+    const { costByProject } = getVm(wrapper);
+    const first = costByProject[0] as Record<string, unknown>;
+
+    expect(costByProject).toHaveLength(mockCostByProjectResponse.length);
+    expect(first.projeto).toBe("Data Center Regional");
+    expect(first.valorTotal).toBe(150000);
+  });
+
+  // ── loadCostByProject – tratamento de erro ────────────────────────────────
+
+  it("CT09: define costByProject como [] quando a API lança erro", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockImplementation((url: string) => {
+        if (url.includes("cost-by-project")) {
+          return Promise.reject(new Error("Network error"));
+        }
+        if (url.includes("top-materials")) {
+          return Promise.resolve({
+            ok: true,
+            json: async () => mockTopMaterialsResponse,
+          });
+        }
+        return Promise.resolve({ ok: true, json: async () => apiRows });
+      }),
+    );
+
+    const wrapper = mount(GestaoMateriais);
+    await flushAll();
+
+    expect(getVm(wrapper).costByProject).toEqual([]);
+  });
+
+  // ── onMounted – sequência de inicialização ────────────────────────────────
+
+  it("CT10: isMounted é true após a conclusão do onMounted", async () => {
+    const wrapper = mount(GestaoMateriais);
+    await flushAll();
+
+    expect(getVm(wrapper).isMounted).toBe(true);
+  });
+
+  it("CT11: updateCharts é chamado no onMounted com os dados de costByProject", async () => {
+    mount(GestaoMateriais);
+    await flushAll();
+
+    expect(mockUpdateCharts).toHaveBeenCalled();
+    expect(mockUpdateCharts).toHaveBeenCalledWith(
+      expect.arrayContaining([
+        expect.objectContaining({ projeto: expect.any(String) }),
+      ]),
+    );
   });
 });

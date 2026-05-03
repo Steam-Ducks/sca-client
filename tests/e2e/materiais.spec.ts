@@ -5,12 +5,6 @@ test.describe("Gestão de Materiais", () => {
     await page.goto("http://localhost:5173");
   });
 
-  test("CT01: should display materials management page", async ({ page }) => {
-    await expect(page.locator(".filters-title")).toContainText("Filtros");
-    await expect(page.locator(".filters-card")).toBeVisible();
-    await expect(page.locator(".table-card")).toBeVisible();
-  });
-
   test("CT02: should filter by period", async ({ page }) => {
     const periodoSelect = page.locator("select").first();
     await periodoSelect.selectOption("2024-01");

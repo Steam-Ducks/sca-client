@@ -19,7 +19,7 @@ const SAUDE_COLORS: Record<BudgetHealthStatus, string> = {
 const tooltipBase = {
   backgroundColor: "#1c2030",
   borderColor: "#2a2f45",
-  borderWidth: 1,
+  borderWidth: 0,
   titleColor: "#e2e6f0",
   bodyColor: "#8b92aa",
   titleFont: { family: FONT, size: 12 },
@@ -197,8 +197,7 @@ function buildChartsOrcamento(data: BudgetProjectRow[]) {
               "rgba(245,166,35,0.9)",
               "rgba(245,90,90,0.9)",
             ],
-            borderColor: "#141720",
-            borderWidth: 3,
+            borderWidth: 0,
             hoverOffset: 8,
           },
         ],
