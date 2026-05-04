@@ -23,5 +23,11 @@ export default defineConfig({
       "tests/**",
       "tests/e2e/**",
     ],
+
+    coverage: {
+      provider: "v8",
+      reporter: ["text", "lcov"],
+      reportsDirectory: "coverage",
+    },
   },
 });
