@@ -1,6 +1,14 @@
 import type { Filters } from "@/types/materiais";
 import { CONFIG } from "@/utils/config";
 
+export interface FilterOptions {
+  periodos: string[];
+  programas: string[];
+  projetos: { nome: string; programa: string | null }[];
+  categorias: string[];
+  fornecedores: string[];
+}
+
 export interface MaterialsApiRow {
   id: number;
   material: string;
@@ -76,5 +84,15 @@ export const materiaisService = {
     }
 
     return response.json() as Promise<CostByProject[]>;
+  },
+
+  async fetchFilterOptions(): Promise<FilterOptions> {
+    const response = await fetch(`${CONFIG.API_BASE_URL}/materials/filter-options/`);
+
+    if (!response.ok) {
+      throw new Error("Não foi possível carregar as opções de filtro.");
+    }
+
+    return response.json() as Promise<FilterOptions>;
   },
 };
