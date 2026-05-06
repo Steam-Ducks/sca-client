@@ -928,6 +928,58 @@ onUnmounted(() => {
   height: 14px;
 }
 
+/* ── Active Filters ───────────────────────────────────────────────────────── */
+.active-filters {
+  margin-top: 12px;
+  padding: 10px 14px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.active-filters-title {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  margin-right: 4px;
+}
+.active-filters-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  flex: 1;
+}
+.active-filters-list span {
+  background: rgba(77, 143, 255, 0.12);
+  color: var(--blue);
+  border: 1px solid rgba(77, 143, 255, 0.25);
+  border-radius: 5px;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 500;
+}
+.clear-btn {
+  background: transparent;
+  border: 1px solid var(--border2);
+  color: var(--text3);
+  border-radius: 5px;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.clear-btn:hover {
+  border-color: var(--red);
+  color: var(--red);
+}
+
 /* ── Charts ───────────────────────────────────────────────────────────────── */
 .charts-row {
   display: grid;
