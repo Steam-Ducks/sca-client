@@ -1,7 +1,9 @@
 <template>
   <div class="app">
     <main class="main">
-      <h1 class="sr-only">Monitoramento do Sistema</h1>
+      <h1 class="sr-only">
+        Monitoramento do Sistema
+      </h1>
 
       <!-- STATUS HEADER -->
       <div :class="['status-header', statusData?.status ?? 'loading']">
@@ -26,7 +28,9 @@
       <!-- KPI CARDS -->
       <div class="metrics">
         <div class="metric-card">
-          <div class="metric-label">Banco de Dados</div>
+          <div class="metric-label">
+            Banco de Dados
+          </div>
           <div :class="['metric-value', serviceColor(statusData?.services?.database?.status)]">
             {{ statusData?.services?.database?.status ?? '—' }}
           </div>
@@ -38,7 +42,9 @@
           </div>
         </div>
         <div class="metric-card">
-          <div class="metric-label">Conexões DB</div>
+          <div class="metric-label">
+            Conexões DB
+          </div>
           <div :class="['metric-value', connectionsColor]">
             {{ statusData?.db_stats?.connections?.total ?? '—' }}
           </div>
@@ -50,25 +56,33 @@
           </div>
         </div>
         <div class="metric-card">
-          <div class="metric-label">Processos Recentes</div>
+          <div class="metric-label">
+            Processos Recentes
+          </div>
           <div class="metric-value blue">
             {{ statusData?.processes?.filter(p => !p.error)?.length ?? '—' }}
           </div>
         </div>
         <div class="metric-card">
-          <div class="metric-label">Alertas Ativos</div>
+          <div class="metric-label">
+            Alertas Ativos
+          </div>
           <div :class="['metric-value', alertsColor]">
             {{ statusData?.alerts?.length ?? '—' }}
           </div>
         </div>
         <div class="metric-card">
-          <div class="metric-label">Inconsistências</div>
+          <div class="metric-label">
+            Inconsistências
+          </div>
           <div :class="['metric-value', integrityColor]">
             {{ statusData?.data_integrity?.inconsistencies?.length ?? '—' }}
           </div>
         </div>
         <div class="metric-card">
-          <div class="metric-label">Queries Lentas</div>
+          <div class="metric-label">
+            Queries Lentas
+          </div>
           <div :class="['metric-value', slowQueriesColor]">
             {{ statusData?.db_stats?.slow_queries?.length ?? '—' }}
           </div>
@@ -80,7 +94,9 @@
 
       <!-- LAST UPDATES -->
       <div class="section-card">
-        <div class="section-title">Última Atualização dos Dados</div>
+        <div class="section-title">
+          Última Atualização dos Dados
+        </div>
         <div
           v-if="!statusData?.last_updates"
           class="empty-state"
@@ -106,7 +122,9 @@
 
       <!-- PROCESSES -->
       <div class="section-card">
-        <div class="section-title">Processos Recentes (ETL)</div>
+        <div class="section-title">
+          Processos Recentes (ETL)
+        </div>
         <div
           v-if="!statusData?.processes?.length"
           class="empty-state"
@@ -149,7 +167,9 @@
 
       <!-- ALERTS -->
       <div class="section-card">
-        <div class="section-title">Alertas e Falhas</div>
+        <div class="section-title">
+          Alertas e Falhas
+        </div>
         <div
           v-if="!statusData?.alerts?.length"
           class="empty-state ok-state"
@@ -178,7 +198,9 @@
 
       <!-- DATA INTEGRITY -->
       <div class="section-card">
-        <div class="section-title">Integridade dos Dados</div>
+        <div class="section-title">
+          Integridade dos Dados
+        </div>
         <div
           v-if="!statusData?.data_integrity?.inconsistencies?.length"
           class="empty-state ok-state"
@@ -214,7 +236,9 @@
 
       <!-- TABLE SIZES -->
       <div class="section-card">
-        <div class="section-title">Tamanho das Tabelas</div>
+        <div class="section-title">
+          Tamanho das Tabelas
+        </div>
         <div
           v-if="!statusData?.db_stats?.table_sizes?.length"
           class="empty-state"
@@ -239,9 +263,13 @@
                 v-for="t in statusData.db_stats.table_sizes"
                 :key="`${t.schemaname}.${t.tablename}`"
               >
-                <td class="schema-tag">{{ t.schemaname }}</td>
+                <td class="schema-tag">
+                  {{ t.schemaname }}
+                </td>
                 <td>{{ t.tablename }}</td>
-                <td class="size-val">{{ t.total_size }}</td>
+                <td class="size-val">
+                  {{ t.total_size }}
+                </td>
                 <td>{{ t.row_estimate.toLocaleString('pt-BR') }}</td>
               </tr>
             </tbody>
@@ -251,7 +279,9 @@
 
       <!-- SLOW QUERIES -->
       <div class="section-card">
-        <div class="section-title">Queries Lentas (média &gt; 300ms)</div>
+        <div class="section-title">
+          Queries Lentas (média &gt; 300ms)
+        </div>
         <div
           v-if="!statusData?.db_stats?.slow_queries?.length"
           class="empty-state ok-state"
@@ -277,9 +307,13 @@
                 v-for="(q, i) in statusData.db_stats.slow_queries"
                 :key="i"
               >
-                <td class="query-snippet">{{ q.query_snippet }}</td>
+                <td class="query-snippet">
+                  {{ q.query_snippet }}
+                </td>
                 <td>{{ q.calls.toLocaleString('pt-BR') }}</td>
-                <td :class="['mean-ms', q.mean_ms > 1000 ? 'ms-red' : 'ms-amber']">{{ q.mean_ms }}</td>
+                <td :class="['mean-ms', q.mean_ms > 1000 ? 'ms-red' : 'ms-amber']">
+                  {{ q.mean_ms }}
+                </td>
                 <td>{{ q.max_ms }}</td>
                 <td>{{ q.total_ms.toLocaleString('pt-BR') }}</td>
               </tr>
