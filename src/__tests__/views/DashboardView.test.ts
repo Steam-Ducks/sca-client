@@ -39,12 +39,18 @@ vi.mock("chart.js", () => {
 
 const fetchKPIsMock = vi.hoisted(() => vi.fn());
 const fetchSummaryMock = vi.hoisted(() => vi.fn());
+const fetchCompositionMock = vi.hoisted(() => vi.fn());
+const fetchTopProjectsMock = vi.hoisted(() => vi.fn());
+const fetchCostEvolutionMock = vi.hoisted(() => vi.fn());
 const flushPromises = () => new Promise((resolve) => setTimeout(resolve, 0));
 
 vi.mock("@/services/dashboardService", () => ({
   dashboardService: {
     fetchKPIs: fetchKPIsMock,
     fetchSummary: fetchSummaryMock,
+    fetchComposition: fetchCompositionMock,
+    fetchTopProjects: fetchTopProjectsMock,
+    fetchCostEvolution: fetchCostEvolutionMock,
   },
 }));
 
@@ -53,6 +59,9 @@ describe("DashboardView.vue", () => {
     vi.clearAllMocks();
     fetchKPIsMock.mockResolvedValue(KPIS_MOCK);
     fetchSummaryMock.mockResolvedValue([]);
+    fetchCompositionMock.mockResolvedValue(COMPOSITION_MOCK);
+    fetchTopProjectsMock.mockResolvedValue([]);
+    fetchCostEvolutionMock.mockResolvedValue([]);
     vi.stubGlobal(
       "fetch",
       vi.fn().mockImplementation((url: string) => {
