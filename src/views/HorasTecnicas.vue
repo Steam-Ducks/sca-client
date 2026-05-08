@@ -20,7 +20,7 @@
             Total de Horas
           </div>
           <div class="metric-value">
-            {{ kpis.totalHoras }}h
+            {{ fmtH(kpis.totalHoras) }}h
           </div>
         </div>
         <div class="metric-card">
@@ -321,7 +321,7 @@
                   {{ row.programa }}
                 </td>
                 <td class="mono right">
-                  {{ row.horas }}h
+                  {{ fmtH(row.horas) }}h
                 </td>
                 <td class="mono">
                   {{ fmt(row.custoPorHora) }}
@@ -757,6 +757,8 @@ watch(
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const fmt = (v: number) =>
   "R$ " + v.toLocaleString("pt-BR", { minimumFractionDigits: 2 });
+
+const fmtH = (v: number) => `${v.toFixed(2)}`;
 
 function sortBy(k: keyof Row) {
   if (sortKey.value === k) sortDir.value = (sortDir.value * -1) as 1 | -1;
