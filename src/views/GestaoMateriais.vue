@@ -667,7 +667,10 @@ function sort(k: SortKey) {
   }
 }
 
-const sortIcon = (k: SortKey) => (sortKey.value !== k ? "↕" : sortDir.value > 0 ? "↑" : "↓");
+const sortIcon = (k: SortKey) => {
+  if (sortKey.value === k) return sortDir.value > 0 ? "↑" : "↓";
+  return "↕";
+};
 
 function badgeClass(c: string) {
   const map: Record<string, string> = {

@@ -724,7 +724,7 @@ async function loadData() {
     const query = params.toString() ? `?${params.toString()}` : "";
 
     const res = await fetch(`${CONFIG.API_BASE_URL}/horas-tecnicas/${query}`);
-    if (!res.ok) throw new Error();
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = (await res.json()) as ApiRow[];
     tableData.value = data.map(mapApiRow);
   } catch {
@@ -767,8 +767,10 @@ function sortBy(k: keyof Row) {
     sortDir.value = -1;
   }
 }
-const sortIcon = (k: keyof Row) =>
-  sortKey.value !== k ? "↕" : sortDir.value > 0 ? "↑" : "↓";
+const sortIcon = (k: keyof Row) => {
+  if (sortKey.value === k) return sortDir.value > 0 ? "↑" : "↓";
+  return "↕";
+};
 
 function tagClass(t: string) {
   const map: Record<string, string> = {

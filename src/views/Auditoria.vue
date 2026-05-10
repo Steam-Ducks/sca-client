@@ -545,8 +545,10 @@ function sortBy(k: keyof AuditoriaRow) {
     sortDir.value = -1;
   }
 }
-const sortIcon = (k: keyof AuditoriaRow) =>
-  sortKey.value !== k ? "↕" : sortDir.value > 0 ? "↑" : "↓";
+const sortIcon = (k: keyof AuditoriaRow) => {
+  if (sortKey.value === k) return sortDir.value > 0 ? "↑" : "↓";
+  return "↕";
+};
 
 function statusClass(s: string) {
   const map: Record<string, string> = {

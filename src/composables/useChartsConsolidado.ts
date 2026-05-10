@@ -124,7 +124,7 @@ function buildCharts(data: ConsolidadoRow[], evolution?: CostEvolutionRow[]) {
                 const dataset = chart.data.datasets[0];
                 const labelColor = css("--text");
                 return (chart.data.labels as string[]).map((label, i) => ({
-                  text: `${label}  ${dataset.data[i]}%`,
+                  text: `${label}  ${Number(dataset.data[i])}%`,
                   fillStyle: (dataset.backgroundColor as string[])[i],
                   strokeStyle: (dataset.backgroundColor as string[])[i],
                   fontColor: labelColor,
@@ -181,7 +181,8 @@ function buildCharts(data: ConsolidadoRow[], evolution?: CostEvolutionRow[]) {
             ticks: { color: text2Color, font: { family: FONT, size: 11 } },
           },
           y: {
-            grid: { color: gridColor, drawBorder: false },
+            grid: { color: gridColor },
+            border: { display: false },
             ticks: {
               color: textColor,
               font: { family: MONO, size: 11 },
@@ -229,16 +230,18 @@ function buildCharts(data: ConsolidadoRow[], evolution?: CostEvolutionRow[]) {
           legend: { display: false },
           tooltip: {
             ...baseOptions().plugins.tooltip,
-            callbacks: { label: (ctx) => ` ${fmtR$(ctx.parsed.y)}` },
+            callbacks: { label: (ctx) => ` ${fmtR$(ctx.parsed.y ?? 0)}` },
           },
         },
         scales: {
           x: {
-            grid: { color: gridColor, drawBorder: false },
+            grid: { color: gridColor },
+            border: { display: false },
             ticks: { color: text2Color, font: { family: FONT, size: 11 } },
           },
           y: {
-            grid: { color: gridColor, drawBorder: false },
+            grid: { color: gridColor },
+            border: { display: false },
             ticks: {
               color: textColor,
               font: { family: MONO, size: 11 },
@@ -277,7 +280,8 @@ function buildCharts(data: ConsolidadoRow[], evolution?: CostEvolutionRow[]) {
         ...baseOptions("y"),
         scales: {
           x: {
-            grid: { color: gridColor, drawBorder: false },
+            grid: { color: gridColor },
+            border: { display: false },
             ticks: {
               color: textColor,
               font: { family: MONO, size: 11 },

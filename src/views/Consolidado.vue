@@ -671,8 +671,10 @@ function sortBy(k: keyof ConsolidadoRow) {
     sortDir.value = -1;
   }
 }
-const sortIcon = (k: keyof ConsolidadoRow) =>
-  sortKey.value !== k ? "↕" : sortDir.value > 0 ? "↑" : "↓";
+const sortIcon = (k: keyof ConsolidadoRow) => {
+  if (sortKey.value === k) return sortDir.value > 0 ? "↑" : "↓";
+  return "↕";
+};
 
 function statusClass(s: string) {
   const map: Record<string, string> = {

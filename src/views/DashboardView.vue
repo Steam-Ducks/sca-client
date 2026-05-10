@@ -657,8 +657,10 @@ function sortBy(k: keyof DashboardRow) {
     sortDir.value = -1;
   }
 }
-const sortIcon = (k: keyof DashboardRow) =>
-  sortKey.value !== k ? "↕" : sortDir.value > 0 ? "↑" : "↓";
+const sortIcon = (k: keyof DashboardRow) => {
+  if (sortKey.value === k) return sortDir.value > 0 ? "↑" : "↓";
+  return "↕";
+};
 
 function exportCSV() {
   const header =
@@ -733,8 +735,10 @@ function sortSummaryBy(k: keyof SummaryRow) {
     summarySortDir.value = -1;
   }
 }
-const summarySortIcon = (k: keyof SummaryRow) =>
-  summarySortKey.value !== k ? "↕" : summarySortDir.value > 0 ? "↑" : "↓";
+const summarySortIcon = (k: keyof SummaryRow) => {
+  if (summarySortKey.value === k) return summarySortDir.value > 0 ? "↑" : "↓";
+  return "↕";
+};
 
 // ─── Charts ──────────────────────────────────────────────────────────────────
 const { buildCharts, updateCharts, destroyCharts } = useChartsDashboard();
