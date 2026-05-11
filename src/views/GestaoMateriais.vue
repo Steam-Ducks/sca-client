@@ -402,6 +402,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted, nextTick } from "vue";
+import { RAW } from "@/data/materiais";
 import { useCharts } from "@/composables/useCharts";
 import { materiaisService } from "@/services/materiaisService";
 import type { MaterialsApiRow } from "@/services/materiaisService";
@@ -430,25 +431,12 @@ const sortKey = ref<SortKey>("valorTotal");
 const sortDir = ref<SortDir>(-1);
 const page = ref(1);
 
-// ─── Filter option lists (populados via API com dados reais do banco) ─────────
-const periodos = ref<string[]>([]);
-const programas = ref<string[]>([]);
-const projetos = ref<{ nome: string; programa: string | null }[]>([]);
-const categorias = ref<string[]>([]);
-const fornecedores = ref<string[]>([]);
-
-async function loadFilterOptions() {
-  try {
-    const opts = await materiaisService.fetchFilterOptions();
-    periodos.value = opts.periodos;
-    programas.value = opts.programas;
-    projetos.value = opts.projetos;
-    categorias.value = opts.categorias;
-    fornecedores.value = opts.fornecedores;
-  } catch (error) {
-    console.error("Erro ao carregar opções de filtro", error);
-  }
-}
+// ─── Filter option lists (from static RAW for dropdown population) ────────────
+const periodos = [...new Set(RAW.map((r) => r.periodo))].sort();
+const programas = [...new Set(RAW.map((r) => r.programa))].sort();
+const projetos = [...new Set(RAW.map((r) => r.projeto))].sort();
+const categorias = [...new Set(RAW.map((r) => r.categoria))].sort();
+const fornecedores = [...new Set(RAW.map((r) => r.fornecedor))].sort();
 
 // ─── Data mapping ─────────────────────────────────────────────────────────────
 function normalizeCategoria(value: string): Categoria {
@@ -579,12 +567,13 @@ const debouncedLoad = createDebouncedFn(() => {
 // ─── Computed ─────────────────────────────────────────────────────────────────
 const projetosFiltered = computed(() => {
   if (!filters.value.programa) {
-    return projetos.value.map((p) => p.nome);
+    return projetos;
   }
-  return projetos.value
-    .filter((p) => p.programa === filters.value.programa)
-    .map((p) => p.nome)
-    .sort();
+  return [
+    ...new Set(
+      RAW.filter((r) => r.programa === filters.value.programa).map((r) => r.projeto),
+    ),
+  ].sort();
 });
 
 const hasActiveFilters = computed(() => {
@@ -641,7 +630,6 @@ watch(
     page.value = 1;
     loadTableData();
     loadTopMaterials();
-    loadCostByProject();
   },
 );
 
@@ -654,7 +642,7 @@ watch(
 );
 
 onMounted(async () => {
-  await Promise.all([loadTableData(), loadFilterOptions()]);
+  await loadTableData();
   try { await loadTopMaterials(); } catch { /* ignore */ }
   await loadCostByProject();
   isMounted.value = true;
@@ -679,10 +667,7 @@ function sort(k: SortKey) {
   }
 }
 
-const sortIcon = (k: SortKey) => {
-  if (sortKey.value === k) return sortDir.value > 0 ? "↑" : "↓";
-  return "↕";
-};
+const sortIcon = (k: SortKey) => (sortKey.value !== k ? "↕" : sortDir.value > 0 ? "↑" : "↓");
 
 function badgeClass(c: string) {
   const map: Record<string, string> = {
@@ -926,58 +911,6 @@ onUnmounted(() => {
 .export-btn svg {
   width: 14px;
   height: 14px;
-}
-
-/* ── Active Filters ───────────────────────────────────────────────────────── */
-.active-filters {
-  margin-top: 12px;
-  padding: 10px 14px;
-  background: var(--bg3);
-  border: 1px solid var(--border);
-  border-radius: 7px;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-}
-.active-filters-title {
-  font-size: 11px;
-  font-weight: 500;
-  color: var(--text3);
-  text-transform: uppercase;
-  letter-spacing: 0.07em;
-  margin-right: 4px;
-}
-.active-filters-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  flex: 1;
-}
-.active-filters-list span {
-  background: rgba(77, 143, 255, 0.12);
-  color: var(--blue);
-  border: 1px solid rgba(77, 143, 255, 0.25);
-  border-radius: 5px;
-  padding: 2px 8px;
-  font-size: 11px;
-  font-weight: 500;
-}
-.clear-btn {
-  background: transparent;
-  border: 1px solid var(--border2);
-  color: var(--text3);
-  border-radius: 5px;
-  padding: 4px 10px;
-  font-size: 11px;
-  font-family: inherit;
-  cursor: pointer;
-  transition: all 0.15s;
-  white-space: nowrap;
-}
-.clear-btn:hover {
-  border-color: var(--red);
-  color: var(--red);
 }
 
 /* ── Charts ───────────────────────────────────────────────────────────────── */

@@ -103,7 +103,7 @@ function buildChartsOrcamento(data: BudgetProjectRow[]) {
         scales: {
           x: {
             border: { display: false },
-            grid: { display: false },
+            grid: { color: gridColor },
             ticks: { color: text2Color, font: { family: FONT, size: 11 } },
           },
           y: {
@@ -154,7 +154,7 @@ function buildChartsOrcamento(data: BudgetProjectRow[]) {
         scales: {
           x: {
             border: { display: false },
-            grid: { display: false },
+            grid: { color: gridColor },
             ticks: { color: text2Color, font: { family: FONT, size: 11 } },
           },
           y: {

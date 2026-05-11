@@ -107,16 +107,11 @@ describe('useChartsConsolidado', () => {
     const { useChartsConsolidado } = await import('@/composables/useChartsConsolidado')
     const { buildCharts, updateCharts } = useChartsConsolidado()
 
-    const evolutionMock = [
-      { period: '2024-01', materials_cost: 500, hours_cost: 200, total_cost: 700 },
-      { period: '2024-02', materials_cost: 300, hours_cost: 150, total_cost: 450 },
-    ]
-
-    buildCharts(SAMPLE_DATA, evolutionMock)
+    buildCharts(SAMPLE_DATA)
     const instances = vi.mocked(Chart).mock.results.map((r) => r.value)
     vi.clearAllMocks()
 
-    updateCharts([SAMPLE_DATA[0]], evolutionMock)
+    updateCharts([SAMPLE_DATA[0]])
 
     instances.forEach((inst) => expect(inst.update).toHaveBeenCalled())
   })

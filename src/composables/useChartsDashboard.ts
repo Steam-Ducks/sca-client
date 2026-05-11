@@ -112,8 +112,7 @@ function buildCharts(data: DashboardRow[], composition?: CompositionData, topPro
         ...baseOptions("y"),
         scales: {
           x: {
-            grid: { color: gridColor },
-            border: { display: false },
+            grid: { color: gridColor, drawBorder: false },
             ticks: {
               color: text2Color,
               font: { family: MONO, size: 11 },
@@ -185,7 +184,7 @@ function buildCharts(data: DashboardRow[], composition?: CompositionData, topPro
                 const dataset = chart.data.datasets[0];
                 const labelColor = css("--text");
                 return (chart.data.labels as string[]).map((label, i) => ({
-                  text: `${label}  ${Number(dataset.data[i])}%`,
+                  text: `${label}  ${dataset.data[i]}%`,
                   fillStyle: (dataset.backgroundColor as string[])[i],
                   strokeStyle: (dataset.backgroundColor as string[])[i],
                   fontColor: labelColor,
@@ -200,7 +199,7 @@ function buildCharts(data: DashboardRow[], composition?: CompositionData, topPro
             ...baseOptions().plugins.tooltip,
             callbacks: {
               label: (ctx) => {
-                const v = Number(ctx.parsed);
+                const v = ctx.parsed as number;
                 const total = (ctx.dataset.data as number[]).reduce(
                   (a: number, b: number) => a + b,
                   0,
@@ -221,7 +220,7 @@ function buildCharts(data: DashboardRow[], composition?: CompositionData, topPro
   data.forEach((r) => {
     temporalMap[r.periodo] = (temporalMap[r.periodo] || 0) + r.custoTotal;
   });
-  const periodos = Object.keys(temporalMap).sort((a, b) => a.localeCompare(b));
+  const periodos = Object.keys(temporalMap).sort();
 
   const ctxT = (
     document.getElementById("chartTemporalDash") as HTMLCanvasElement
@@ -245,8 +244,7 @@ function buildCharts(data: DashboardRow[], composition?: CompositionData, topPro
         ...baseOptions("y"),
         scales: {
           x: {
-            grid: { color: gridColor },
-            border: { display: false },
+            grid: { color: gridColor, drawBorder: false },
             ticks: {
               color: textColor,
               font: { family: MONO, size: 11 },
@@ -289,8 +287,7 @@ function buildCharts(data: DashboardRow[], composition?: CompositionData, topPro
         ...baseOptions("y"),
         scales: {
           x: {
-            grid: { color: gridColor },
-            border: { display: false },
+            grid: { color: gridColor, drawBorder: false },
             ticks: {
               color: textColor,
               font: { family: MONO, size: 11 },
@@ -388,19 +385,17 @@ function buildCharts(data: DashboardRow[], composition?: CompositionData, topPro
           tooltip: {
             ...baseOptions().plugins?.tooltip,
             callbacks: {
-              label: (ctx) => ` ${ctx.dataset.label}: ${fmtR$(ctx.parsed.y ?? 0)}`,
+              label: (ctx) => ` ${ctx.dataset.label}: ${fmtR$(ctx.parsed.y)}`,
             },
           },
         },
         scales: {
           x: {
-            grid: { color: gridColor },
-            border: { display: false },
+            grid: { color: gridColor, drawBorder: false },
             ticks: { color: text2Color, font: { family: FONT, size: 11 } },
           },
           y: {
-            grid: { color: gridColor },
-            border: { display: false },
+            grid: { color: gridColor, drawBorder: false },
             ticks: {
               color: text2Color,
               font: { family: MONO, size: 11 },
@@ -442,7 +437,7 @@ function updateCharts(data: DashboardRow[], composition?: CompositionData, topPr
   data.forEach((r) => {
     temporalMap[r.periodo] = (temporalMap[r.periodo] || 0) + r.custoTotal;
   });
-  const periodos = Object.keys(temporalMap).sort((a, b) => a.localeCompare(b));
+  const periodos = Object.keys(temporalMap).sort();
 
   if (chartTemporal) {
     chartTemporal.data.labels = periodos;

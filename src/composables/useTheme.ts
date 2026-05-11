@@ -4,10 +4,10 @@ type Theme = 'light' | 'dark'
 
 const theme = ref<Theme>((localStorage.getItem('theme') as Theme) ?? 'light')
 
-document.documentElement.dataset.theme = theme.value
+document.documentElement.setAttribute('data-theme', theme.value)
 
 watch(theme, (t) => {
-  document.documentElement.dataset.theme = t
+  document.documentElement.setAttribute('data-theme', t)
   localStorage.setItem('theme', t)
 })
 

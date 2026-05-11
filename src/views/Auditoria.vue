@@ -275,7 +275,7 @@
                   class="sort-col"
                   @click="sortBy('valorImpacto')"
                 >
-                  Linhas Afetadas {{ sortIcon("valorImpacto") }}
+                  Valor Impacto {{ sortIcon("valorImpacto") }}
                 </th>
                 <th>Status</th>
               </tr>
@@ -395,15 +395,10 @@ interface ApiRow {
 }
 
 const STATUS_MAP: Record<string, string> = {
-  SUCCESS: "Aprovado",
-  FAILED: "Rejeitado",
-  PARTIAL: "Parcial",
-};
-
-const OPERATION_MAP: Record<string, string> = {
-  INGEST: "Ingestão",
-  TRANSFORM: "Transformação",
-  EXPORT: "Exportação",
+  success: "Aprovado",
+  failed: "Rejeitado",
+  running: "Em Análise",
+  pending: "Pendente",
 };
 
 function toRow(r: ApiRow): AuditoriaRow {
@@ -411,7 +406,7 @@ function toRow(r: ApiRow): AuditoriaRow {
   const descricao = [r.table_schema, r.table_name].filter(Boolean).join(".");
   return {
     id: r.id,
-    tipo: OPERATION_MAP[r.operation] ?? r.operation,
+    tipo: r.operation,
     descricao: descricao || r.operation,
     projeto: String(meta.nome_projeto ?? meta.projeto ?? ""),
     programa: String(meta.nome_programa ?? meta.programa ?? ""),
@@ -536,7 +531,8 @@ watch(
 );
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
-const fmt = (v: number) => v.toLocaleString("pt-BR");
+const fmt = (v: number) =>
+  "R$ " + v.toLocaleString("pt-BR", { minimumFractionDigits: 2 });
 
 function sortBy(k: keyof AuditoriaRow) {
   if (sortKey.value === k) sortDir.value = (sortDir.value * -1) as 1 | -1;
@@ -545,10 +541,8 @@ function sortBy(k: keyof AuditoriaRow) {
     sortDir.value = -1;
   }
 }
-const sortIcon = (k: keyof AuditoriaRow) => {
-  if (sortKey.value === k) return sortDir.value > 0 ? "↑" : "↓";
-  return "↕";
-};
+const sortIcon = (k: keyof AuditoriaRow) =>
+  sortKey.value !== k ? "↕" : sortDir.value > 0 ? "↑" : "↓";
 
 function statusClass(s: string) {
   const map: Record<string, string> = {
@@ -562,16 +556,17 @@ function statusClass(s: string) {
 
 function tipoClass(t: string) {
   const map: Record<string, string> = {
-    Ingestão: "badge badge-hw",
-    Transformação: "badge badge-cl",
-    Exportação: "badge badge-sg",
+    "Compra de Material": "badge badge-hw",
+    "Horas Técnicas": "badge badge-cl",
+    Contrato: "badge badge-sg",
+    "Ajuste Orçamentário": "badge badge-sw",
   };
   return map[t] ?? "badge badge-hw";
 }
 
 function exportCSV() {
   const header =
-    "Tipo,Descrição,Projeto,Programa,Responsável,Data Registro,Data Revisão,Linhas Afetadas,Status";
+    "Tipo,Descrição,Projeto,Programa,Responsável,Data Registro,Data Revisão,Valor Impacto,Status";
   const rows = filteredData.value.map((r) =>
     [
       r.tipo,

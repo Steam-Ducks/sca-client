@@ -24,7 +24,7 @@ const API_ROWS = [
   {
     id: 1,
     operation: "bronze_ingest",
-    status: "SUCCESS",
+    status: "success",
     table_schema: "bronze",
     table_name: "horas_tecnicas",
     affected_rows: 100,
@@ -39,7 +39,7 @@ const API_ROWS = [
   {
     id: 2,
     operation: "silver_ingest",
-    status: "FAILED",
+    status: "failed",
     table_schema: "silver",
     table_name: "materiais",
     affected_rows: 0,

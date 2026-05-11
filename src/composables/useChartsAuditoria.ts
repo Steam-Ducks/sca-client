@@ -117,8 +117,7 @@ function buildCharts(data: AuditoriaRow[]) {
             ticks: { color: text2Color, font: { family: FONT, size: 11 } },
           },
           y: {
-            grid: { color: gridColor },
-            border: { display: false },
+            grid: { color: gridColor, drawBorder: false },
             ticks: {
               color: textColor,
               font: { family: MONO, size: 11 },
@@ -157,8 +156,7 @@ function buildCharts(data: AuditoriaRow[]) {
         ...baseOptions("y"),
         scales: {
           x: {
-            grid: { color: gridColor },
-            border: { display: false },
+            grid: { color: gridColor, drawBorder: false },
             ticks: {
               color: textColor,
               font: { family: MONO, size: 11 },
@@ -201,8 +199,7 @@ function buildCharts(data: AuditoriaRow[]) {
         ...baseOptions("y"),
         scales: {
           x: {
-            grid: { color: gridColor },
-            border: { display: false },
+            grid: { color: gridColor, drawBorder: false },
             ticks: {
               color: textColor,
               font: { family: MONO, size: 11 },
@@ -224,7 +221,7 @@ function buildCharts(data: AuditoriaRow[]) {
     const mes = r.dataRegistro.slice(0, 7);
     temporalMap[mes] = (temporalMap[mes] || 0) + 1;
   });
-  const periodos = Object.keys(temporalMap).sort((a, b) => a.localeCompare(b));
+  const periodos = Object.keys(temporalMap).sort();
 
   const ctxT = (
     document.getElementById("chartTemporalAud") as HTMLCanvasElement
@@ -263,13 +260,11 @@ function buildCharts(data: AuditoriaRow[]) {
         },
         scales: {
           x: {
-            grid: { color: gridColor },
-            border: { display: false },
+            grid: { color: gridColor, drawBorder: false },
             ticks: { color: text2Color, font: { family: FONT, size: 11 } },
           },
           y: {
-            grid: { color: gridColor },
-            border: { display: false },
+            grid: { color: gridColor, drawBorder: false },
             ticks: {
               color: textColor,
               font: { family: MONO, size: 11 },
@@ -330,7 +325,7 @@ function updateCharts(data: AuditoriaRow[]) {
     const mes = r.dataRegistro.slice(0, 7);
     temporalMap[mes] = (temporalMap[mes] || 0) + 1;
   });
-  const periodos = Object.keys(temporalMap).sort((a, b) => a.localeCompare(b));
+  const periodos = Object.keys(temporalMap).sort();
   if (chartTemporal) {
     chartTemporal.data.labels = periodos;
     chartTemporal.data.datasets[0].data = periodos.map((p) => temporalMap[p]);
