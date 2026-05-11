@@ -20,7 +20,7 @@
             Total de Horas
           </div>
           <div class="metric-value">
-            {{ kpis.totalHoras }}h
+            {{ fmtH(kpis.totalHoras) }}h
           </div>
         </div>
         <div class="metric-card">
@@ -321,7 +321,7 @@
                   {{ row.programa }}
                 </td>
                 <td class="mono right">
-                  {{ row.horas }}h
+                  {{ fmtH(row.horas) }}h
                 </td>
                 <td class="mono">
                   {{ fmt(row.custoPorHora) }}
@@ -724,7 +724,7 @@ async function loadData() {
     const query = params.toString() ? `?${params.toString()}` : "";
 
     const res = await fetch(`${CONFIG.API_BASE_URL}/horas-tecnicas/${query}`);
-    if (!res.ok) throw new Error();
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = (await res.json()) as ApiRow[];
     tableData.value = data.map(mapApiRow);
   } catch {
@@ -758,6 +758,8 @@ watch(
 const fmt = (v: number) =>
   "R$ " + v.toLocaleString("pt-BR", { minimumFractionDigits: 2 });
 
+const fmtH = (v: number) => `${v.toFixed(2)}`;
+
 function sortBy(k: keyof Row) {
   if (sortKey.value === k) sortDir.value = (sortDir.value * -1) as 1 | -1;
   else {
@@ -765,8 +767,10 @@ function sortBy(k: keyof Row) {
     sortDir.value = -1;
   }
 }
-const sortIcon = (k: keyof Row) =>
-  sortKey.value !== k ? "↕" : sortDir.value > 0 ? "↑" : "↓";
+const sortIcon = (k: keyof Row) => {
+  if (sortKey.value === k) return sortDir.value > 0 ? "↑" : "↓";
+  return "↕";
+};
 
 function tagClass(t: string) {
   const map: Record<string, string> = {
