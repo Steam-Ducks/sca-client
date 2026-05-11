@@ -27,17 +27,13 @@ const text2Color = "#8b92aa"; // --text2
 
 const baseScales = (axis: "x" | "y" = "x") => ({
   x: {
-    grid: {
-      color: axis === "x" ? gridColor : "transparent",
-      drawBorder: false,
-    },
+    grid: { color: axis === "x" ? gridColor : "transparent" },
+    border: { display: false },
     ticks: { color: textColor, font: { family: MONO, size: 11 } },
   },
   y: {
-    grid: {
-      color: axis === "y" ? gridColor : "transparent",
-      drawBorder: false,
-    },
+    grid: { color: axis === "y" ? gridColor : "transparent" },
+    border: { display: false },
     ticks: {
       color: text2Color,
       font: { family: FONT, size: 11 },
@@ -139,7 +135,8 @@ function buildCharts(data: HoraRow[]) {
         scales: {
           ...baseScales("x"),
           x: {
-            grid: { color: gridColor, drawBorder: false },
+            grid: { color: gridColor },
+            border: { display: false },
             ticks: { color: textColor, font: { family: MONO, size: 11 } },
           },
           y: {
@@ -188,7 +185,8 @@ function buildCharts(data: HoraRow[]) {
         ...baseOptions("y"),
         scales: {
           x: {
-            grid: { color: gridColor, drawBorder: false },
+            grid: { color: gridColor },
+            border: { display: false },
             ticks: {
               color: textColor,
               font: { family: MONO, size: 11 },
@@ -205,7 +203,7 @@ function buildCharts(data: HoraRow[]) {
           tooltip: {
             ...baseOptions("y").plugins.tooltip,
             callbacks: {
-              label: (ctx) => ` ${fmtR$(ctx.parsed.x)}`,
+              label: (ctx) => ` ${fmtR$(ctx.parsed.x ?? 0)}`,
             },
           },
         },
@@ -241,7 +239,8 @@ function buildCharts(data: HoraRow[]) {
         ...baseOptions("y"),
         scales: {
           x: {
-            grid: { color: gridColor, drawBorder: false },
+            grid: { color: gridColor },
+            border: { display: false },
             ticks: {
               color: textColor,
               font: { family: MONO, size: 11 },
@@ -258,7 +257,7 @@ function buildCharts(data: HoraRow[]) {
           tooltip: {
             ...baseOptions("y").plugins.tooltip,
             callbacks: {
-              label: (ctx) => ` ${fmtR$(ctx.parsed.x)}`,
+              label: (ctx) => ` ${fmtR$(ctx.parsed.x ?? 0)}`,
             },
           },
         },
@@ -271,7 +270,7 @@ function buildCharts(data: HoraRow[]) {
   data.forEach((r) => {
     temporalMap[r.periodo] = (temporalMap[r.periodo] || 0) + r.horas;
   });
-  const periodos = Object.keys(temporalMap).sort();
+  const periodos = Object.keys(temporalMap).sort((a, b) => a.localeCompare(b));
   const horasPorPeriodo = periodos.map((p) => temporalMap[p]);
 
   const ctxT = (
@@ -320,11 +319,13 @@ function buildCharts(data: HoraRow[]) {
         },
         scales: {
           x: {
-            grid: { color: gridColor, drawBorder: false },
+            grid: { color: gridColor },
+            border: { display: false },
             ticks: { color: text2Color, font: { family: FONT, size: 11 } },
           },
           y: {
-            grid: { color: gridColor, drawBorder: false },
+            grid: { color: gridColor },
+            border: { display: false },
             ticks: {
               color: textColor,
               font: { family: MONO, size: 11 },
@@ -380,7 +381,7 @@ function updateCharts(data: HoraRow[]) {
   data.forEach((r) => {
     temporalMap[r.periodo] = (temporalMap[r.periodo] || 0) + r.horas;
   });
-  const periodos = Object.keys(temporalMap).sort();
+  const periodos = Object.keys(temporalMap).sort((a, b) => a.localeCompare(b));
   if (chartTemporal) {
     chartTemporal.data.labels = periodos;
     chartTemporal.data.datasets[0].data = periodos.map((p) => temporalMap[p]);

@@ -389,6 +389,8 @@ import { useTheme } from "@/composables/useTheme";
 import { useChartsConsolidado } from "@/composables/useChartsConsolidado";
 import type { ConsolidadoRow } from "@/composables/useChartsConsolidado";
 import { apiService } from "@/services/apiService";
+import { dashboardService } from "@/services/dashboardService";
+import type { CostEvolutionRow } from "@/types/api";
 
 const PER_PAGE = 8;
 
@@ -542,6 +544,7 @@ const MOCK: ConsolidadoRow[] = [
 
 // ─── State ───────────────────────────────────────────────────────────────────
 const tableData = ref<ConsolidadoRow[]>([]);
+const costEvolutionData = ref<CostEvolutionRow[]>([]);
 const lastUpdatedAt = ref<string | null>(null);
 const filters = ref({ periodo: "", programa: "", projeto: "", status: "" });
 const sortKey = ref<keyof ConsolidadoRow>("custoTotal");
@@ -630,7 +633,7 @@ const formattedLastUpdatedAt = computed(() => {
 // ─── Watchers ────────────────────────────────────────────────────────────────
 watch(filteredData, (val) => {
   page.value = 1;
-  nextTick(() => updateCharts(val));
+  nextTick(() => updateCharts(val, costEvolutionData.value));
 });
 
 watch(
@@ -668,8 +671,10 @@ function sortBy(k: keyof ConsolidadoRow) {
     sortDir.value = -1;
   }
 }
-const sortIcon = (k: keyof ConsolidadoRow) =>
-  sortKey.value !== k ? "↕" : sortDir.value > 0 ? "↑" : "↓";
+const sortIcon = (k: keyof ConsolidadoRow) => {
+  if (sortKey.value === k) return sortDir.value > 0 ? "↑" : "↓";
+  return "↕";
+};
 
 function statusClass(s: string) {
   const map: Record<string, string> = {
@@ -713,8 +718,21 @@ const { buildCharts, updateCharts, destroyCharts } = useChartsConsolidado();
 const { theme } = useTheme();
 
 watch(theme, () => {
-  nextTick(() => buildCharts(tableData.value));
+  nextTick(() => buildCharts(tableData.value, costEvolutionData.value));
 });
+
+async function fetchEvolution() {
+  try {
+    const f = filters.value;
+    const apiFilters: Record<string, string> = {};
+    if (f.programa) apiFilters.program = f.programa;
+    if (f.projeto) apiFilters.project = f.projeto;
+    if (f.status) apiFilters.status = f.status;
+    costEvolutionData.value = await dashboardService.fetchCostEvolution(apiFilters);
+  } catch (err) {
+    console.error("Erro ao buscar evolução de custos:", err);
+  }
+}
 
 async function loadConsolidado() {
   try {
@@ -729,7 +747,8 @@ async function loadConsolidado() {
     lastUpdatedAt.value = null;
   }
 
-  nextTick(() => buildCharts(tableData.value));
+  await fetchEvolution();
+  nextTick(() => buildCharts(tableData.value, costEvolutionData.value));
 }
 
 onMounted(() => {

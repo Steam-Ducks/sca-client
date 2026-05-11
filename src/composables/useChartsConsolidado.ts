@@ -1,4 +1,5 @@
 import { Chart, registerables } from "chart.js";
+import type { CostEvolutionRow } from "@/types/api";
 Chart.register(...registerables);
 
 const FONT = "'IBM Plex Sans', sans-serif";
@@ -71,7 +72,7 @@ function destroyAll() {
   chartDistribuicao = chartPorPrograma = chartTemporal = chartTopCustos = null;
 }
 
-function buildCharts(data: ConsolidadoRow[]) {
+function buildCharts(data: ConsolidadoRow[], evolution?: CostEvolutionRow[]) {
   destroyAll();
   const gridColor = css("--border");
   const textColor = css("--text3");
@@ -123,7 +124,7 @@ function buildCharts(data: ConsolidadoRow[]) {
                 const dataset = chart.data.datasets[0];
                 const labelColor = css("--text");
                 return (chart.data.labels as string[]).map((label, i) => ({
-                  text: `${label}  ${dataset.data[i]}%`,
+                  text: `${label}  ${Number(dataset.data[i])}%`,
                   fillStyle: (dataset.backgroundColor as string[])[i],
                   strokeStyle: (dataset.backgroundColor as string[])[i],
                   fontColor: labelColor,
@@ -180,7 +181,8 @@ function buildCharts(data: ConsolidadoRow[]) {
             ticks: { color: text2Color, font: { family: FONT, size: 11 } },
           },
           y: {
-            grid: { color: gridColor, drawBorder: false },
+            grid: { color: gridColor },
+            border: { display: false },
             ticks: {
               color: textColor,
               font: { family: MONO, size: 11 },
@@ -192,12 +194,9 @@ function buildCharts(data: ConsolidadoRow[]) {
     });
   }
 
-  // 3. Evolução Mensal Consolidada — line chart, purple
-  const temporalMap: Record<string, number> = {};
-  data.forEach((r) => {
-    temporalMap[r.periodo] = (temporalMap[r.periodo] || 0) + r.custoTotal;
-  });
-  const periodos = Object.keys(temporalMap).sort();
+  // 3. Evolução Mensal Consolidada — line chart from /dashboard/cost-evolution/
+  const evoLabels = evolution ? evolution.map((r) => r.period) : [];
+  const evoData   = evolution ? evolution.map((r) => r.total_cost) : [];
 
   const ctxT = (
     document.getElementById("chartTemporalCons") as HTMLCanvasElement
@@ -206,15 +205,15 @@ function buildCharts(data: ConsolidadoRow[]) {
     chartTemporal = new Chart(ctxT, {
       type: "line",
       data: {
-        labels: periodos,
+        labels: evoLabels,
         datasets: [
           {
-            data: periodos.map((p) => temporalMap[p]),
+            data: evoData,
             borderColor: "#9b7fff",
             backgroundColor: "rgba(155,127,255,0.12)",
             borderWidth: 2.5,
             pointBackgroundColor: "#9b7fff",
-            pointBorderColor: "#141720",
+            pointBorderColor: "#9b7fff",
             pointBorderWidth: 0,
             pointRadius: 5,
             pointHoverRadius: 7,
@@ -231,16 +230,18 @@ function buildCharts(data: ConsolidadoRow[]) {
           legend: { display: false },
           tooltip: {
             ...baseOptions().plugins.tooltip,
-            callbacks: { label: (ctx) => ` ${fmtR$(ctx.parsed.y)}` },
+            callbacks: { label: (ctx) => ` ${fmtR$(ctx.parsed.y ?? 0)}` },
           },
         },
         scales: {
           x: {
-            grid: { color: gridColor, drawBorder: false },
+            grid: { color: gridColor },
+            border: { display: false },
             ticks: { color: text2Color, font: { family: FONT, size: 11 } },
           },
           y: {
-            grid: { color: gridColor, drawBorder: false },
+            grid: { color: gridColor },
+            border: { display: false },
             ticks: {
               color: textColor,
               font: { family: MONO, size: 11 },
@@ -279,7 +280,8 @@ function buildCharts(data: ConsolidadoRow[]) {
         ...baseOptions("y"),
         scales: {
           x: {
-            grid: { color: gridColor, drawBorder: false },
+            grid: { color: gridColor },
+            border: { display: false },
             ticks: {
               color: textColor,
               font: { family: MONO, size: 11 },
@@ -296,7 +298,7 @@ function buildCharts(data: ConsolidadoRow[]) {
   }
 }
 
-function updateCharts(data: ConsolidadoRow[]) {
+function updateCharts(data: ConsolidadoRow[], evolution?: CostEvolutionRow[]) {
   if (chartDistribuicao) {
     const updTotalMat = data.reduce((s, r) => s + r.custoMateriais, 0);
     const updTotalHoras = data.reduce((s, r) => s + r.custoHoras, 0);
@@ -318,14 +320,9 @@ function updateCharts(data: ConsolidadoRow[]) {
     chartPorPrograma.update();
   }
 
-  const temporalMap: Record<string, number> = {};
-  data.forEach((r) => {
-    temporalMap[r.periodo] = (temporalMap[r.periodo] || 0) + r.custoTotal;
-  });
-  const periodos = Object.keys(temporalMap).sort();
-  if (chartTemporal) {
-    chartTemporal.data.labels = periodos;
-    chartTemporal.data.datasets[0].data = periodos.map((p) => temporalMap[p]);
+  if (chartTemporal && evolution) {
+    chartTemporal.data.labels = evolution.map((r) => r.period);
+    chartTemporal.data.datasets[0].data = evolution.map((r) => r.total_cost);
     chartTemporal.update();
   }
 
