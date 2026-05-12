@@ -401,22 +401,23 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onUnmounted, nextTick } from "vue";
+import { ref, reactive, computed, watch, onMounted, onUnmounted, nextTick } from "vue";
 import { useCharts } from "@/composables/useCharts";
 import { materiaisService } from "@/services/materiaisService";
 import type { MaterialsApiRow } from "@/services/materiaisService";
 import type { Filters, SortKey, SortDir, Material, Categoria, Status } from "@/types/materiais";
+import { RAW } from "@/data/materiais";
 
 const PER_PAGE = 8;
 const isMounted = ref(false);
 
 // ─── State ────────────────────────────────────────────────────────────────────
-const tableData = ref<Material[]>([]);
+const tableData = ref<Material[]>(RAW);
 const tableLoading = ref(false);
 const tableError = ref("");
 const topMaterials = ref<Material[]>([]);
 const costByProject = ref<Material[]>([]);
-const filters = ref<Filters>({
+const filters = reactive<Filters>({
   periodo: "",
   programa: "",
   projeto: "",
@@ -430,25 +431,23 @@ const sortKey = ref<SortKey>("valorTotal");
 const sortDir = ref<SortDir>(-1);
 const page = ref(1);
 
-// ─── Filter option lists (populados via API com dados reais do banco) ─────────
-const periodos = ref<string[]>([]);
-const programas = ref<string[]>([]);
-const projetos = ref<{ nome: string; programa: string | null }[]>([]);
-const categorias = ref<string[]>([]);
-const fornecedores = ref<string[]>([]);
-
-async function loadFilterOptions() {
-  try {
-    const opts = await materiaisService.fetchFilterOptions();
-    periodos.value = opts.periodos;
-    programas.value = opts.programas;
-    projetos.value = opts.projetos;
-    categorias.value = opts.categorias;
-    fornecedores.value = opts.fornecedores;
-  } catch (error) {
-    console.error("Erro ao carregar opções de filtro", error);
-  }
-}
+// ─── Filter option lists (derivados reativamente dos dados da tabela) ────────
+const periodos = computed(() =>
+  [...new Set(tableData.value.map((r) => r.periodo).filter(Boolean))].sort(),
+);
+const programas = computed(() =>
+  [...new Set(tableData.value.map((r) => r.programa).filter(Boolean))].sort(),
+);
+const projetos = computed(() => {
+  const map = new Map(tableData.value.map((r) => [r.projeto, { nome: r.projeto, programa: r.programa }]));
+  return [...map.values()];
+});
+const categorias = computed(() =>
+  [...new Set(tableData.value.map((r) => r.categoria).filter(Boolean))].sort(),
+);
+const fornecedores = computed(() =>
+  [...new Set(tableData.value.map((r) => r.fornecedor).filter(Boolean))].sort(),
+);
 
 // ─── Data mapping ─────────────────────────────────────────────────────────────
 function normalizeCategoria(value: string): Categoria {
@@ -480,7 +479,7 @@ async function loadTableData() {
   tableError.value = "";
 
   try {
-    const data = await materiaisService.fetchMateriais(filters.value);
+    const data = await materiaisService.fetchMateriais(filters);
     tableData.value = data.map(mapApiRow);
   } catch (error) {
     console.error(error);
@@ -515,7 +514,7 @@ function mapTopMaterial(row: TopMaterialApi): Material {
 
 async function loadTopMaterials() {
   try {
-    const data = await materiaisService.fetchTopMaterials(filters.value);
+    const data = await materiaisService.fetchTopMaterials(filters);
     console.log("TOP MATERIALS API:", data);
     topMaterials.value = data.map(mapTopMaterial);
   } catch (error) {
@@ -526,7 +525,7 @@ async function loadTopMaterials() {
 
 async function loadCostByProject() {
   try {
-    const data = await materiaisService.fetchCostByProject(filters.value);
+    const data = await materiaisService.fetchCostByProject(filters);
 
     console.log("COST BY PROJECT:", data);
 
@@ -578,23 +577,24 @@ const debouncedLoad = createDebouncedFn(() => {
 
 // ─── Computed ─────────────────────────────────────────────────────────────────
 const projetosFiltered = computed(() => {
-  if (!filters.value.programa) {
-    return projetos.value.map((p) => p.nome);
+  const list = projetos.value ?? [];
+  if (!filters.programa) {
+    return list.map((p) => p.nome);
   }
-  return projetos.value
-    .filter((p) => p.programa === filters.value.programa)
+  return list
+    .filter((p) => p.programa === filters.programa)
     .map((p) => p.nome)
     .sort();
 });
 
 const hasActiveFilters = computed(() => {
   return (
-    filters.value.periodo !== "" ||
-    filters.value.programa !== "" ||
-    filters.value.projeto !== "" ||
-    filters.value.categoria !== "" ||
-    filters.value.fornecedor !== "" ||
-    filters.value.search !== ""
+    filters.periodo !== "" ||
+    filters.programa !== "" ||
+    filters.projeto !== "" ||
+    filters.categoria !== "" ||
+    filters.fornecedor !== "" ||
+    filters.search !== ""
   );
 });
 
@@ -631,11 +631,11 @@ const visiblePages = computed(() => {
 // ─── Watchers ─────────────────────────────────────────────────────────────────
 watch(
   () => [
-    filters.value.periodo,
-    filters.value.programa,
-    filters.value.projeto,
-    filters.value.categoria,
-    filters.value.fornecedor,
+    filters.periodo,
+    filters.programa,
+    filters.projeto,
+    filters.categoria,
+    filters.fornecedor,
   ],
   () => {
     page.value = 1;
@@ -646,7 +646,7 @@ watch(
 );
 
 watch(
-  () => filters.value.search,
+  () => filters.search,
   () => {
     page.value = 1;
     debouncedLoad();
@@ -654,16 +654,13 @@ watch(
 );
 
 onMounted(async () => {
-  await Promise.all([loadTableData(), loadFilterOptions()]);
+  await loadTableData();
   try { await loadTopMaterials(); } catch { /* ignore */ }
   await loadCostByProject();
   isMounted.value = true;
 
-  console.log("costByProject após load:", costByProject.value);  // ← add
-  console.log("topMaterials após load:", topMaterials.value);    // ← add
-
-  nextTick(() => { // ← add
-    buildCharts(topMaterials.value);
+  nextTick(() => {
+    buildCharts(topMaterials.value, tableData.value, costByProject.value);
     updateCharts(costByProject.value);
   });
 });
@@ -697,7 +694,7 @@ function badgeClass(c: string) {
 }
 
 function clearFilters() {
-  filters.value = {
+  Object.assign(filters, {
     periodo: "",
     programa: "",
     projeto: "",
@@ -706,7 +703,7 @@ function clearFilters() {
     status: "",
     area: "",
     search: "",
-  };
+  });
   page.value = 1;
 }
 
@@ -736,15 +733,17 @@ function exportCSV() {
 // ─── Charts ──────────────────────────────────────────────────────────────
 const { buildCharts, updateCharts, destroyCharts } = useCharts();
 
-watch(topMaterials, () => {
+watch([topMaterials, tableData, costByProject], () => {
   if (!isMounted.value) return;
-  nextTick(() => updateCharts(costByProject.value));
+  nextTick(() => updateCharts(topMaterials.value, tableData.value, costByProject.value));
 });
 
 onUnmounted(() => {
   debouncedLoad.cancel();
   destroyCharts();
 });
+
+defineExpose({ filters, sortKey, page, costByProject, topMaterials, isMounted });
 </script>
 
 <style scoped>

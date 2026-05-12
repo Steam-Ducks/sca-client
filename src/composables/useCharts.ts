@@ -63,14 +63,16 @@ let chartTemporal: Chart | null = null;
 function tempEntries(data: Material[]) {
   const map: Record<string, number> = {};
   data.forEach((r) => {
-    map[r.periodo] = (map[r.periodo] || 0) + r.valorTotal;
+    const month = r.periodo ? r.periodo.slice(0, 7) : null;
+    if (!month) return;
+    map[month] = (map[month] || 0) + r.valorTotal;
   });
   return Object.entries(map).sort((a, b) => a[0].localeCompare(b[0]));
 }
 
-function buildCharts(raw: Material[]) {
+function buildCharts(topData: Material[], tableData: Material[], projectData: Material[]) {
   // ───────────── TOP CUSTO ─────────────
-  const top10c = [...raw]
+  const top10c = [...topData]
     .sort((a, b) => b.valorTotal - a.valorTotal)
     .slice(0, 10);
 
@@ -108,7 +110,7 @@ function buildCharts(raw: Material[]) {
   );
 
   // ───────────── TOP QUANTIDADE ─────────────
-  const top10q = [...raw]
+  const top10q = [...tableData]
     .sort((a, b) => b.quantidade - a.quantidade)
     .slice(0, 10);
 
@@ -132,8 +134,8 @@ function buildCharts(raw: Material[]) {
   );
 
   // ───────────── PROJETO ─────────────
-  const labelsProjeto = raw.map((r) => r.projeto);
-  const dataProjeto = raw.map((r) => r.valorTotal);
+  const labelsProjeto = projectData.map((r) => r.projeto);
+  const dataProjeto = projectData.map((r) => r.valorTotal);
 
   if (chartProjeto) {
     chartProjeto.destroy();
@@ -180,7 +182,7 @@ function buildCharts(raw: Material[]) {
   );
 
   // ───────────── TEMPORAL ─────────────
-  const ts = tempEntries(raw);
+  const ts = tempEntries(tableData);
 
   chartTemporal = new Chart(
     document.getElementById("chartTemporal") as HTMLCanvasElement,
@@ -220,8 +222,19 @@ function buildCharts(raw: Material[]) {
   );
 }
 
-function updateCharts(filtered: Material[]) {
-  const top10c = [...filtered]
+function updateCharts(topData: Material[], tableDataArg?: Material[], projectData?: Material[]) {
+  if (!tableDataArg || !projectData) {
+    const labelsProjeto = topData.map((r) => r.projeto);
+    const dataProjeto = topData.map((r) => r.valorTotal);
+    if (chartProjeto) {
+      chartProjeto.data.labels = labelsProjeto;
+      chartProjeto.data.datasets[0].data = dataProjeto;
+      chartProjeto.update();
+    }
+    return;
+  }
+
+  const top10c = [...topData]
     .sort((a, b) => b.valorTotal - a.valorTotal)
     .slice(0, 10);
 
@@ -231,7 +244,7 @@ function updateCharts(filtered: Material[]) {
     chartCusto.update();
   }
 
-  const top10q = [...filtered]
+  const top10q = [...tableDataArg]
     .sort((a, b) => b.quantidade - a.quantidade)
     .slice(0, 10);
 
@@ -241,9 +254,8 @@ function updateCharts(filtered: Material[]) {
     chartQtd.update();
   }
 
-  // ───────────── UPDATE PROJETO ─────────────
-  const labelsProjeto = filtered.map((r) => r.projeto);
-  const dataProjeto = filtered.map((r) => r.valorTotal);
+  const labelsProjeto = projectData.map((r) => r.projeto);
+  const dataProjeto = projectData.map((r) => r.valorTotal);
 
   if (chartProjeto) {
     chartProjeto.data.labels = labelsProjeto;
@@ -251,7 +263,7 @@ function updateCharts(filtered: Material[]) {
     chartProjeto.update();
   }
 
-  const ts = tempEntries(filtered);
+  const ts = tempEntries(tableDataArg);
 
   if (chartTemporal) {
     chartTemporal.data.labels = ts.map((e) => e[0]);
