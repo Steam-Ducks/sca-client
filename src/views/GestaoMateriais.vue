@@ -401,23 +401,23 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onUnmounted, nextTick } from "vue";
-import { RAW } from "@/data/materiais";
+import { ref, reactive, computed, watch, onMounted, onUnmounted, nextTick } from "vue";
 import { useCharts } from "@/composables/useCharts";
 import { materiaisService } from "@/services/materiaisService";
 import type { MaterialsApiRow } from "@/services/materiaisService";
 import type { Filters, SortKey, SortDir, Material, Categoria, Status } from "@/types/materiais";
+import { RAW } from "@/data/materiais";
 
 const PER_PAGE = 8;
 const isMounted = ref(false);
 
 // ─── State ────────────────────────────────────────────────────────────────────
-const tableData = ref<Material[]>([]);
+const tableData = ref<Material[]>(RAW);
 const tableLoading = ref(false);
 const tableError = ref("");
 const topMaterials = ref<Material[]>([]);
 const costByProject = ref<Material[]>([]);
-const filters = ref<Filters>({
+const filters = reactive<Filters>({
   periodo: "",
   programa: "",
   projeto: "",
@@ -431,12 +431,23 @@ const sortKey = ref<SortKey>("valorTotal");
 const sortDir = ref<SortDir>(-1);
 const page = ref(1);
 
-// ─── Filter option lists (from static RAW for dropdown population) ────────────
-const periodos = [...new Set(RAW.map((r) => r.periodo))].sort();
-const programas = [...new Set(RAW.map((r) => r.programa))].sort();
-const projetos = [...new Set(RAW.map((r) => r.projeto))].sort();
-const categorias = [...new Set(RAW.map((r) => r.categoria))].sort();
-const fornecedores = [...new Set(RAW.map((r) => r.fornecedor))].sort();
+// ─── Filter option lists (derivados reativamente dos dados da tabela) ────────
+const periodos = computed(() =>
+  [...new Set(tableData.value.map((r) => r.periodo).filter(Boolean))].sort(),
+);
+const programas = computed(() =>
+  [...new Set(tableData.value.map((r) => r.programa).filter(Boolean))].sort(),
+);
+const projetos = computed(() => {
+  const map = new Map(tableData.value.map((r) => [r.projeto, { nome: r.projeto, programa: r.programa }]));
+  return [...map.values()];
+});
+const categorias = computed(() =>
+  [...new Set(tableData.value.map((r) => r.categoria).filter(Boolean))].sort(),
+);
+const fornecedores = computed(() =>
+  [...new Set(tableData.value.map((r) => r.fornecedor).filter(Boolean))].sort(),
+);
 
 // ─── Data mapping ─────────────────────────────────────────────────────────────
 function normalizeCategoria(value: string): Categoria {
@@ -468,12 +479,11 @@ async function loadTableData() {
   tableError.value = "";
 
   try {
-    const data = await materiaisService.fetchMateriais(filters.value);
+    const data = await materiaisService.fetchMateriais(filters);
     tableData.value = data.map(mapApiRow);
   } catch (error) {
     console.error(error);
     tableError.value = "Não foi possível carregar a tabela de materiais.";
-    tableData.value = [];
   } finally {
     tableLoading.value = false;
   }
@@ -503,7 +513,7 @@ function mapTopMaterial(row: TopMaterialApi): Material {
 
 async function loadTopMaterials() {
   try {
-    const data = await materiaisService.fetchTopMaterials(filters.value);
+    const data = await materiaisService.fetchTopMaterials(filters);
     console.log("TOP MATERIALS API:", data);
     topMaterials.value = data.map(mapTopMaterial);
   } catch (error) {
@@ -514,7 +524,7 @@ async function loadTopMaterials() {
 
 async function loadCostByProject() {
   try {
-    const data = await materiaisService.fetchCostByProject(filters.value);
+    const data = await materiaisService.fetchCostByProject(filters);
 
     console.log("COST BY PROJECT:", data);
 
@@ -566,24 +576,24 @@ const debouncedLoad = createDebouncedFn(() => {
 
 // ─── Computed ─────────────────────────────────────────────────────────────────
 const projetosFiltered = computed(() => {
-  if (!filters.value.programa) {
-    return projetos;
+  const list = projetos.value ?? [];
+  if (!filters.programa) {
+    return list.map((p) => p.nome);
   }
-  return [
-    ...new Set(
-      RAW.filter((r) => r.programa === filters.value.programa).map((r) => r.projeto),
-    ),
-  ].sort();
+  return list
+    .filter((p) => p.programa === filters.programa)
+    .map((p) => p.nome)
+    .sort();
 });
 
 const hasActiveFilters = computed(() => {
   return (
-    filters.value.periodo !== "" ||
-    filters.value.programa !== "" ||
-    filters.value.projeto !== "" ||
-    filters.value.categoria !== "" ||
-    filters.value.fornecedor !== "" ||
-    filters.value.search !== ""
+    filters.periodo !== "" ||
+    filters.programa !== "" ||
+    filters.projeto !== "" ||
+    filters.categoria !== "" ||
+    filters.fornecedor !== "" ||
+    filters.search !== ""
   );
 });
 
@@ -620,21 +630,22 @@ const visiblePages = computed(() => {
 // ─── Watchers ─────────────────────────────────────────────────────────────────
 watch(
   () => [
-    filters.value.periodo,
-    filters.value.programa,
-    filters.value.projeto,
-    filters.value.categoria,
-    filters.value.fornecedor,
+    filters.periodo,
+    filters.programa,
+    filters.projeto,
+    filters.categoria,
+    filters.fornecedor,
   ],
   () => {
     page.value = 1;
     loadTableData();
     loadTopMaterials();
+    loadCostByProject();
   },
 );
 
 watch(
-  () => filters.value.search,
+  () => filters.search,
   () => {
     page.value = 1;
     debouncedLoad();
@@ -647,11 +658,8 @@ onMounted(async () => {
   await loadCostByProject();
   isMounted.value = true;
 
-  console.log("costByProject após load:", costByProject.value);  // ← add
-  console.log("topMaterials após load:", topMaterials.value);    // ← add
-
-  nextTick(() => { // ← add
-    buildCharts(topMaterials.value);
+  nextTick(() => {
+    buildCharts(topMaterials.value, tableData.value, costByProject.value);
     updateCharts(costByProject.value);
   });
 });
@@ -685,7 +693,7 @@ function badgeClass(c: string) {
 }
 
 function clearFilters() {
-  filters.value = {
+  Object.assign(filters, {
     periodo: "",
     programa: "",
     projeto: "",
@@ -694,7 +702,7 @@ function clearFilters() {
     status: "",
     area: "",
     search: "",
-  };
+  });
   page.value = 1;
 }
 
@@ -724,15 +732,17 @@ function exportCSV() {
 // ─── Charts ──────────────────────────────────────────────────────────────
 const { buildCharts, updateCharts, destroyCharts } = useCharts();
 
-watch(topMaterials, () => {
+watch([topMaterials, tableData, costByProject], () => {
   if (!isMounted.value) return;
-  nextTick(() => updateCharts(costByProject.value));
+  nextTick(() => updateCharts(topMaterials.value, tableData.value, costByProject.value));
 });
 
 onUnmounted(() => {
   debouncedLoad.cancel();
   destroyCharts();
 });
+
+defineExpose({ filters, sortKey, page, costByProject, topMaterials, isMounted });
 </script>
 
 <style scoped>
@@ -914,6 +924,58 @@ onUnmounted(() => {
 .export-btn svg {
   width: 14px;
   height: 14px;
+}
+
+/* ── Active Filters ───────────────────────────────────────────────────────── */
+.active-filters {
+  margin-top: 12px;
+  padding: 10px 14px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.active-filters-title {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  margin-right: 4px;
+}
+.active-filters-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  flex: 1;
+}
+.active-filters-list span {
+  background: rgba(77, 143, 255, 0.12);
+  color: var(--blue);
+  border: 1px solid rgba(77, 143, 255, 0.25);
+  border-radius: 5px;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 500;
+}
+.clear-btn {
+  background: transparent;
+  border: 1px solid var(--border2);
+  color: var(--text3);
+  border-radius: 5px;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.clear-btn:hover {
+  border-color: var(--red);
+  color: var(--red);
 }
 
 /* ── Charts ───────────────────────────────────────────────────────────────── */
