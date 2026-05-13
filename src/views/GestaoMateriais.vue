@@ -484,7 +484,6 @@ async function loadTableData() {
   } catch (error) {
     console.error(error);
     tableError.value = "Não foi possível carregar a tabela de materiais.";
-    tableData.value = [];
   } finally {
     tableLoading.value = false;
   }
