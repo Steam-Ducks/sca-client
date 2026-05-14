@@ -19,6 +19,13 @@
       </div>
 
       <div
+        v-if="isLoadingIndicators && !isLoading"
+        class="loading-banner"
+      >
+        Atualizando indicadores...
+      </div>
+
+      <div
         class="metrics"
         data-testid="metrics-section"
       >
@@ -171,6 +178,50 @@
             @click="clearFilters"
           >
             Limpar filtros
+          </button>
+        </div>
+      </div>
+
+      <div
+        class="chart-pagination-bar"
+        data-testid="chart-pagination-bar"
+      >
+        <div class="chart-page-size-control">
+          <span class="chart-page-label">Itens por página:</span>
+          <select
+            v-model.number="chartPageSize"
+            class="filter-select chart-page-select"
+            data-testid="chart-page-size-select"
+            @change="chartPage = 1"
+          >
+            <option
+              v-for="opt in chartPageSizeOptions"
+              :key="opt.value"
+              :value="opt.value"
+            >
+              {{ opt.label }}
+            </option>
+          </select>
+        </div>
+        <div class="chart-page-nav">
+          <span class="chart-page-info">
+            Página {{ chartPage }} de {{ totalChartPages }}
+          </span>
+          <button
+            class="page-btn"
+            data-testid="chart-page-prev"
+            :disabled="chartPage <= 1"
+            @click="chartPage--"
+          >
+            ‹
+          </button>
+          <button
+            class="page-btn"
+            data-testid="chart-page-next"
+            :disabled="chartPage >= totalChartPages"
+            @click="chartPage++"
+          >
+            ›
           </button>
         </div>
       </div>
@@ -393,7 +444,7 @@
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 import { useChartsOrcamento } from "@/composables/useChartsOrcamento";
 import { budgetService } from "@/services/budgetService";
-import type { BudgetHealthStatus, BudgetProjectRow } from "@/types/api";
+import type { BudgetHealthStatus, BudgetIndicators, BudgetProjectRow } from "@/types/api";
 
 const { buildChartsOrcamento, updateChartsOrcamento, destroyChartsOrcamento } =
   useChartsOrcamento();
@@ -401,7 +452,17 @@ const { buildChartsOrcamento, updateChartsOrcamento, destroyChartsOrcamento } =
 const allData = ref<BudgetProjectRow[]>([]);
 const lastUpdatedAt = ref<string | null>(null);
 const isLoading = ref(false);
+const isLoadingIndicators = ref(false);
 const errorMsg = ref<string | null>(null);
+
+const indicators = ref<BudgetIndicators>({
+  budgetTotal: 0,
+  custoRealTotal: 0,
+  desvioPercentMedio: 0,
+  projetosSaudaveis: 0,
+  projetosAtencao: 0,
+  projetosCriticos: 0,
+});
 
 const filters = ref({
   periodo: "",
@@ -412,6 +473,32 @@ const filters = ref({
 
 const sortKey = ref<keyof BudgetProjectRow>("programa");
 const sortDir = ref<1 | -1>(1);
+
+const chartPageSize = ref(10);
+const chartPage = ref(1);
+
+const chartPageSizeOptions = computed(() => {
+  const total = filteredData.value.length;
+  if (total === 0) return [{ label: "Todos (0)", value: 0 }];
+  const opts: { label: string; value: number }[] = [];
+  for (let i = 1; i <= total; i++) {
+    opts.push({ label: i === total ? `${i} (Todos)` : String(i), value: i });
+  }
+  return opts;
+});
+
+const totalChartPages = computed(() => {
+  const size = chartPageSize.value;
+  const total = filteredData.value.length;
+  if (!size || total === 0) return 1;
+  return Math.ceil(total / size);
+});
+
+const pagedChartData = computed(() => {
+  const size = chartPageSize.value;
+  const start = (chartPage.value - 1) * size;
+  return filteredData.value.slice(start, start + size);
+});
 
 // Opções dinâmicas derivadas dos dados carregados (sem aplicar filtro de saúde
 // para que o dropdown de saúde sempre mostre as 3 opções fixas)
@@ -451,21 +538,15 @@ const sortedData = computed(() => {
   });
 });
 
-const kpis = computed(() => {
-  const data = filteredData.value;
-  return {
-    budgetTotal: data.reduce((s, p) => s + p.budget, 0),
-    custoRealTotal: data.reduce((s, p) => s + p.custoReal, 0),
-    desvioMedio:
-      data.length > 0
-        ? data.reduce((s, p) => s + p.desvioPercent, 0) / data.length
-        : 0,
-    saudavelCount: data.filter((p) => p.saude === "Saudável").length,
-    atencaoCount: data.filter((p) => p.saude === "Atenção").length,
-    criticoCount: data.filter((p) => p.saude === "Crítico").length,
-    projecaoEstouro: data.reduce((s, p) => s + (p.projecaoEstouro ?? 0), 0),
-  };
-});
+const kpis = computed(() => ({
+  budgetTotal: indicators.value.budgetTotal,
+  custoRealTotal: indicators.value.custoRealTotal,
+  desvioMedio: indicators.value.desvioPercentMedio,
+  saudavelCount: indicators.value.projetosSaudaveis,
+  atencaoCount: indicators.value.projetosAtencao,
+  criticoCount: indicators.value.projetosCriticos,
+  projecaoEstouro: filteredData.value.reduce((s, p) => s + (p.projecaoEstouro ?? 0), 0),
+}));
 
 const ultimaAtualizacao = computed(() => {
   if (!lastUpdatedAt.value) return "Não informado";
@@ -534,6 +615,25 @@ function exportCSV() {
   a.click();
 }
 
+async function loadIndicators() {
+  isLoadingIndicators.value = true;
+  try {
+    const f = filters.value;
+    const snapshot = await budgetService.fetchBudgetIndicators({
+      periodo: f.periodo || undefined,
+      programa: f.programa || undefined,
+      projeto: f.projeto || undefined,
+      saude: f.saude || undefined,
+    });
+    indicators.value = snapshot.indicators;
+    lastUpdatedAt.value = snapshot.lastUpdatedAt;
+  } catch {
+    // indicators remain at their previous/zero values; error shown by loadData
+  } finally {
+    isLoadingIndicators.value = false;
+  }
+}
+
 // Busca dados do backend com os filtros server-side (periodo, programa, projeto, saude).
 // O filtro de saúde é enviado ao backend; no caminho gold é aplicado server-side,
 // no caminho silver é ignorado e aplicado client-side em filteredData.
@@ -542,14 +642,17 @@ async function loadData() {
   errorMsg.value = null;
   try {
     const f = filters.value;
-    const snapshot = await budgetService.fetchBudgetSnapshot({
-      periodo: f.periodo || undefined,
-      programa: f.programa || undefined,
-      projeto: f.projeto || undefined,
-      saude: f.saude || undefined,
-    });
+    const [snapshot] = await Promise.all([
+      budgetService.fetchBudgetSnapshot({
+        periodo: f.periodo || undefined,
+        programa: f.programa || undefined,
+        projeto: f.projeto || undefined,
+        saude: f.saude || undefined,
+      }),
+      loadIndicators(),
+    ]);
     allData.value = snapshot.rows;
-    lastUpdatedAt.value = snapshot.lastUpdatedAt;
+    if (snapshot.lastUpdatedAt) lastUpdatedAt.value = snapshot.lastUpdatedAt;
   } catch {
     errorMsg.value = "Não foi possível conectar ao servidor. Verifique se o backend está em execução.";
     allData.value = [];
@@ -563,32 +666,43 @@ async function loadData() {
 watch(
   () => [filters.value.periodo, filters.value.programa, filters.value.projeto],
   async () => {
-    // Limpa projeto se não é mais válido para o programa selecionado
     if (
       filters.value.projeto &&
       !uniqueProjetos.value.includes(filters.value.projeto)
     ) {
       filters.value.projeto = "";
     }
+    chartPage.value = 1;
     await loadData();
     await nextTick();
-    buildChartsOrcamento(filteredData.value);
+    buildChartsOrcamento(pagedChartData.value, filteredData.value);
   },
 );
 
-// Quando saúde muda: apenas filtra client-side (sem refetch)
+// Quando saúde muda: refaz indicadores server-side e atualiza charts client-side
 watch(
   () => filters.value.saude,
   async () => {
+    chartPage.value = 1;
+    await loadIndicators();
     await nextTick();
-    updateChartsOrcamento(filteredData.value);
+    updateChartsOrcamento(pagedChartData.value, filteredData.value);
+  },
+);
+
+// Quando página ou tamanho de página muda: atualiza apenas os bar charts
+watch(
+  [chartPage, chartPageSize],
+  async () => {
+    await nextTick();
+    updateChartsOrcamento(pagedChartData.value, filteredData.value);
   },
 );
 
 onMounted(async () => {
   await loadData();
   await nextTick();
-  buildChartsOrcamento(filteredData.value);
+  buildChartsOrcamento(pagedChartData.value, filteredData.value);
 });
 
 onUnmounted(() => {
@@ -742,6 +856,74 @@ th,
   background: var(--blue2);
   border: none;
   color: #fff;
+}
+
+.chart-pagination-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 16px;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.chart-page-size-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.chart-page-label {
+  color: var(--text3);
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.chart-page-select {
+  width: auto;
+  min-width: 80px;
+}
+
+.chart-page-nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.chart-page-info {
+  color: var(--text3);
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.page-btn {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 6px;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  cursor: pointer;
+  line-height: 1;
+  padding: 0;
+}
+
+.page-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.page-btn:not(:disabled):hover {
+  background: var(--bg3);
+  border-color: var(--blue);
+  color: var(--blue);
 }
 
 .charts-row {

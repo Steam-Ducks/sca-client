@@ -125,6 +125,20 @@ export interface BudgetSnapshot {
   lastUpdatedAt: string | null;
 }
 
+export interface BudgetIndicators {
+  budgetTotal: number;
+  custoRealTotal: number;
+  desvioPercentMedio: number;
+  projetosSaudaveis: number;
+  projetosAtencao: number;
+  projetosCriticos: number;
+}
+
+export interface BudgetIndicatorsSnapshot {
+  indicators: BudgetIndicators;
+  lastUpdatedAt: string | null;
+}
+
 export interface DashboardProjectRow {
   id: number
   nome_projeto: string

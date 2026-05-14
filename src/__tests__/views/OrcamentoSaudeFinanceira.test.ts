@@ -1,6 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { mount } from "@vue/test-utils";
-import { nextTick } from "vue";
+import { flushPromises, mount } from "@vue/test-utils";
 import OrcamentoSaudeFinanceira from "@/views/OrcamentoSaudeFinanceira.vue";
 
 vi.mock("chart.js", () => {
@@ -71,13 +70,23 @@ vi.mock("@/services/budgetService", () => ({
       if (filters.periodo) rows = rows.filter((r) => r.periodo === filters.periodo);
       return { rows, lastUpdatedAt: "2026-04-26T12:30:00Z" };
     }),
+    fetchBudgetIndicators: vi.fn().mockResolvedValue({
+      indicators: {
+        budgetTotal: 1700000,
+        custoRealTotal: 1420000,
+        desvioPercentMedio: 81.3,
+        projetosSaudaveis: 1,
+        projetosAtencao: 1,
+        projetosCriticos: 1,
+      },
+      lastUpdatedAt: "2026-04-26T12:30:00Z",
+    }),
   },
 }));
 
 async function mountView() {
   const wrapper = mount(OrcamentoSaudeFinanceira);
-  await Promise.resolve();
-  await nextTick();
+  await flushPromises();
   return wrapper;
 }
 
@@ -112,6 +121,7 @@ describe("OrcamentoSaudeFinanceira.vue", () => {
   it("filters by health status", async () => {
     const wrapper = await mountView();
     await wrapper.find('[data-testid="filter-saude"]').setValue("Crítico");
+    await flushPromises();
     expect(wrapper.findAll('[data-testid^="row-"]').length).toBe(1);
     expect(wrapper.text()).toContain("Projeto B");
   });
@@ -119,11 +129,11 @@ describe("OrcamentoSaudeFinanceira.vue", () => {
   it("filters by program and clears filters", async () => {
     const wrapper = await mountView();
     await wrapper.find('[data-testid="filter-programa"]').setValue("Programa Alpha");
-    await nextTick();
+    await flushPromises();
     expect(wrapper.findAll('[data-testid^="row-"]').length).toBe(2);
 
     await wrapper.find('[data-testid="btn-limpar"]').trigger("click");
-    await nextTick();
+    await flushPromises();
     expect(wrapper.findAll('[data-testid^="row-"]').length).toBe(3);
   });
 
@@ -142,9 +152,23 @@ describe("OrcamentoSaudeFinanceira.vue", () => {
   it("shows empty state when filters match nothing", async () => {
     const wrapper = await mountView();
     await wrapper.find('[data-testid="filter-programa"]').setValue("Programa Beta");
-    await nextTick();
+    await flushPromises();
     await wrapper.find('[data-testid="filter-saude"]').setValue("Crítico");
-    await nextTick();
+    await flushPromises();
     expect(wrapper.text()).toContain("Nenhum registro encontrado.");
+  });
+
+  it("renders chart pagination bar with select and nav buttons", async () => {
+    const wrapper = await mountView();
+    expect(wrapper.find('[data-testid="chart-pagination-bar"]').exists()).toBe(true);
+    expect(wrapper.find('[data-testid="chart-page-size-select"]').exists()).toBe(true);
+    expect(wrapper.find('[data-testid="chart-page-prev"]').exists()).toBe(true);
+    expect(wrapper.find('[data-testid="chart-page-next"]').exists()).toBe(true);
+  });
+
+  it("prev button is disabled on first page", async () => {
+    const wrapper = await mountView();
+    const prevBtn = wrapper.find('[data-testid="chart-page-prev"]');
+    expect((prevBtn.element as HTMLButtonElement).disabled).toBe(true);
   });
 });
