@@ -222,7 +222,10 @@
             Evolução Temporal das Horas
           </div>
           <div class="chart-wrap tall">
-            <canvas id="chartTemporal" />
+            <canvas
+              id="chartTemporal"
+              data-testid="chart-temporal"
+            />
           </div>
         </div>
       </div>
@@ -622,6 +625,9 @@ const uniq = (key: keyof Row) =>
     [...new Set(tableData.value.map((r) => String(r[key])))].sort(),
   );
 
+const allPeriodos = computed(() =>
+  [...new Set(tableData.value.map((r) => r.periodo))].filter(Boolean).sort(),
+);
 const uniquePeriodos = uniq("periodo");
 const uniqueProgramas = uniq("programa");
 const uniqueColaboradores = uniq("colaborador");
@@ -695,7 +701,7 @@ const visiblePages = computed(() => {
 // ─── Watchers ─────────────────────────────────────────────────────────────────
 watch(filteredData, (data) => {
   page.value = 1;
-  updateCharts(data);
+  updateCharts(data, allPeriodos.value);
 });
 
 // ─── API load ─────────────────────────────────────────────────────────────────
@@ -823,7 +829,7 @@ const { buildCharts, updateCharts, destroyCharts } = useChartsTechnical();
 
 onMounted(async () => {
   await loadData();
-  nextTick(() => buildCharts(filteredData.value));
+  nextTick(() => buildCharts(filteredData.value, allPeriodos.value));
 });
 onUnmounted(destroyCharts);
 </script>

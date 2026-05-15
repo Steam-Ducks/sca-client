@@ -28,6 +28,7 @@ interface VmType {
   page: number;
   filteredData: Row[];
   kpis: { custoTotal: number; totalHoras: number; custoMedio: number };
+  allPeriodos: string[];
 }
 
 // ── Mocks hoisted so they're available inside vi.mock factories ───────────────
@@ -290,6 +291,112 @@ describe("HorasTecnicas.vue", () => {
       await wrapper.find('[data-testid="btn-clear-filters"]').trigger("click");
       await nextTick();
       expect((wrapper.vm as unknown as VmType).filters.programa).toBe("");
+    });
+  });
+
+  // ── TC01/TC02/TC03: evolução temporal das horas ─────────────────────────────
+  describe("TC01/TC02/TC03 - Evolução temporal das horas", () => {
+    // Fixture com 3 períodos distintos para validar o comportamento temporal
+    const TEMPORAL_ROWS = [
+      ...API_ROWS, // 2024-03 (Lucas, Cloud) e 2024-01 (Ana, Dev)
+      {
+        id: 3,
+        colaborador: "Pedro Costa",
+        projeto: "Portal Web",
+        programa: "Desenvolvimento",
+        horas_trabalhadas: 30,
+        custo_por_hora: 250,
+        custo_total: 7500,
+        periodo: "2024-02",
+        tarefa: "Desenvolvimento",
+      },
+    ];
+
+    beforeEach(() => {
+      updateChartsMock.mockClear();
+      buildChartsMock.mockClear();
+      vi.stubGlobal(
+        "fetch",
+        vi.fn().mockResolvedValue({ ok: true, json: async () => TEMPORAL_ROWS }),
+      );
+    });
+
+    it("TC01: canvas do gráfico temporal existe com data-testid correto", () => {
+      const wrapper = mount(HorasTecnicas);
+
+      expect(wrapper.find('[data-testid="chart-temporal"]').exists()).toBe(true);
+    });
+
+    it("TC01: buildCharts é chamado ao montar com allPeriodos de todos os períodos carregados", async () => {
+      mount(HorasTecnicas);
+      await flushPromises();
+      await nextTick();
+
+      expect(buildChartsMock).toHaveBeenCalledOnce();
+      const [, periods] = buildChartsMock.mock.calls[0] as [Row[], string[]];
+      expect(periods).toEqual(["2024-01", "2024-02", "2024-03"]);
+    });
+
+    it("TC02: updateCharts recebe allPeriodos como 2º argumento ao aplicar filtro de colaborador", async () => {
+      const wrapper = mount(HorasTecnicas);
+      await flushPromises();
+      await nextTick();
+
+      updateChartsMock.mockClear();
+
+      // Filtro de colaborador é client-side — não dispara nova chamada à API
+      (wrapper.vm as unknown as VmType).filters.colaborador = "Lucas Martins";
+      await nextTick();
+
+      expect(updateChartsMock).toHaveBeenCalledOnce();
+      const [, periods] = updateChartsMock.mock.calls[0] as [Row[], string[]];
+      expect(periods).toEqual(["2024-01", "2024-02", "2024-03"]);
+    });
+
+    it("TC02: updateCharts recebe apenas os dados filtrados como 1º argumento", async () => {
+      const wrapper = mount(HorasTecnicas);
+      await flushPromises();
+      await nextTick();
+
+      updateChartsMock.mockClear();
+
+      (wrapper.vm as unknown as VmType).filters.colaborador = "Lucas Martins";
+      await nextTick();
+
+      const [filteredRows] = updateChartsMock.mock.calls[0] as [Row[], string[]];
+      expect(filteredRows.length).toBe(1);
+      expect(filteredRows[0].colaborador).toBe("Lucas Martins");
+    });
+
+    it("TC03: allPeriodos preserva todos os períodos quando filteredData tem lacunas", async () => {
+      const wrapper = mount(HorasTecnicas);
+      await flushPromises();
+      await nextTick();
+
+      updateChartsMock.mockClear();
+
+      // Lucas só tem 2024-03; tableData ainda tem os 3 períodos
+      (wrapper.vm as unknown as VmType).filters.colaborador = "Lucas Martins";
+      await nextTick();
+
+      const [filteredRows, allPeriods] = updateChartsMock.mock.calls[0] as [
+        Row[],
+        string[],
+      ];
+      // filteredData reduzido a 1 linha
+      expect(filteredRows.length).toBe(1);
+      expect(filteredRows[0].periodo).toBe("2024-03");
+      // mas o eixo X ainda cobre todos os períodos (2024-02 mostrará 0h)
+      expect(allPeriods).toEqual(["2024-01", "2024-02", "2024-03"]);
+    });
+
+    it("TC03: allPeriodos computado do componente contém todos os períodos de tableData", async () => {
+      const wrapper = mount(HorasTecnicas);
+      await flushPromises();
+      await nextTick();
+
+      const vm = wrapper.vm as unknown as VmType;
+      expect(vm.allPeriodos).toEqual(["2024-01", "2024-02", "2024-03"]);
     });
   });
 
