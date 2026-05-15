@@ -183,6 +183,11 @@
             class="filter-chip"
           >
             {{ filter.label }}: {{ filter.value }}
+            <button
+              class="chip-remove"
+              :aria-label="`Remover filtro ${filter.label}`"
+              @click="removeFilter(filter.key)"
+            >×</button>
           </span>
         </div>
       </div>
@@ -741,17 +746,7 @@ async function loadData() {
   }
 }
 
-watch(
-  () => filters.value.programa,
-  () => {
-    if (
-      filters.value.projeto &&
-      !availableProjects.value.includes(filters.value.projeto)
-    ) {
-      filters.value.projeto = "";
-    }
-  },
-);
+
 
 watch(
   () => [filters.value.periodo, filters.value.programa, filters.value.projeto],
@@ -814,6 +809,10 @@ function exportCSV() {
   a.click();
 }
 
+
+function removeFilter(key: string) {
+  (filters.value as Record<string, string>)[key] = "";
+}
 function clearFilters() {
   filters.value = {
     periodo: "",
@@ -1015,6 +1014,9 @@ onUnmounted(destroyCharts);
   letter-spacing: 0.08em;
 }
 .filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
   background: var(--bg3);
   border: 1px solid var(--border2);
   color: var(--text);
@@ -1236,5 +1238,24 @@ td.total {
     opacity: 1;
     transform: none;
   }
+}
+
+.chip-remove {
+  background: none;
+  border: none;
+  color: var(--text3);
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1;
+  padding: 0 1px;
+  display: flex;
+  align-items: center;
+  opacity: 0.5;
+  transition: opacity 0.15s, color 0.15s;
+}
+.chip-remove:hover {
+  opacity: 1;
+  color: #e05252;
 }
 </style>
