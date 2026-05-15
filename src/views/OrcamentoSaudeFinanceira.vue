@@ -96,6 +96,17 @@
         data-testid="filters-section"
       >
         <div class="filters-title">
+          <svg
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              d="M3 4h18M7 10h10M11 16h2"
+              stroke-width="1.5"
+              stroke-linecap="round"
+            />
+          </svg>
           Filtros
         </div>
         <div class="filters-row">
@@ -166,12 +177,54 @@
             </option>
           </select>
           <button
+            v-if="hasActiveFilters"
             class="clear-btn"
             data-testid="btn-limpar"
             @click="clearFilters"
           >
             Limpar filtros
           </button>
+          <button
+            class="export-btn"
+            @click="exportCSV"
+          >
+            <svg
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                d="M12 16l-4-4h3V4h2v8h3l-4 4z"
+                stroke-width="1.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+              <path
+                d="M4 20h16"
+                stroke-width="1.5"
+                stroke-linecap="round"
+              />
+            </svg>
+            Exportar
+          </button>
+        </div>
+        <div
+          v-if="hasActiveFilters"
+          class="active-filters"
+        >
+          <span class="active-filters-label">Filtros ativos</span>
+          <span
+            v-for="filter in activeFilterEntries"
+            :key="filter.key"
+            class="filter-chip"
+          >
+            {{ filter.label }}: {{ filter.value }}
+            <button
+              class="chip-remove"
+              :aria-label="`Remover filtro ${filter.label}`"
+              @click="removeFilter(filter.key)"
+            >×</button>
+          </span>
         </div>
       </div>
 
@@ -513,6 +566,20 @@ function saudeProgressClass(saude: BudgetHealthStatus): string {
   return "progress-red";
 }
 
+const activeFilterEntries = computed(() =>
+  [
+    { key: "periodo",  label: "Período",  value: filters.value.periodo },
+    { key: "programa", label: "Programa", value: filters.value.programa },
+    { key: "projeto",  label: "Projeto",  value: filters.value.projeto },
+    { key: "saude",    label: "Saúde",    value: filters.value.saude },
+  ].filter((e) => Boolean(e.value)),
+);
+const hasActiveFilters = computed(() => activeFilterEntries.value.length > 0);
+
+function removeFilter(key: string) {
+  (filters.value as Record<string, string>)[key] = "";
+}
+
 function clearFilters() {
   filters.value = { periodo: "", programa: "", projeto: "", saude: "" };
 }
@@ -648,28 +715,14 @@ onUnmounted(() => {
 }
 
 .metric-card,
-.filters-card,
-.chart-card,
-.section-card,
-.table-card {
-  background: var(--bg2);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-}
+
 
 .metric-card {
   padding: 16px;
 }
 
 .metric-label,
-.filters-title,
-.chart-title,
-.project-program,
-.stat-label,
-th,
-.metric-sub {
-  color: var(--text3);
-}
+
 
 .metric-value {
   font-size: 18px;
@@ -698,51 +751,17 @@ th,
   font-size: 15px;
 }
 
-.filters-card,
-.chart-card,
-.section-card {
-  padding: 16px;
-}
 
-.filters-row,
-.project-card-top,
-.project-stat,
-.table-header {
-  display: flex;
-  align-items: center;
-}
 
-.filters-row {
-  gap: 10px;
-  flex-wrap: wrap;
-}
 
-.filter-select,
-.clear-btn,
-.export-btn {
-  border-radius: 6px;
-  padding: 8px 12px;
-  font: inherit;
-}
 
-.filter-select,
-.clear-btn {
-  background: var(--bg3);
-  border: 1px solid var(--border);
-  color: var(--text);
-}
 
-.clear-btn,
-.export-btn,
-.sort-col {
-  cursor: pointer;
-}
 
-.export-btn {
-  background: var(--blue2);
-  border: none;
-  color: #fff;
-}
+
+
+
+
+
 
 .charts-row {
   display: grid;
@@ -923,5 +942,147 @@ td {
   .project-grid {
     grid-template-columns: 1fr;
   }
+}
+
+.active-filters {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-top: 12px;
+}
+.active-filters-label {
+  font-size: 11px;
+  color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  color: var(--text);
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 11px;
+}
+.chip-remove {
+  background: none;
+  border: none;
+  color: var(--text3);
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+  padding: 0 1px;
+  display: flex;
+  align-items: center;
+  opacity: 0.5;
+  transition: opacity 0.15s, color 0.15s;
+}
+.chip-remove:hover {
+  opacity: 1;
+  color: #e05252;
+}
+/* ── Filters ──────────────────────────────────────────────────────────────── */
+.filters-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px 20px;
+  animation: fadeIn 0.35s ease both;
+}
+
+/* Card backgrounds — restored */
+.metric-card,
+.chart-card,
+.section-card,
+.table-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+.chart-card,
+.section-card {
+  padding: 16px;
+}
+.filters-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  margin-bottom: 14px;
+  color: var(--text2);
+}
+.filters-title svg {
+  width: 14px;
+  height: 14px;
+  color: var(--text3);
+}
+.filters-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.filter-select {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 7px;
+  padding: 7px 30px 7px 10px;
+  font-size: 12px;
+  font-family: inherit;
+  appearance: none;
+  cursor: pointer;
+  min-width: 155px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%238b92aa'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  transition: border-color 0.2s;
+}
+.filter-select:focus {
+  outline: none;
+  border-color: var(--blue2);
+}
+.export-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--blue2);
+  color: #fff;
+  border: none;
+  border-radius: 7px;
+  padding: 7px 16px;
+  font-size: 12px;
+  font-family: inherit;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+  white-space: nowrap;
+  margin-left: auto;
+}
+.export-btn:hover {
+  background: var(--blue);
+}
+.export-btn svg {
+  width: 14px;
+  height: 14px;
+}
+.clear-btn {
+  background: transparent;
+  border: 1px solid var(--border2);
+  color: var(--text2);
+  border-radius: 7px;
+  padding: 7px 12px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.clear-btn:hover {
+  color: var(--text);
+  border-color: var(--blue2);
 }
 </style>
