@@ -121,57 +121,13 @@
               {{ f }}
             </option>
           </select>
-        </div>
-        <div
-          v-if="hasActiveFilters"
-          class="active-filters"
-        >
-          <div class="active-filters-title">
-            Filtros ativos
-          </div>
-          <div class="active-filters-list">
-            <span v-if="filters.periodo">Período: {{ filters.periodo }}</span>
-            <span v-if="filters.programa">Programa: {{ filters.programa }}</span>
-            <span v-if="filters.projeto">Projeto: {{ filters.projeto }}</span>
-            <span v-if="filters.categoria">Categoria: {{ filters.categoria }}</span>
-            <span v-if="filters.fornecedor">Fornecedor: {{ filters.fornecedor }}</span>
-            <span v-if="filters.search">Busca: {{ filters.search }}</span>
-          </div>
           <button
+            v-if="hasActiveFilters"
             class="clear-btn"
             @click="clearFilters"
           >
-            Limpar Filtros
+            Limpar filtros
           </button>
-        </div>
-        <div
-          class="filters-row"
-          style="margin-top: 10px"
-        >
-          <div class="search-wrap">
-            <svg
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <circle
-                cx="11"
-                cy="11"
-                r="8"
-                stroke-width="1.5"
-              />
-              <path
-                d="M21 21l-4.35-4.35"
-                stroke-width="1.5"
-                stroke-linecap="round"
-              />
-            </svg>
-            <input
-              v-model="filters.search"
-              class="search-input"
-              placeholder="Buscar material..."
-            >
-          </div>
           <button
             class="export-btn"
             @click="exportCSV"
@@ -195,6 +151,24 @@
             </svg>
             Exportar
           </button>
+        </div>
+        <div
+          v-if="hasActiveFilters"
+          class="active-filters"
+        >
+          <span class="active-filters-label">Filtros ativos</span>
+          <span
+            v-for="filter in activeFilterEntries"
+            :key="filter.key"
+            class="filter-chip"
+          >
+            {{ filter.label }}: {{ filter.value }}
+            <button
+              class="chip-remove"
+              :aria-label="`Remover filtro ${filter.label}`"
+              @click="removeFilter(filter.key)"
+            >×</button>
+          </span>
         </div>
       </div>
 
@@ -425,7 +399,6 @@ const filters = reactive<Filters>({
   fornecedor: "",
   status: "",
   area: "",
-  search: "",
 });
 const sortKey = ref<SortKey>("valorTotal");
 const sortDir = ref<SortDir>(-1);
@@ -586,16 +559,20 @@ const projetosFiltered = computed(() => {
     .sort();
 });
 
-const hasActiveFilters = computed(() => {
-  return (
-    filters.periodo !== "" ||
-    filters.programa !== "" ||
-    filters.projeto !== "" ||
-    filters.categoria !== "" ||
-    filters.fornecedor !== "" ||
-    filters.search !== ""
-  );
-});
+const activeFilterEntries = computed(() =>
+  [
+    { key: "periodo",    label: "Período",    value: filters.periodo },
+    { key: "programa",   label: "Programa",   value: filters.programa },
+    { key: "projeto",    label: "Projeto",    value: filters.projeto },
+    { key: "categoria",  label: "Categoria",  value: filters.categoria },
+    { key: "fornecedor", label: "Fornecedor", value: filters.fornecedor },
+  ].filter((e) => Boolean(e.value)),
+);
+const hasActiveFilters = computed(() => activeFilterEntries.value.length > 0);
+
+function removeFilter(key: string) {
+  (filters as Record<string, string>)[key] = "";
+}
 
 const sortedData = computed(() =>
   [...tableData.value].sort((a, b) => {
@@ -645,7 +622,6 @@ watch(
 );
 
 watch(
-  () => filters.search,
   () => {
     page.value = 1;
     debouncedLoad();
@@ -701,8 +677,7 @@ function clearFilters() {
     fornecedor: "",
     status: "",
     area: "",
-    search: "",
-  });
+    });
   page.value = 1;
 }
 
@@ -870,41 +845,11 @@ defineExpose({ filters, sortKey, page, costByProject, topMaterials, isMounted })
   outline: none;
   border-color: var(--blue2);
 }
-.search-wrap {
-  flex: 1;
-  position: relative;
-  min-width: 200px;
-}
-.search-wrap svg {
-  position: absolute;
-  left: 10px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 14px;
-  height: 14px;
-  color: var(--text3);
-}
-.search-input {
-  width: 100%;
-  background: var(--bg3);
-  border: 1px solid var(--border);
-  color: var(--text);
-  border-radius: 7px;
-  padding: 7px 10px 7px 32px;
-  font-size: 12px;
-  font-family: inherit;
-  transition: border-color 0.2s;
-}
-.search-input:focus {
-  outline: none;
-  border-color: var(--blue2);
-}
-.search-input::placeholder {
-  color: var(--text3);
-}
+
 .export-btn {
   display: flex;
   align-items: center;
+  margin-left: auto;
   gap: 6px;
   background: var(--blue2);
   color: #fff;
@@ -928,15 +873,11 @@ defineExpose({ filters, sortKey, page, costByProject, topMaterials, isMounted })
 
 /* ── Active Filters ───────────────────────────────────────────────────────── */
 .active-filters {
-  margin-top: 12px;
-  padding: 10px 14px;
-  background: var(--bg3);
-  border: 1px solid var(--border);
-  border-radius: 7px;
   display: flex;
+  gap: 8px;
   flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
+  margin-top: 12px;
 }
 .active-filters-title {
   font-size: 11px;
@@ -1173,5 +1114,38 @@ td.total {
     opacity: 1;
     transform: none;
   }
+}
+
+
+
+
+.filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  color: var(--text);
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 11px;
+}
+.chip-remove {
+  background: none;
+  border: none;
+  color: var(--text3);
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1;
+  padding: 0 1px;
+  display: flex;
+  align-items: center;
+  opacity: 0.5;
+  transition: opacity 0.15s, color 0.15s;
+}
+.chip-remove:hover {
+  opacity: 1;
+  color: #e05252;
 }
 </style>
