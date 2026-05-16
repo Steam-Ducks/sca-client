@@ -559,19 +559,38 @@ const projetosFiltered = computed(() => {
     .sort();
 });
 
-const activeFilterEntries = computed(() =>
-  [
-    { key: "periodo",    label: "Período",    value: filters.periodo },
-    { key: "programa",   label: "Programa",   value: filters.programa },
-    { key: "projeto",    label: "Projeto",    value: filters.projeto },
-    { key: "categoria",  label: "Categoria",  value: filters.categoria },
-    { key: "fornecedor", label: "Fornecedor", value: filters.fornecedor },
-  ].filter((e) => Boolean(e.value)),
-);
-const hasActiveFilters = computed(() => activeFilterEntries.value.length > 0);
+const hasActiveFilters = computed(() => {
+  return (
+    filters.periodo !== "" ||
+    filters.programa !== "" ||
+    filters.projeto !== "" ||
+    filters.categoria !== "" ||
+    filters.fornecedor !== "" ||
+    filters.search !== ""
+  );
+});
 
-function removeFilter(key: string) {
-  (filters as Record<string, string>)[key] = "";
+type FilterEntry = { key: keyof Filters; label: string; value: string };
+
+const FILTER_LABELS: Partial<Record<keyof Filters, string>> = {
+  periodo: "Período",
+  programa: "Programa",
+  projeto: "Projeto",
+  categoria: "Categoria",
+  fornecedor: "Fornecedor",
+  search: "Busca",
+};
+
+const activeFilterEntries = computed<FilterEntry[]>(() => {
+  const keys: (keyof Filters)[] = ["periodo", "programa", "projeto", "categoria", "fornecedor", "search"];
+  return keys
+    .filter((k) => filters[k] !== "")
+    .map((k) => ({ key: k, label: FILTER_LABELS[k]!, value: filters[k] }));
+});
+
+function removeFilter(key: keyof Filters) {
+  filters[key] = "";
+  page.value = 1;
 }
 
 const sortedData = computed(() =>
@@ -622,6 +641,7 @@ watch(
 );
 
 watch(
+  () => filters.search,
   () => {
     page.value = 1;
     debouncedLoad();
@@ -677,7 +697,8 @@ function clearFilters() {
     fornecedor: "",
     status: "",
     area: "",
-    });
+    search: "",
+  });
   page.value = 1;
 }
 
@@ -873,11 +894,15 @@ defineExpose({ filters, sortKey, page, costByProject, topMaterials, isMounted })
 
 /* ── Active Filters ───────────────────────────────────────────────────────── */
 .active-filters {
+  margin-top: 12px;
+  padding: 10px 14px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 7px;
   display: flex;
-  gap: 8px;
   flex-wrap: wrap;
   align-items: center;
-  margin-top: 12px;
+  gap: 8px;
 }
 .active-filters-title {
   font-size: 11px;
