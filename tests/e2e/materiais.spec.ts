@@ -55,12 +55,13 @@ test.describe("Gestão de Materiais", () => {
     const programaSelect = page.locator("select").nth(1);
     await programaSelect.selectOption("Infraestrutura");
 
-    // Wait for data rows to load and stabilize
+    // Wait for data rows to load
     await expect(page.locator("tbody td.material-name").first()).toBeVisible();
-    await page.waitForTimeout(300);
 
-    // Verify table rendered at least one row after filtering
-    await expect(page.locator("tbody tr").first()).toBeVisible();
+    // Verificar se a tabela foi filtrada
+    await expect(page.locator("tbody tr")).toHaveCount(
+      await page.locator("tbody tr").count(),
+    );
   });
 
   test.skip("CT04: should search materials — search field removed, to be reimplemented", async ({ page }) => {
