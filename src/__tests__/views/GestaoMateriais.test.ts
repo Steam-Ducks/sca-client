@@ -212,18 +212,17 @@ describe("GestaoMateriais.vue", () => {
 
   it("CT07: shows and clears active filters", async () => {
     const wrapper = mount(GestaoMateriais);
-    await nextTick();
-    await nextTick();
+    await flushAll();
 
     const selects = wrapper.findAll("select");
     await selects[1].setValue("Infraestrutura");
-    await nextTick();
+    await flushAll();
 
     expect(wrapper.text()).toContain("Filtros ativos");
-    expect(wrapper.text()).toContain("Programa: Infraestrutura");
+    expect(wrapper.find(".active-filters-list").text()).toContain("Programa: Infraestrutura");
 
     await wrapper.find(".clear-btn").trigger("click");
-    await nextTick();
+    await flushAll();
 
     expect(getVm(wrapper).filters.programa).toBe("");
   });
