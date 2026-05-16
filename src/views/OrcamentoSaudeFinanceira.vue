@@ -276,7 +276,7 @@
         </div>
         <div class="project-grid">
           <div
-            v-for="p in filteredData"
+            v-for="p in pagedCardsData"
             :key="p.id"
             class="project-card"
             :data-testid="`project-card-${p.id}`"
@@ -313,6 +313,45 @@
                 :style="{ width: Math.min(p.desvioPercent, 100) + '%' }"
               />
             </div>
+          </div>
+        </div>
+        <div class="section-pagination">
+          <div class="chart-page-size-control">
+            <span class="chart-page-label">Itens por página:</span>
+            <select
+              v-model.number="cardsPageSize"
+              class="filter-select chart-page-select"
+              data-testid="cards-page-size-select"
+            >
+              <option
+                v-for="opt in cardsPageSizeOptions"
+                :key="opt.value"
+                :value="opt.value"
+              >
+                {{ opt.label }}
+              </option>
+            </select>
+          </div>
+          <div class="chart-page-nav">
+            <span class="chart-page-info">
+              Página {{ cardsPage }} de {{ totalCardsPages }}
+            </span>
+            <button
+              class="page-btn"
+              data-testid="cards-page-prev"
+              :disabled="cardsPage <= 1"
+              @click="cardsPage--"
+            >
+              ‹
+            </button>
+            <button
+              class="page-btn"
+              data-testid="cards-page-next"
+              :disabled="cardsPage >= totalCardsPages"
+              @click="cardsPage++"
+            >
+              ›
+            </button>
           </div>
         </div>
       </div>
@@ -388,7 +427,7 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-if="sortedData.length === 0">
+              <tr v-if="pagedTableData.length === 0">
                 <td
                   colspan="10"
                   class="table-feedback muted"
@@ -397,7 +436,7 @@
                 </td>
               </tr>
               <tr
-                v-for="row in sortedData"
+                v-for="row in pagedTableData"
                 :key="row.id"
                 :data-testid="`row-${row.id}`"
               >
@@ -434,6 +473,45 @@
               </tr>
             </tbody>
           </table>
+        </div>
+        <div class="section-pagination">
+          <div class="chart-page-size-control">
+            <span class="chart-page-label">Itens por página:</span>
+            <select
+              v-model.number="tablePageSize"
+              class="filter-select chart-page-select"
+              data-testid="table-page-size-select"
+            >
+              <option
+                v-for="opt in tablePageSizeOptions"
+                :key="opt.value"
+                :value="opt.value"
+              >
+                {{ opt.label }}
+              </option>
+            </select>
+          </div>
+          <div class="chart-page-nav">
+            <span class="chart-page-info">
+              Página {{ tablePage }} de {{ totalTablePages }}
+            </span>
+            <button
+              class="page-btn"
+              data-testid="table-page-prev"
+              :disabled="tablePage <= 1"
+              @click="tablePage--"
+            >
+              ‹
+            </button>
+            <button
+              class="page-btn"
+              data-testid="table-page-next"
+              :disabled="tablePage >= totalTablePages"
+              @click="tablePage++"
+            >
+              ›
+            </button>
+          </div>
         </div>
       </div>
     </main>
@@ -476,6 +554,11 @@ const sortDir = ref<1 | -1>(1);
 
 const chartPageSize = ref(10);
 const chartPage = ref(1);
+
+const tablePage = ref(1);
+const tablePageSize = ref(10);
+const cardsPage = ref(1);
+const cardsPageSize = ref(10);
 
 const chartPageSizeOptions = computed(() => {
   const total = filteredData.value.length;
@@ -536,6 +619,47 @@ const sortedData = computed(() => {
       ? av.localeCompare(bv as string) * sortDir.value
       : ((av as number) - (bv as number)) * sortDir.value;
   });
+});
+
+function buildPageSizeOpts(total: number): { label: string; value: number }[] {
+  if (total === 0) return [{ label: "Todos (0)", value: 0 }];
+  const bases = [10, 25, 50, 100];
+  const opts = bases
+    .filter((n) => n < total)
+    .map((n) => ({ label: String(n), value: n }));
+  opts.push({ label: `Todos (${total})`, value: 0 });
+  return opts;
+}
+
+const cardsPageSizeOptions = computed(() => buildPageSizeOpts(filteredData.value.length));
+const tablePageSizeOptions = computed(() => buildPageSizeOpts(sortedData.value.length));
+
+const totalCardsPages = computed(() => {
+  const size = cardsPageSize.value;
+  const total = filteredData.value.length;
+  if (!size || total === 0) return 1;
+  return Math.ceil(total / size);
+});
+
+const totalTablePages = computed(() => {
+  const size = tablePageSize.value;
+  const total = sortedData.value.length;
+  if (!size || total === 0) return 1;
+  return Math.ceil(total / size);
+});
+
+const pagedCardsData = computed(() => {
+  const size = cardsPageSize.value;
+  if (!size) return filteredData.value;
+  const start = (cardsPage.value - 1) * size;
+  return filteredData.value.slice(start, start + size);
+});
+
+const pagedTableData = computed(() => {
+  const size = tablePageSize.value;
+  if (!size) return sortedData.value;
+  const start = (tablePage.value - 1) * size;
+  return sortedData.value.slice(start, start + size);
 });
 
 const kpis = computed(() => ({
@@ -673,6 +797,8 @@ watch(
       filters.value.projeto = "";
     }
     chartPage.value = 1;
+    tablePage.value = 1;
+    cardsPage.value = 1;
     await loadData();
     await nextTick();
     buildChartsOrcamento(pagedChartData.value, filteredData.value);
@@ -684,6 +810,8 @@ watch(
   () => filters.value.saude,
   async () => {
     chartPage.value = 1;
+    tablePage.value = 1;
+    cardsPage.value = 1;
     await loadIndicators();
     await nextTick();
     updateChartsOrcamento(pagedChartData.value, filteredData.value);
@@ -698,6 +826,9 @@ watch(
     updateChartsOrcamento(pagedChartData.value, filteredData.value);
   },
 );
+
+watch(tablePageSize, () => { tablePage.value = 1; });
+watch(cardsPageSize, () => { cardsPage.value = 1; });
 
 onMounted(async () => {
   await loadData();
@@ -1088,6 +1219,25 @@ td {
 .table-feedback {
   text-align: center;
   padding: 32px;
+}
+
+.section-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.section-card .section-pagination {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.table-card .section-pagination {
+  padding: 10px 16px;
+  border-top: 1px solid var(--border);
 }
 
 @media (max-width: 1200px) {

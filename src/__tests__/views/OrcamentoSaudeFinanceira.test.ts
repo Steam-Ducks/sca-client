@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { flushPromises, mount } from "@vue/test-utils";
 import OrcamentoSaudeFinanceira from "@/views/OrcamentoSaudeFinanceira.vue";
+import { budgetService } from "@/services/budgetService";
 
 vi.mock("chart.js", () => {
   const ChartMock = vi.fn().mockImplementation(() => ({
@@ -170,5 +171,126 @@ describe("OrcamentoSaudeFinanceira.vue", () => {
     const wrapper = await mountView();
     const prevBtn = wrapper.find('[data-testid="chart-page-prev"]');
     expect((prevBtn.element as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  it("renders cards pagination controls", async () => {
+    const wrapper = await mountView();
+    expect(wrapper.find('[data-testid="cards-page-size-select"]').exists()).toBe(true);
+    expect(wrapper.find('[data-testid="cards-page-prev"]').exists()).toBe(true);
+    expect(wrapper.find('[data-testid="cards-page-next"]').exists()).toBe(true);
+  });
+
+  it("renders table pagination controls", async () => {
+    const wrapper = await mountView();
+    expect(wrapper.find('[data-testid="table-page-size-select"]').exists()).toBe(true);
+    expect(wrapper.find('[data-testid="table-page-prev"]').exists()).toBe(true);
+    expect(wrapper.find('[data-testid="table-page-next"]').exists()).toBe(true);
+  });
+
+  it("cards prev button is disabled on first page", async () => {
+    const wrapper = await mountView();
+    const prev = wrapper.find('[data-testid="cards-page-prev"]');
+    expect((prev.element as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  it("table prev button is disabled on first page", async () => {
+    const wrapper = await mountView();
+    const prev = wrapper.find('[data-testid="table-page-prev"]');
+    expect((prev.element as HTMLButtonElement).disabled).toBe(true);
+  });
+});
+
+function make15Rows() {
+  return Array.from({ length: 15 }, (_, i) => ({
+    id: i + 100,
+    projeto: `Projeto Pag ${i + 1}`,
+    programa: "Programa Paginacao",
+    budget: 100000,
+    custoMateriais: 0,
+    custoHoras: 0,
+    custoReal: 0,
+    desvioPercent: 0,
+    saude: "Saudável" as const,
+    projecaoEstouro: null,
+    periodo: "2026-01",
+    status: "Em andamento",
+  }));
+}
+
+describe("OrcamentoSaudeFinanceira.vue – paginação com 15 linhas", () => {
+  beforeEach(() => {
+    document.body.innerHTML = "";
+    vi.mocked(budgetService.fetchBudgetSnapshot).mockResolvedValueOnce({
+      rows: make15Rows(),
+      lastUpdatedAt: "2026-04-26T12:30:00Z",
+    });
+  });
+
+  it("tabela exibe 10 linhas na primeira página e next habilitado", async () => {
+    const wrapper = await mountView();
+    expect(wrapper.findAll('[data-testid^="row-"]').length).toBe(10);
+    const next = wrapper.find('[data-testid="table-page-next"]');
+    expect((next.element as HTMLButtonElement).disabled).toBe(false);
+  });
+
+  it("tabela navega para página 2 mostrando as 5 linhas restantes", async () => {
+    const wrapper = await mountView();
+    await wrapper.find('[data-testid="table-page-next"]').trigger("click");
+    await flushPromises();
+    expect(wrapper.findAll('[data-testid^="row-"]').length).toBe(5);
+    expect(wrapper.text()).toContain("Página 2 de 2");
+  });
+
+  it("tabela – prev habilitado na página 2 e next desabilitado", async () => {
+    const wrapper = await mountView();
+    await wrapper.find('[data-testid="table-page-next"]').trigger("click");
+    await flushPromises();
+    const prev = wrapper.find('[data-testid="table-page-prev"]');
+    const next = wrapper.find('[data-testid="table-page-next"]');
+    expect((prev.element as HTMLButtonElement).disabled).toBe(false);
+    expect((next.element as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  it("tabela – voltar para página 1 restaura 10 linhas", async () => {
+    const wrapper = await mountView();
+    await wrapper.find('[data-testid="table-page-next"]').trigger("click");
+    await flushPromises();
+    await wrapper.find('[data-testid="table-page-prev"]').trigger("click");
+    await flushPromises();
+    expect(wrapper.findAll('[data-testid^="row-"]').length).toBe(10);
+    expect(wrapper.text()).toContain("Página 1 de 2");
+  });
+
+  it("cards exibe 10 cards na primeira página e next habilitado", async () => {
+    const wrapper = await mountView();
+    expect(wrapper.findAll('[data-testid^="project-card-"]').length).toBe(10);
+    const next = wrapper.find('[data-testid="cards-page-next"]');
+    expect((next.element as HTMLButtonElement).disabled).toBe(false);
+  });
+
+  it("cards navega para página 2 mostrando os 5 cards restantes", async () => {
+    const wrapper = await mountView();
+    await wrapper.find('[data-testid="cards-page-next"]').trigger("click");
+    await flushPromises();
+    expect(wrapper.findAll('[data-testid^="project-card-"]').length).toBe(5);
+  });
+
+  it("cards – prev habilitado na página 2 e next desabilitado", async () => {
+    const wrapper = await mountView();
+    await wrapper.find('[data-testid="cards-page-next"]').trigger("click");
+    await flushPromises();
+    const prev = wrapper.find('[data-testid="cards-page-prev"]');
+    const next = wrapper.find('[data-testid="cards-page-next"]');
+    expect((prev.element as HTMLButtonElement).disabled).toBe(false);
+    expect((next.element as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  it("cards – voltar para página 1 restaura 10 cards", async () => {
+    const wrapper = await mountView();
+    await wrapper.find('[data-testid="cards-page-next"]').trigger("click");
+    await flushPromises();
+    await wrapper.find('[data-testid="cards-page-prev"]').trigger("click");
+    await flushPromises();
+    expect(wrapper.findAll('[data-testid^="project-card-"]').length).toBe(10);
   });
 });
