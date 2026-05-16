@@ -64,10 +64,10 @@ test.describe("Gestão de Materiais", () => {
     );
   });
 
-  test("CT04: should search materials", async ({ page }) => {
+  test.skip("CT04: should search materials — search field removed, to be reimplemented", async ({ page }) => {
+    // Search field removed from GestaoMateriais pending backend implementation.
+    // This test will be re-enabled when the feature is available for all pages.
     await page.locator(".search-input").fill("Dell");
-
-    // Verificar se a busca funcionou
     await expect(page.locator("tbody tr")).toHaveCount(
       await page.locator("tbody tr").count(),
     );
