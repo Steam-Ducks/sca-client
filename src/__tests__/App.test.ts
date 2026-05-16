@@ -9,7 +9,6 @@ import AboutView from "@/views/AboutView.vue";
 import GestaoMateriais from "@/views/GestaoMateriais.vue";
 import HorasTecnicas from "@/views/HorasTecnicas.vue";
 import Consolidado from "@/views/Consolidado.vue";
-import Auditoria from "@/views/Auditoria.vue";
 
 const router = createRouter({
   history: createWebHistory(),
@@ -43,11 +42,6 @@ const router = createRouter({
       path: "/consolidado",
       name: "consolidado",
       component: Consolidado,
-    },
-    {
-      path: "/auditoria",
-      name: "auditoria",
-      component: Auditoria,
     },
   ],
 });
