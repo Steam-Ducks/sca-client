@@ -570,6 +570,29 @@ const hasActiveFilters = computed(() => {
   );
 });
 
+type FilterEntry = { key: keyof Filters; label: string; value: string };
+
+const FILTER_LABELS: Partial<Record<keyof Filters, string>> = {
+  periodo: "Período",
+  programa: "Programa",
+  projeto: "Projeto",
+  categoria: "Categoria",
+  fornecedor: "Fornecedor",
+  search: "Busca",
+};
+
+const activeFilterEntries = computed<FilterEntry[]>(() => {
+  const keys: (keyof Filters)[] = ["periodo", "programa", "projeto", "categoria", "fornecedor", "search"];
+  return keys
+    .filter((k) => filters[k] !== "")
+    .map((k) => ({ key: k, label: FILTER_LABELS[k]!, value: filters[k] }));
+});
+
+function removeFilter(key: keyof Filters) {
+  filters[key] = "";
+  page.value = 1;
+}
+
 const sortedData = computed(() =>
   [...tableData.value].sort((a, b) => {
     const av = a[sortKey.value];

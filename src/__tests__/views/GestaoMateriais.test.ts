@@ -219,7 +219,7 @@ describe("GestaoMateriais.vue", () => {
     await flushAll();
 
     expect(wrapper.text()).toContain("Filtros ativos");
-    expect(wrapper.find(".active-filters-list").text()).toContain("Programa: Infraestrutura");
+    expect(wrapper.find(".active-filters").text()).toContain("Programa: Infraestrutura");
 
     await wrapper.find(".clear-btn").trigger("click");
     await flushAll();
