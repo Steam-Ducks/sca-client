@@ -2,7 +2,7 @@ import { test, expect } from "@playwright/test";
 
 test.describe("Navigation", () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto("http://localhost:5173");
+    await page.goto("/");
   });
 
   test("CT01: should navigate to materials page (home)", async ({ page }) => {
