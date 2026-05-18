@@ -3,78 +3,64 @@ import { flushPromises, mount } from "@vue/test-utils";
 import { nextTick } from "vue";
 import Auditoria from "@/views/Auditoria.vue";
 
-vi.mock("@/composables/useChartsAuditoria", () => ({
-  useChartsAuditoria: vi.fn(() => ({
-    buildCharts: vi.fn(),
-    updateCharts: vi.fn(),
-    destroyCharts: vi.fn(),
-  })),
-}));
-
-vi.mock("chart.js", () => ({
-  Chart: vi.fn().mockImplementation(() => ({
-    destroy: vi.fn(),
-    update: vi.fn(),
-  })),
-  registerables: [],
-}));
-
-// ── Fixture ───────────────────────────────────────────────────────────────────
+// ── API fixture ───────────────────────────────────────────────────────────────
 const API_ROWS = [
   {
-    id: 1,
-    operation: "bronze_ingest",
-    status: "SUCCESS",
-    table_schema: "bronze",
-    table_name: "horas_tecnicas",
-    affected_rows: 100,
-    started_at: "2024-03-01T10:00:00Z",
-    finalized_at: "2024-03-01T10:05:00Z",
-    operation_metadata: {
-      nome_projeto: "Migração AWS",
-      nome_programa: "Cloud",
-      responsavel: "Lucas Martins",
-    },
+    id: 1, operation: "INGEST", status: "SUCCESS",
+    table_schema: "bronze", table_name: "materiais",
+    affected_rows: 150, started_at: "2026-03-11T23:00:00Z",
+    finalized_at: "2026-03-11T23:45:00Z", operation_metadata: {},
   },
   {
-    id: 2,
-    operation: "silver_ingest",
-    status: "FAILED",
-    table_schema: "silver",
-    table_name: "materiais",
-    affected_rows: 0,
-    started_at: "2024-01-15T09:00:00Z",
-    finalized_at: "2024-01-15T09:03:00Z",
-    operation_metadata: {
-      nome_projeto: "Portal Web",
-      nome_programa: "Desenvolvimento",
-      responsavel: "Ana Oliveira",
-    },
+    id: 2, operation: "TRANSFORM", status: "SUCCESS",
+    table_schema: "silver", table_name: "horas",
+    affected_rows: 80, started_at: "2026-03-10T23:00:00Z",
+    finalized_at: "2026-03-10T23:42:00Z", operation_metadata: {},
+  },
+  {
+    id: 3, operation: "INGEST", status: "PARTIAL",
+    table_schema: "bronze", table_name: "fornecedores",
+    affected_rows: 5, started_at: "2026-03-09T23:00:00Z",
+    finalized_at: "2026-03-09T23:38:00Z", operation_metadata: {},
+  },
+  {
+    id: 4, operation: "EXPORT", status: "FAILED",
+    table_schema: null, table_name: null,
+    affected_rows: 0, started_at: "2026-03-06T23:00:00Z",
+    finalized_at: "2026-03-06T23:05:00Z", operation_metadata: {},
   },
 ];
 
-interface AuditoriaRow {
-  id: number;
-  tipo: string;
-  status: string;
-  projeto: string;
-  programa: string;
-  responsavel: string;
-}
-
+// ── Helpers ───────────────────────────────────────────────────────────────────
 interface VmType {
-  filters: {
-    tipo: string;
-    status: string;
-    projeto: string;
-    responsavel: string;
-    programa: string;
-  };
-  sortKey: string;
-  page: number;
-  filteredData: AuditoriaRow[];
+  activeTab: string;
+  importStatus: Record<string, { status: string; message?: string; recordsProcessed?: number }>;
+  tableData: { id: number; status: string }[];
+  kpis: { concluidas: number; parciais: number; falhas: number };
+  handleFileChange: (key: string, event: Event) => Promise<void>;
 }
 
+const getVm = (wrapper: ReturnType<typeof mount>) =>
+  wrapper.vm as unknown as VmType;
+
+function csvFileEvent(fileName = "dados.csv"): Event {
+  const file = new File(["col1,col2\nval1,val2"], fileName, { type: "text/csv" });
+  return { target: { files: [file] } } as unknown as Event;
+}
+
+function nonCsvFileEvent(): Event {
+  const file = new File(["data"], "dados.xlsx", { type: "application/vnd.ms-excel" });
+  return { target: { files: [file] } } as unknown as Event;
+}
+
+function mockFetch(status: number, body: object) {
+  vi.stubGlobal(
+    "fetch",
+    vi.fn().mockResolvedValue({ ok: status >= 200 && status < 300, status, json: async () => body }),
+  );
+}
+
+// ── Suite ─────────────────────────────────────────────────────────────────────
 describe("Auditoria.vue", () => {
   beforeEach(() => {
     vi.restoreAllMocks();
@@ -84,243 +70,402 @@ describe("Auditoria.vue", () => {
     );
   });
 
-  const getVm = (wrapper: ReturnType<typeof mount>) =>
-    wrapper.vm as unknown as VmType;
-
   // ── Estrutura ───────────────────────────────────────────────────────────────
-
-  it("renders the auditoria page with metrics", async () => {
-    const wrapper = mount(Auditoria);
-    await flushPromises();
-    await nextTick();
-
-    expect(wrapper.find(".metrics").exists()).toBe(true);
-    const metricCards = wrapper.findAll(".metric-card");
-    expect(metricCards.length).toBe(4);
-  });
-
-  it("displays correct metric labels", async () => {
-    const wrapper = mount(Auditoria);
-    await nextTick();
-
-    expect(wrapper.text()).toContain("Total de Registros");
-    expect(wrapper.text()).toContain("Aprovados");
-    expect(wrapper.text()).toContain("Pendentes");
-    expect(wrapper.text()).toContain("Rejeitados");
-  });
-
-  it("displays filters card with correct options", async () => {
-    const wrapper = mount(Auditoria);
-    await nextTick();
-
-    expect(wrapper.find(".filters-card").exists()).toBe(true);
-    expect(wrapper.find(".filters-title").text()).toContain("Filtros");
-
-    const selects = wrapper.findAll("select");
-    expect(selects.length).toBe(5);
-  });
-
-  it("renders the data table with correct headers", async () => {
-    const wrapper = mount(Auditoria);
-    await nextTick();
-
-    expect(wrapper.find(".table-card").exists()).toBe(true);
-    expect(wrapper.find(".table-header h2").text()).toBe(
-      "Registros de Auditoria",
-    );
-
-    const headers = wrapper.findAll("th");
-    expect(headers.length).toBe(9);
-  });
-
-  it("displays pagination controls", async () => {
-    const wrapper = mount(Auditoria);
-    await nextTick();
-
-    const pagination = wrapper.find(".pagination");
-    expect(pagination.exists()).toBe(true);
-  });
-
-  it("shows charts section", async () => {
-    const wrapper = mount(Auditoria);
-    await nextTick();
-
-    const charts = wrapper.findAll(".chart-card");
-    expect(charts.length).toBe(4);
-  });
-
-  it("displays status and tipo badges in table", async () => {
-    const wrapper = mount(Auditoria);
-    await flushPromises();
-    await nextTick();
-
-    const badges = wrapper.findAll(".badge");
-    expect(badges.length).toBeGreaterThan(0);
-  });
-
-  it("carrega dados da API no mount", async () => {
-    const wrapper = mount(Auditoria);
-    await flushPromises();
-    await nextTick();
-
-    expect(getVm(wrapper).filteredData.length).toBe(2);
-    expect(wrapper.text()).toContain("Migração AWS");
-    expect(wrapper.text()).toContain("Portal Web");
-  });
-
-  // ── CT01–CT04 (comportamento da tabela) ─────────────────────────────────────
-
-  it("CT01: filters data by tipo", async () => {
-    const wrapper = mount(Auditoria);
-    await flushPromises();
-    await nextTick();
-
-    const selects = wrapper.findAll("select");
-    if (selects.length > 0) {
-      await selects[0].setValue("bronze_ingest");
-      expect(getVm(wrapper).filters.tipo).toBe("bronze_ingest");
-    }
-  });
-
-  it("CT02: filters data by status", async () => {
-    const wrapper = mount(Auditoria);
-    await flushPromises();
-    await nextTick();
-
-    const selects = wrapper.findAll("select");
-    if (selects.length > 1) {
-      await selects[1].setValue("Aprovado");
-      expect(getVm(wrapper).filters.status).toBe("Aprovado");
-    }
-  });
-
-  it("CT03: filters data by responsavel", async () => {
-    const wrapper = mount(Auditoria);
-    await flushPromises();
-    await nextTick();
-
-    const selects = wrapper.findAll("select");
-    if (selects.length > 3) {
-      await selects[3].setValue("Lucas Martins");
-      expect(getVm(wrapper).filters.responsavel).toBe("Lucas Martins");
-    }
-  });
-
-  it("CT04: sorts table by dataRegistro column", async () => {
-    const wrapper = mount(Auditoria);
-    await nextTick();
-
-    const headers = wrapper.findAll("th.sort-col");
-    const dataHeader = headers.find((h) => h.text().includes("Data Registro"));
-    if (dataHeader) {
-      await dataHeader.trigger("click");
-      expect(getVm(wrapper).sortKey).toBe("dataRegistro");
-    }
-  });
-
-  it("CT05: has export button", async () => {
-    const wrapper = mount(Auditoria);
-    await nextTick();
-
-    const exportBtn = wrapper.find(".export-btn");
-    expect(exportBtn.exists()).toBe(true);
-    expect(exportBtn.text()).toContain("Exportar");
-  });
-
-  it("CT06: changes page in pagination", async () => {
-    const wrapper = mount(Auditoria);
-    await flushPromises();
-    await nextTick();
-
-    const pageButton = wrapper
-      .findAll(".pg-btn")
-      .find((btn) => btn.text() === "2");
-    if (pageButton && pageButton.exists()) {
-      await pageButton.trigger("click");
-      expect(getVm(wrapper).page).toBe(2);
-    }
-  });
-
-  // ── Filtros por programa e projeto (US acceptance criteria) ─────────────────
-
-  describe("Filtros por programa e projeto", () => {
-    it("CT01-US: filtra registros pelo programa selecionado", async () => {
+  describe("Estrutura da página", () => {
+    it("renderiza o cabeçalho com título e subtítulo", async () => {
       const wrapper = mount(Auditoria);
-      await flushPromises();
       await nextTick();
 
-      getVm(wrapper).filters.programa = "Cloud";
-      await nextTick();
-
-      expect(getVm(wrapper).filteredData.length).toBe(1);
-      expect(getVm(wrapper).filteredData[0].projeto).toBe("Migração AWS");
+      expect(wrapper.text()).toContain("Auditoria e Importação de Dados");
+      expect(wrapper.text()).toContain("Monitoramento de cargas");
     });
 
-    it("CT02-US: filtra registros pelo projeto selecionado", async () => {
+    it("renderiza 4 cards de KPI", async () => {
       const wrapper = mount(Auditoria);
-      await flushPromises();
       await nextTick();
 
-      getVm(wrapper).filters.projeto = "Portal Web";
-      await nextTick();
-
-      expect(getVm(wrapper).filteredData.length).toBe(1);
-      expect(getVm(wrapper).filteredData[0].programa).toBe("Desenvolvimento");
+      expect(wrapper.findAll(".metric-card").length).toBe(4);
     });
 
-    it("CT03-US: combinação de programa e projeto filtra corretamente", async () => {
+    it("exibe os labels corretos nos KPIs", async () => {
       const wrapper = mount(Auditoria);
-      await flushPromises();
       await nextTick();
 
-      getVm(wrapper).filters.programa = "Cloud";
-      getVm(wrapper).filters.projeto = "Migração AWS";
-      await nextTick();
-
-      expect(getVm(wrapper).filteredData.length).toBe(1);
-      expect(getVm(wrapper).filteredData[0].tipo).toBe("bronze_ingest");
+      expect(wrapper.text()).toContain("Total de Cargas");
+      expect(wrapper.text()).toContain("Concluídas");
+      expect(wrapper.text()).toContain("Parciais");
+      expect(wrapper.text()).toContain("Falhas");
     });
 
-    it("CT04-US: limpar filtros restaura todos os registros", async () => {
+    it("renderiza as 4 abas de navegação", async () => {
       const wrapper = mount(Auditoria);
-      await flushPromises();
       await nextTick();
 
-      getVm(wrapper).filters.programa = "Cloud";
-      await nextTick();
-      expect(getVm(wrapper).filteredData.length).toBe(1);
-
-      await wrapper.find(".clear-btn").trigger("click");
-      await nextTick();
-
-      expect(getVm(wrapper).filters.programa).toBe("");
-      expect(getVm(wrapper).filteredData.length).toBe(2);
+      const tabs = wrapper.findAll(".tab-btn");
+      expect(tabs.length).toBe(4);
+      expect(tabs[0].text()).toContain("Importação de Dados");
+      expect(tabs[1].text()).toContain("Histórico de Execuções");
+      expect(tabs[2].text()).toContain("Falhas e Inconsistências");
+      expect(tabs[3].text()).toContain("Rastreabilidade");
     });
 
-    it("CT05-US: exibe chips de filtros ativos ao selecionar programa", async () => {
+    it("abre na aba Importação de Dados por padrão", async () => {
       const wrapper = mount(Auditoria);
+      await nextTick();
+
+      expect(getVm(wrapper).activeTab).toBe("importacao");
+      expect(wrapper.find(".tab-btn.active").text()).toContain("Importação de Dados");
+    });
+  });
+
+  // ── KPIs via API ────────────────────────────────────────────────────────────
+  describe("KPIs carregados da API", () => {
+    it("busca dados da API no mount", async () => {
+      mount(Auditoria);
       await flushPromises();
-      await nextTick();
 
-      getVm(wrapper).filters.programa = "Cloud";
-      await nextTick();
-
-      expect(wrapper.text()).toContain("Filtros ativos");
-      expect(wrapper.text()).toContain("Programa: Cloud");
+      expect(fetch).toHaveBeenCalledWith(expect.stringContaining("/audit/"));
     });
 
-    it("CT06-US: lista de projetos é restrita ao programa selecionado", async () => {
+    it("computa concluídas a partir dos registros SUCCESS", async () => {
       const wrapper = mount(Auditoria);
       await flushPromises();
       await nextTick();
 
-      getVm(wrapper).filters.programa = "Cloud";
+      expect(getVm(wrapper).kpis.concluidas).toBe(2);
+    });
+
+    it("computa parciais a partir dos registros PARTIAL", async () => {
+      const wrapper = mount(Auditoria);
+      await flushPromises();
       await nextTick();
 
-      const projectSelect = wrapper.findAll("select")[2];
-      const options = projectSelect.findAll("option").map((o) => o.text());
-      expect(options).toContain("Migração AWS");
-      expect(options).not.toContain("Portal Web");
+      expect(getVm(wrapper).kpis.parciais).toBe(1);
+    });
+
+    it("computa falhas a partir dos registros FAILED", async () => {
+      const wrapper = mount(Auditoria);
+      await flushPromises();
+      await nextTick();
+
+      expect(getVm(wrapper).kpis.falhas).toBe(1);
+    });
+
+    it("exibe total de cargas igual ao total de registros da API", async () => {
+      const wrapper = mount(Auditoria);
+      await flushPromises();
+      await nextTick();
+
+      expect(getVm(wrapper).tableData.length).toBe(4);
+    });
+
+    it("mantém dados existentes se a API falhar", async () => {
+      vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("network")));
+      const wrapper = mount(Auditoria);
+      await flushPromises();
+      await nextTick();
+
+      expect(getVm(wrapper).tableData.length).toBe(0);
+    });
+  });
+
+  // ── Navegação de abas ───────────────────────────────────────────────────────
+  describe("Navegação de abas", () => {
+    it("troca para Histórico ao clicar na aba", async () => {
+      const wrapper = mount(Auditoria);
+      await nextTick();
+
+      await wrapper.findAll(".tab-btn")[1].trigger("click");
+
+      expect(getVm(wrapper).activeTab).toBe("historico");
+      expect(wrapper.find(".tab-btn.active").text()).toContain("Histórico");
+    });
+
+    it("troca para Falhas ao clicar na aba", async () => {
+      const wrapper = mount(Auditoria);
+      await nextTick();
+
+      await wrapper.findAll(".tab-btn")[2].trigger("click");
+
+      expect(getVm(wrapper).activeTab).toBe("falhas");
+    });
+
+    it("troca para Rastreabilidade ao clicar na aba", async () => {
+      const wrapper = mount(Auditoria);
+      await nextTick();
+
+      await wrapper.findAll(".tab-btn")[3].trigger("click");
+
+      expect(getVm(wrapper).activeTab).toBe("rastreabilidade");
+    });
+  });
+
+  // ── Aba de Importação – estrutura ───────────────────────────────────────────
+  describe("Aba Importação de Dados – estrutura", () => {
+    it("exibe as 3 seções de importação", async () => {
+      const wrapper = mount(Auditoria);
+      await nextTick();
+
+      expect(wrapper.text()).toContain("Importação Organizacional");
+      expect(wrapper.text()).toContain("Importação de Materiais");
+      expect(wrapper.text()).toContain("Importação de Horas Técnicas");
+    });
+
+    it("renderiza card para programas.csv", async () => {
+      const wrapper = mount(Auditoria);
+      await nextTick();
+
+      expect(wrapper.text()).toContain("programas.csv");
+    });
+
+    it("renderiza todos os 11 cards de upload", async () => {
+      const wrapper = mount(Auditoria);
+      await nextTick();
+
+      expect(wrapper.findAll(".upload-card").length).toBe(11);
+    });
+
+    it("todos os botões de upload exibem 'Selecionar Arquivo' inicialmente", async () => {
+      const wrapper = mount(Auditoria);
+      await nextTick();
+
+      const btns = wrapper.findAll(".upload-btn");
+      btns.forEach((btn) => expect(btn.text()).toContain("Selecionar Arquivo"));
+    });
+
+    it("todos os inputs aceitam apenas .csv", async () => {
+      const wrapper = mount(Auditoria);
+      await nextTick();
+
+      const inputs = wrapper.findAll("input[type='file']");
+      inputs.forEach((input) => expect(input.attributes("accept")).toBe(".csv"));
+    });
+  });
+
+  // ── handleFileChange – validação ────────────────────────────────────────────
+  describe("handleFileChange – validação de arquivo", () => {
+    it("rejeita arquivo não-CSV e exibe erro", async () => {
+      const wrapper = mount(Auditoria);
+      await flushPromises();
+
+      await getVm(wrapper).handleFileChange("programas", nonCsvFileEvent());
+      await nextTick();
+
+      expect(getVm(wrapper).importStatus["programas"].status).toBe("error");
+      expect(getVm(wrapper).importStatus["programas"].message).toContain("CSV");
+    });
+
+    it("exibe status 'processing' antes da resposta da API", async () => {
+      let resolveResponse!: (v: unknown) => void;
+      vi.stubGlobal(
+        "fetch",
+        vi.fn()
+          .mockResolvedValueOnce({ ok: true, json: async () => API_ROWS })
+          .mockReturnValueOnce(new Promise((r) => { resolveResponse = r; })),
+      );
+
+      const wrapper = mount(Auditoria);
+      await flushPromises();
+
+      getVm(wrapper).handleFileChange("programas", csvFileEvent());
+      await nextTick();
+
+      expect(getVm(wrapper).importStatus["programas"].status).toBe("processing");
+
+      resolveResponse({ ok: true, json: async () => ({ run_id: "x", tabela: "programas", linhas_recebidas: 10 }) });
+    });
+  });
+
+  // ── handleFileChange – resposta 200 ─────────────────────────────────────────
+  describe("handleFileChange – sucesso (HTTP 200)", () => {
+    it("exibe status success após resposta 200", async () => {
+      vi.stubGlobal(
+        "fetch",
+        vi.fn()
+          .mockResolvedValueOnce({ ok: true, json: async () => API_ROWS })
+          .mockResolvedValueOnce({ ok: true, json: async () => ({ run_id: "abc", tabela: "programas", linhas_recebidas: 320 }) }),
+      );
+
+      const wrapper = mount(Auditoria);
+      await flushPromises();
+
+      await getVm(wrapper).handleFileChange("programas", csvFileEvent());
+      await flushPromises();
+
+      expect(getVm(wrapper).importStatus["programas"].status).toBe("success");
+    });
+
+    it("exibe linhas_recebidas como recordsProcessed", async () => {
+      vi.stubGlobal(
+        "fetch",
+        vi.fn()
+          .mockResolvedValueOnce({ ok: true, json: async () => API_ROWS })
+          .mockResolvedValueOnce({ ok: true, json: async () => ({ run_id: "abc", tabela: "programas", linhas_recebidas: 320 }) }),
+      );
+
+      const wrapper = mount(Auditoria);
+      await flushPromises();
+
+      await getVm(wrapper).handleFileChange("programas", csvFileEvent());
+      await flushPromises();
+
+      expect(getVm(wrapper).importStatus["programas"].recordsProcessed).toBe(320);
+    });
+
+    it("exibe mensagem de sucesso", async () => {
+      vi.stubGlobal(
+        "fetch",
+        vi.fn()
+          .mockResolvedValueOnce({ ok: true, json: async () => API_ROWS })
+          .mockResolvedValueOnce({ ok: true, json: async () => ({ run_id: "abc", tabela: "projetos", linhas_recebidas: 50 }) }),
+      );
+
+      const wrapper = mount(Auditoria);
+      await flushPromises();
+
+      await getVm(wrapper).handleFileChange("projetos", csvFileEvent());
+      await flushPromises();
+
+      expect(getVm(wrapper).importStatus["projetos"].message).toContain("sucesso");
+    });
+  });
+
+  // ── handleFileChange – erros HTTP ───────────────────────────────────────────
+  describe("handleFileChange – erros HTTP", () => {
+    it("exibe colunas_ausentes quando a API retorna 400 com esse campo", async () => {
+      vi.stubGlobal(
+        "fetch",
+        vi.fn()
+          .mockResolvedValueOnce({ ok: true, json: async () => API_ROWS })
+          .mockResolvedValueOnce({
+            ok: false, status: 400,
+            json: async () => ({ error: "Arquivo inválido", colunas_ausentes: ["programa_id", "nome"] }),
+          }),
+      );
+
+      const wrapper = mount(Auditoria);
+      await flushPromises();
+
+      await getVm(wrapper).handleFileChange("materiais", csvFileEvent());
+      await flushPromises();
+
+      const msg = getVm(wrapper).importStatus["materiais"].message ?? "";
+      expect(msg).toContain("programa_id");
+      expect(msg).toContain("nome");
+      expect(getVm(wrapper).importStatus["materiais"].status).toBe("error");
+    });
+
+    it("exibe mensagem de error genérico em resposta 400 sem colunas_ausentes", async () => {
+      vi.stubGlobal(
+        "fetch",
+        vi.fn()
+          .mockResolvedValueOnce({ ok: true, json: async () => API_ROWS })
+          .mockResolvedValueOnce({
+            ok: false, status: 400,
+            json: async () => ({ error: "Arquivo muito grande" }),
+          }),
+      );
+
+      const wrapper = mount(Auditoria);
+      await flushPromises();
+
+      await getVm(wrapper).handleFileChange("fornecedores", csvFileEvent());
+      await flushPromises();
+
+      expect(getVm(wrapper).importStatus["fornecedores"].status).toBe("error");
+      expect(getVm(wrapper).importStatus["fornecedores"].message).toContain("grande");
+    });
+
+    it("exibe mensagem de erro em resposta 500", async () => {
+      vi.stubGlobal(
+        "fetch",
+        vi.fn()
+          .mockResolvedValueOnce({ ok: true, json: async () => API_ROWS })
+          .mockResolvedValueOnce({
+            ok: false, status: 500,
+            json: async () => ({ error: "Erro interno de ingestão" }),
+          }),
+      );
+
+      const wrapper = mount(Auditoria);
+      await flushPromises();
+
+      await getVm(wrapper).handleFileChange("pedidos_compras", csvFileEvent());
+      await flushPromises();
+
+      expect(getVm(wrapper).importStatus["pedidos_compras"].status).toBe("error");
+      expect(getVm(wrapper).importStatus["pedidos_compras"].message).toContain("ingestão");
+    });
+
+    it("exibe erro de conexão em falha de rede", async () => {
+      vi.stubGlobal(
+        "fetch",
+        vi.fn()
+          .mockResolvedValueOnce({ ok: true, json: async () => API_ROWS })
+          .mockRejectedValueOnce(new Error("network error")),
+      );
+
+      const wrapper = mount(Auditoria);
+      await flushPromises();
+
+      await getVm(wrapper).handleFileChange("tempo_tarefas", csvFileEvent());
+      await flushPromises();
+
+      expect(getVm(wrapper).importStatus["tempo_tarefas"].status).toBe("error");
+      expect(getVm(wrapper).importStatus["tempo_tarefas"].message).toContain("conexão");
+    });
+  });
+
+  // ── handleFileChange – endpoints corretos ───────────────────────────────────
+  describe("handleFileChange – envia para o endpoint correto", () => {
+    const cases: [string, string][] = [
+      ["programas",                 "/import/programas/"],
+      ["projetos",                  "/import/projetos/"],
+      ["materiais",                 "/import/materiais/"],
+      ["empenho_materiais",         "/import/empenho-materiais/"],
+      ["estoque_materiais_projeto", "/import/estoque-materiais-projeto/"],
+      ["fornecedores",              "/import/fornecedores/"],
+      ["pedidos_compras",           "/import/pedidos-compra/"],
+      ["solicitacoes_compra",       "/import/solicitacoes-compra/"],
+      ["compras_projeto",           "/import/compras-projeto/"],
+      ["tarefa_projeto",            "/import/tarefas-projeto/"],
+      ["tempo_tarefas",             "/import/tempo-tarefas/"],
+    ];
+
+    cases.forEach(([key, endpoint]) => {
+      it(`chama o endpoint correto para ${key}`, async () => {
+        const fetchMock = vi.fn()
+          .mockResolvedValueOnce({ ok: true, json: async () => API_ROWS })
+          .mockResolvedValueOnce({ ok: true, json: async () => ({ run_id: "x", tabela: key, linhas_recebidas: 1 }) });
+        vi.stubGlobal("fetch", fetchMock);
+
+        const wrapper = mount(Auditoria);
+        await flushPromises();
+
+        await getVm(wrapper).handleFileChange(key, csvFileEvent());
+        await flushPromises();
+
+        const uploadCall = fetchMock.mock.calls[1];
+        expect(uploadCall[0]).toContain(endpoint);
+      });
+    });
+
+    it("envia o arquivo via FormData com campo 'file'", async () => {
+      const fetchMock = vi.fn()
+        .mockResolvedValueOnce({ ok: true, json: async () => API_ROWS })
+        .mockResolvedValueOnce({ ok: true, json: async () => ({ run_id: "x", tabela: "programas", linhas_recebidas: 5 }) });
+      vi.stubGlobal("fetch", fetchMock);
+
+      const wrapper = mount(Auditoria);
+      await flushPromises();
+
+      await getVm(wrapper).handleFileChange("programas", csvFileEvent("programas.csv"));
+      await flushPromises();
+
+      const [, options] = fetchMock.mock.calls[1] as [string, RequestInit];
+      expect(options.method).toBe("POST");
+      expect(options.body).toBeInstanceOf(FormData);
+      expect((options.body as FormData).get("file")).toBeInstanceOf(File);
     });
   });
 });
