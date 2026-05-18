@@ -53,13 +53,6 @@ function nonCsvFileEvent(): Event {
   return { target: { files: [file] } } as unknown as Event;
 }
 
-function mockFetch(status: number, body: object) {
-  vi.stubGlobal(
-    "fetch",
-    vi.fn().mockResolvedValue({ ok: status >= 200 && status < 300, status, json: async () => body }),
-  );
-}
-
 // ── Suite ─────────────────────────────────────────────────────────────────────
 describe("Auditoria.vue", () => {
   beforeEach(() => {
