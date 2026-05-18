@@ -1,376 +1,362 @@
 <template>
   <div class="app">
     <main class="main">
-      <h1 class="sr-only">
-        Auditoria
-      </h1>
+      <h1 class="sr-only">Auditoria e Importação de Dados</h1>
 
-      <!-- METRICS -->
+      <!-- PAGE HEADER -->
+      <div class="page-header">
+        <div class="header-title">
+          <svg
+            class="shield-icon"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+          </svg>
+          <span>Auditoria e Importação de Dados</span>
+        </div>
+        <p class="header-subtitle">
+          Monitoramento de cargas, importação manual de dados e rastreabilidade do sistema
+        </p>
+      </div>
+
+      <!-- KPI CARDS -->
       <div class="metrics">
         <div class="metric-card">
-          <div class="metric-label">
-            Total de Registros
-          </div>
-          <div class="metric-value blue">
-            {{ filteredData.length }}
-          </div>
-        </div>
-        <div class="metric-card">
-          <div class="metric-label">
-            Aprovados
-          </div>
-          <div class="metric-value green">
-            {{ kpis.aprovados }}
-          </div>
-        </div>
-        <div class="metric-card">
-          <div class="metric-label">
-            Pendentes
-          </div>
-          <div class="metric-value amber">
-            {{ kpis.pendentes }}
-          </div>
-        </div>
-        <div class="metric-card">
-          <div class="metric-label">
-            Rejeitados
-          </div>
-          <div class="metric-value red">
-            {{ kpis.rejeitados }}
-          </div>
-        </div>
-      </div>
-
-      <!-- FILTERS -->
-      <div class="filters-card">
-        <div class="filters-title">
-          <svg
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              d="M3 4h18M7 10h10M11 16h2"
+          <div class="metric-icon-wrap blue">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
               stroke-width="1.5"
               stroke-linecap="round"
-            />
-          </svg>
-          Filtros
+              stroke-linejoin="round"
+            >
+              <ellipse cx="12" cy="5" rx="9" ry="3" />
+              <path d="M3 5v5c0 1.7 4 3 9 3s9-1.3 9-3V5" />
+              <path d="M3 10v5c0 1.7 4 3 9 3s9-1.3 9-3v-5" />
+            </svg>
+          </div>
+          <p class="metric-label">Total de Cargas</p>
+          <p class="metric-value">{{ tableData.length }}</p>
         </div>
-        <div class="filters-row">
-          <select
-            v-model="filters.tipo"
-            class="filter-select"
-          >
-            <option value="">
-              Todos os Tipos
-            </option>
-            <option
-              v-for="t in uniqueTipos"
-              :key="t"
-              :value="t"
+
+        <div class="metric-card">
+          <div class="metric-icon-wrap green">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
             >
-              {{ t }}
-            </option>
-          </select>
-          <select
-            v-model="filters.status"
-            class="filter-select"
-          >
-            <option value="">
-              Todos os Status
-            </option>
-            <option
-              v-for="s in uniqueStatuses"
-              :key="s"
-              :value="s"
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+              <polyline points="22 4 12 14.01 9 11.01" />
+            </svg>
+          </div>
+          <p class="metric-label">Concluídas</p>
+          <p class="metric-value">{{ kpis.concluidas }}</p>
+          <p class="metric-sub">{{ pct(kpis.concluidas) }}% do total</p>
+        </div>
+
+        <div class="metric-card">
+          <div class="metric-icon-wrap amber">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
             >
-              {{ s }}
-            </option>
-          </select>
-          <select
-            v-model="filters.projeto"
-            class="filter-select"
-            :disabled="availableProjects.length === 0"
-          >
-            <option value="">
-              Todos os Projetos
-            </option>
-            <option
-              v-for="p in availableProjects"
-              :key="p"
-              :value="p"
+              <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+              <line x1="12" y1="9" x2="12" y2="13" />
+              <line x1="12" y1="17" x2="12.01" y2="17" stroke-width="2" />
+            </svg>
+          </div>
+          <p class="metric-label">Parciais</p>
+          <p class="metric-value">{{ kpis.parciais }}</p>
+          <p class="metric-sub">{{ pct(kpis.parciais) }}% do total</p>
+        </div>
+
+        <div class="metric-card">
+          <div class="metric-icon-wrap red">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
             >
-              {{ p }}
-            </option>
-          </select>
-          <select
-            v-model="filters.responsavel"
-            class="filter-select"
-          >
-            <option value="">
-              Todos os Responsáveis
-            </option>
-            <option
-              v-for="r in uniqueResponsaveis"
-              :key="r"
-              :value="r"
-            >
-              {{ r }}
-            </option>
-          </select>
-          <select
-            v-model="filters.programa"
-            class="filter-select"
-          >
-            <option value="">
-              Todos os Programas
-            </option>
-            <option
-              v-for="p in uniqueProgramas"
-              :key="p"
-              :value="p"
-            >
-              {{ p }}
-            </option>
-          </select>
+              <circle cx="12" cy="12" r="10" />
+              <line x1="15" y1="9" x2="9" y2="15" />
+              <line x1="9" y1="9" x2="15" y2="15" />
+            </svg>
+          </div>
+          <p class="metric-label">Falhas</p>
+          <p class="metric-value">{{ kpis.falhas }}</p>
+          <p class="metric-sub">{{ pct(kpis.falhas) }}% do total</p>
+        </div>
+      </div>
+
+      <!-- TABS CONTAINER -->
+      <div class="tabs-container">
+        <!-- Tab Navigation -->
+        <div class="tabs-nav">
           <button
-            v-if="hasActiveFilters"
-            class="clear-btn"
-            @click="clearFilters"
-          >
-            Limpar filtros
-          </button>
-          <button
-            class="export-btn"
-            @click="exportCSV"
+            :class="['tab-btn', { active: activeTab === 'importacao' }]"
+            @click="activeTab = 'importacao'"
           >
             <svg
-              fill="none"
               viewBox="0 0 24 24"
+              fill="none"
               stroke="currentColor"
+              stroke-width="1.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
             >
-              <path
-                d="M12 16l-4-4h3V4h2v8h3l-4 4z"
-                stroke-width="1.5"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-              <path
-                d="M4 20h16"
-                stroke-width="1.5"
-                stroke-linecap="round"
-              />
+              <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
+              <polyline points="17 8 12 3 7 8" />
+              <line x1="12" y1="3" x2="12" y2="15" />
             </svg>
-            Exportar
+            Importação de Dados
+          </button>
+          <button
+            :class="['tab-btn', { active: activeTab === 'historico' }]"
+            @click="activeTab = 'historico'"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <circle cx="12" cy="12" r="10" />
+              <polyline points="12 6 12 12 16 14" />
+            </svg>
+            Histórico de Execuções
+          </button>
+          <button
+            :class="['tab-btn', { active: activeTab === 'falhas' }]"
+            @click="activeTab = 'falhas'"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+              <line x1="12" y1="9" x2="12" y2="13" />
+              <line x1="12" y1="17" x2="12.01" y2="17" stroke-width="2" />
+            </svg>
+            Falhas e Inconsistências
+          </button>
+          <button
+            :class="['tab-btn', { active: activeTab === 'rastreabilidade' }]"
+            @click="activeTab = 'rastreabilidade'"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <circle cx="11" cy="11" r="8" />
+              <line x1="21" y1="21" x2="16.65" y2="16.65" />
+            </svg>
+            Rastreabilidade
           </button>
         </div>
-        <div
-          v-if="hasActiveFilters"
-          class="active-filters"
-        >
-          <span class="active-filters-label">Filtros ativos</span>
-          <span
-            v-for="filter in activeFilterEntries"
-            :key="filter.key"
-            class="filter-chip"
-          >
-            {{ filter.label }}: {{ filter.value }}
-            <button
-              class="chip-remove"
-              :aria-label="`Remover filtro ${filter.label}`"
-              @click="removeFilter(filter.key)"
-            >×</button>
-          </span>
-        </div>
-      </div>
 
-      <!-- TOP CHARTS -->
-      <div class="charts-row">
-        <div class="chart-card">
-          <div class="chart-title">
-            Registros por Status
-          </div>
-          <div class="chart-wrap tall">
-            <canvas id="chartStatusPeriodo" />
-          </div>
-        </div>
-        <div class="chart-card">
-          <div class="chart-title">
-            Registros por Tipo
-          </div>
-          <div class="chart-wrap tall">
-            <canvas id="chartPorTipo" />
-          </div>
-        </div>
-      </div>
+        <!-- Tab Content -->
+        <div class="tabs-content">
 
-      <!-- BOTTOM CHARTS -->
-      <div class="charts-row">
-        <div class="chart-card">
-          <div class="chart-title">
-            Registros por Responsável
-          </div>
-          <div class="chart-wrap tall">
-            <canvas id="chartPorResponsavel" />
-          </div>
-        </div>
-        <div class="chart-card">
-          <div class="chart-title">
-            Evolução de Auditorias
-          </div>
-          <div class="chart-wrap tall">
-            <canvas id="chartTemporalAud" />
-          </div>
-        </div>
-      </div>
+          <!-- ── Importação de Dados ──────────────────────────────────── -->
+          <div v-show="activeTab === 'importacao'" class="tab-panel">
+            <div class="import-sections">
 
-      <!-- TABLE -->
-      <div class="table-card">
-        <div class="table-header">
-          <h2>Registros de Auditoria</h2>
-        </div>
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th
-                  class="sort-col"
-                  @click="sortBy('tipo')"
-                >
-                  Tipo {{ sortIcon("tipo") }}
-                </th>
-                <th
-                  class="sort-col"
-                  @click="sortBy('descricao')"
-                >
-                  Descrição {{ sortIcon("descricao") }}
-                </th>
-                <th
-                  class="sort-col"
-                  @click="sortBy('projeto')"
-                >
-                  Projeto {{ sortIcon("projeto") }}
-                </th>
-                <th
-                  class="sort-col"
-                  @click="sortBy('programa')"
-                >
-                  Programa {{ sortIcon("programa") }}
-                </th>
-                <th
-                  class="sort-col"
-                  @click="sortBy('responsavel')"
-                >
-                  Responsável {{ sortIcon("responsavel") }}
-                </th>
-                <th
-                  class="sort-col"
-                  @click="sortBy('dataRegistro')"
-                >
-                  Data Registro {{ sortIcon("dataRegistro") }}
-                </th>
-                <th
-                  class="sort-col"
-                  @click="sortBy('dataRevisao')"
-                >
-                  Data Revisão {{ sortIcon("dataRevisao") }}
-                </th>
-                <th
-                  class="sort-col"
-                  @click="sortBy('valorImpacto')"
-                >
-                  Linhas Afetadas {{ sortIcon("valorImpacto") }}
-                </th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-if="pagedData.length === 0">
-                <td
-                  colspan="9"
-                  class="table-feedback muted"
-                >
-                  Nenhum registro encontrado.
-                </td>
-              </tr>
-              <tr
-                v-for="row in pagedData"
-                :key="row.id"
-              >
-                <td>
-                  <span :class="tipoClass(row.tipo)">{{ row.tipo }}</span>
-                </td>
-                <td class="material-name">
-                  {{ row.descricao }}
-                </td>
-                <td class="muted">
-                  {{ row.projeto }}
-                </td>
-                <td class="muted">
-                  {{ row.programa }}
-                </td>
-                <td class="muted">
-                  {{ row.responsavel }}
-                </td>
-                <td class="mono">
-                  {{ row.dataRegistro }}
-                </td>
-                <td class="mono">
-                  {{ row.dataRevisao }}
-                </td>
-                <td class="mono">
-                  {{ fmt(row.valorImpacto) }}
-                </td>
-                <td>
-                  <span :class="statusClass(row.status)">{{ row.status }}</span>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-        <div class="pagination">
-          <span>{{ filteredData.length }} registros · página {{ page }} de
-            {{ totalPages }}</span>
-          <div class="pg-btns">
-            <button
-              class="pg-btn"
-              :disabled="page === 1"
-              @click="page = 1"
-            >
-              «
-            </button>
-            <button
-              class="pg-btn"
-              :disabled="page === 1"
-              @click="page--"
-            >
-              ‹
-            </button>
-            <button
-              v-for="p in visiblePages"
-              :key="p"
-              class="pg-btn"
-              :class="{ active: p === page }"
-              @click="page = p"
-            >
-              {{ p }}
-            </button>
-            <button
-              class="pg-btn"
-              :disabled="page === totalPages"
-              @click="page++"
-            >
-              ›
-            </button>
-            <button
-              class="pg-btn"
-              :disabled="page === totalPages"
-              @click="page = totalPages"
-            >
-              »
-            </button>
+              <!-- Importação Organizacional -->
+              <div class="import-section">
+                <div class="section-header">
+                  <div class="section-icon blue">
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.5"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <path d="M6 22V4a2 2 0 012-2h8a2 2 0 012 2v18z" />
+                      <path d="M6 12H4a2 2 0 00-2 2v6a2 2 0 002 2h2" />
+                      <path d="M18 9h2a2 2 0 012 2v9a2 2 0 01-2 2h-2" />
+                      <line x1="10" y1="6" x2="14" y2="6" />
+                      <line x1="10" y1="10" x2="14" y2="10" />
+                      <line x1="10" y1="14" x2="14" y2="14" />
+                      <line x1="10" y1="18" x2="14" y2="18" />
+                    </svg>
+                  </div>
+                  <h3 class="section-title">Importação Organizacional</h3>
+                </div>
+                <p class="section-desc">
+                  Atualização das estruturas organizacionais utilizadas no ambiente analítico
+                </p>
+                <div class="upload-grid">
+                  <div v-for="file in orgFiles" :key="file.key" class="upload-card">
+                    <div class="upload-card-header">
+                      <div class="file-name-row">
+                        <svg class="file-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                          <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+                          <polyline points="14 2 14 8 20 8" />
+                          <line x1="16" y1="13" x2="8" y2="13" />
+                          <line x1="16" y1="17" x2="8" y2="17" />
+                        </svg>
+                        <span class="file-name">{{ file.name }}</span>
+                      </div>
+                      <span v-if="importStatus[file.key]" :class="importBadgeClass(importStatus[file.key].status)">
+                        {{ importBadgeLabel(importStatus[file.key].status) }}
+                      </span>
+                    </div>
+                    <p v-if="importStatus[file.key]?.message" :class="['upload-message', { error: importStatus[file.key].status === 'error' }]">
+                      {{ importStatus[file.key].message }}
+                      <span v-if="importStatus[file.key].recordsProcessed"> — {{ importStatus[file.key].recordsProcessed }} registros</span>
+                    </p>
+                    <input :id="`file-input-${file.key}`" type="file" accept=".csv" class="sr-only" @change="handleFileChange(file.key, $event)" />
+                    <button :disabled="importStatus[file.key]?.status === 'processing'" class="upload-btn" @click="triggerFileInput(file.key)">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
+                        <polyline points="17 8 12 3 7 8" />
+                        <line x1="12" y1="3" x2="12" y2="15" />
+                      </svg>
+                      {{ importStatus[file.key]?.status === 'processing' ? 'Processando...' : 'Selecionar Arquivo' }}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Importação de Materiais -->
+              <div class="import-section">
+                <div class="section-header">
+                  <div class="section-icon green">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                      <line x1="16.5" y1="9.4" x2="7.5" y2="4.21" />
+                      <path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 002 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z" />
+                      <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
+                      <line x1="12" y1="22.08" x2="12" y2="12" />
+                    </svg>
+                  </div>
+                  <h3 class="section-title">Importação de Materiais</h3>
+                </div>
+                <p class="section-desc">
+                  Atualização dos dados relacionados a materiais, compras, estoque e fornecedores
+                </p>
+                <div class="upload-grid">
+                  <div v-for="file in materiaisFiles" :key="file.key" class="upload-card">
+                    <div class="upload-card-header">
+                      <div class="file-name-row">
+                        <svg class="file-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                          <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+                          <polyline points="14 2 14 8 20 8" />
+                          <line x1="16" y1="13" x2="8" y2="13" />
+                          <line x1="16" y1="17" x2="8" y2="17" />
+                        </svg>
+                        <span class="file-name">{{ file.name }}</span>
+                      </div>
+                      <span v-if="importStatus[file.key]" :class="importBadgeClass(importStatus[file.key].status)">
+                        {{ importBadgeLabel(importStatus[file.key].status) }}
+                      </span>
+                    </div>
+                    <p v-if="importStatus[file.key]?.message" :class="['upload-message', { error: importStatus[file.key].status === 'error' }]">
+                      {{ importStatus[file.key].message }}
+                      <span v-if="importStatus[file.key].recordsProcessed"> — {{ importStatus[file.key].recordsProcessed }} registros</span>
+                    </p>
+                    <input :id="`file-input-${file.key}`" type="file" accept=".csv" class="sr-only" @change="handleFileChange(file.key, $event)" />
+                    <button :disabled="importStatus[file.key]?.status === 'processing'" class="upload-btn" @click="triggerFileInput(file.key)">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
+                        <polyline points="17 8 12 3 7 8" />
+                        <line x1="12" y1="3" x2="12" y2="15" />
+                      </svg>
+                      {{ importStatus[file.key]?.status === 'processing' ? 'Processando...' : 'Selecionar Arquivo' }}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Importação de Horas Técnicas -->
+              <div class="import-section">
+                <div class="section-header">
+                  <div class="section-icon purple">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
+                      <circle cx="9" cy="7" r="4" />
+                      <path d="M23 21v-2a4 4 0 00-3-3.87" />
+                      <path d="M16 3.13a4 4 0 010 7.75" />
+                    </svg>
+                  </div>
+                  <h3 class="section-title">Importação de Horas Técnicas</h3>
+                </div>
+                <p class="section-desc">
+                  Atualização dos dados relacionados às tarefas executadas e horas técnicas registradas
+                </p>
+                <div class="upload-grid">
+                  <div v-for="file in horasFiles" :key="file.key" class="upload-card">
+                    <div class="upload-card-header">
+                      <div class="file-name-row">
+                        <svg class="file-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                          <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+                          <polyline points="14 2 14 8 20 8" />
+                          <line x1="16" y1="13" x2="8" y2="13" />
+                          <line x1="16" y1="17" x2="8" y2="17" />
+                        </svg>
+                        <span class="file-name">{{ file.name }}</span>
+                      </div>
+                      <span v-if="importStatus[file.key]" :class="importBadgeClass(importStatus[file.key].status)">
+                        {{ importBadgeLabel(importStatus[file.key].status) }}
+                      </span>
+                    </div>
+                    <p v-if="importStatus[file.key]?.message" :class="['upload-message', { error: importStatus[file.key].status === 'error' }]">
+                      {{ importStatus[file.key].message }}
+                      <span v-if="importStatus[file.key].recordsProcessed"> — {{ importStatus[file.key].recordsProcessed }} registros</span>
+                    </p>
+                    <input :id="`file-input-${file.key}`" type="file" accept=".csv" class="sr-only" @change="handleFileChange(file.key, $event)" />
+                    <button :disabled="importStatus[file.key]?.status === 'processing'" class="upload-btn" @click="triggerFileInput(file.key)">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
+                        <polyline points="17 8 12 3 7 8" />
+                        <line x1="12" y1="3" x2="12" y2="15" />
+                      </svg>
+                      {{ importStatus[file.key]?.status === 'processing' ? 'Processando...' : 'Selecionar Arquivo' }}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+            </div>
           </div>
+
+          <!-- ── Histórico de Execuções ─── empty ───────────────────── -->
+          <div v-show="activeTab === 'historico'" class="tab-panel" />
+
+          <!-- ── Falhas e Inconsistências ─── empty ────────────────── -->
+          <div v-show="activeTab === 'falhas'" class="tab-panel" />
+
+          <!-- ── Rastreabilidade ─── empty ──────────────────────────── -->
+          <div v-show="activeTab === 'rastreabilidade'" class="tab-panel" />
+
         </div>
       </div>
     </main>
@@ -378,14 +364,17 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onUnmounted, nextTick } from "vue";
-import { useChartsAuditoria } from "@/composables/useChartsAuditoria";
-import type { AuditoriaRow } from "@/composables/useChartsAuditoria";
+import { ref, computed, onMounted } from "vue";
 import { CONFIG } from "@/utils/config";
 
-const PER_PAGE = 8;
+type TabType = "importacao" | "historico" | "falhas" | "rastreabilidade";
+type ImportStatus = "idle" | "processing" | "success" | "error";
 
-const API_URL = `${CONFIG.API_BASE_URL}/audit/`;
+interface FileImportStatus {
+  status: ImportStatus;
+  message?: string;
+  recordsProcessed?: number;
+}
 
 interface ApiRow {
   id: number;
@@ -399,236 +388,163 @@ interface ApiRow {
   operation_metadata: Record<string, unknown> | null;
 }
 
+interface DataRow {
+  id: number;
+  status: string;
+}
+
 const STATUS_MAP: Record<string, string> = {
   SUCCESS: "Aprovado",
-  FAILED: "Rejeitado",
+  FAILED:  "Rejeitado",
   PARTIAL: "Parcial",
 };
 
-const OPERATION_MAP: Record<string, string> = {
-  INGEST: "Ingestão",
-  TRANSFORM: "Transformação",
-  EXPORT: "Exportação",
+// ─── Endpoint map ────────────────────────────────────────────────────────────
+const IMPORT_ENDPOINTS: Record<string, string> = {
+  programas:                 "/import/programas/",
+  projetos:                  "/import/projetos/",
+  materiais:                 "/import/materiais/",
+  empenho_materiais:         "/import/empenho-materiais/",
+  estoque_materiais_projeto: "/import/estoque-materiais-projeto/",
+  fornecedores:              "/import/fornecedores/",
+  pedidos_compras:           "/import/pedidos-compra/",
+  solicitacoes_compra:       "/import/solicitacoes-compra/",
+  compras_projeto:           "/import/compras-projeto/",
+  tarefa_projeto:            "/import/tarefas-projeto/",
+  tempo_tarefas:             "/import/tempo-tarefas/",
 };
 
-function toRow(r: ApiRow): AuditoriaRow {
-  const meta = r.operation_metadata ?? {};
-  const descricao = [r.table_schema, r.table_name].filter(Boolean).join(".");
-  return {
-    id: r.id,
-    tipo: OPERATION_MAP[r.operation] ?? r.operation,
-    descricao: descricao || r.operation,
-    projeto: String(meta.nome_projeto ?? meta.projeto ?? ""),
-    programa: String(meta.nome_programa ?? meta.programa ?? ""),
-    responsavel: String(meta.responsavel ?? ""),
-    dataRegistro: r.started_at ? r.started_at.split("T")[0] : "",
-    dataRevisao: r.finalized_at ? r.finalized_at.split("T")[0] : "",
-    status: STATUS_MAP[r.status] ?? r.status,
-    valorImpacto: r.affected_rows ?? 0,
-    observacao: "",
-  };
-}
+// ─── File definitions ─────────────────────────────────────────────────────────
+const orgFiles = [
+  { key: "programas", name: "programas.csv" },
+  { key: "projetos",  name: "projetos.csv" },
+];
+const materiaisFiles = [
+  { key: "materiais",                 name: "materiais.csv" },
+  { key: "empenho_materiais",         name: "empenho_materiais.csv" },
+  { key: "estoque_materiais_projeto", name: "estoque_materiais_projeto.csv" },
+  { key: "fornecedores",              name: "fornecedores.csv" },
+  { key: "pedidos_compras",           name: "pedidos_compras.csv" },
+  { key: "solicitacoes_compra",       name: "solicitacoes_compra.csv" },
+  { key: "compras_projeto",           name: "compras_projeto.csv" },
+];
+const horasFiles = [
+  { key: "tarefa_projeto", name: "tarefa_projeto.csv" },
+  { key: "tempo_tarefas",  name: "tempo_tarefas.csv" },
+];
 
-// ─── State ───────────────────────────────────────────────────────────────────
-const tableData = ref<AuditoriaRow[]>([]);
-const filters = ref({
-  tipo: "",
-  status: "",
-  projeto: "",
-  responsavel: "",
-  programa: "",
-});
-const sortKey = ref<keyof AuditoriaRow>("dataRegistro");
-const sortDir = ref<1 | -1>(-1);
-const page = ref(1);
+// ─── State ────────────────────────────────────────────────────────────────────
+const activeTab    = ref<TabType>("importacao");
+const importStatus = ref<Record<string, FileImportStatus>>({});
+const tableData    = ref<DataRow[]>([]);
 
-// ─── Filter options ──────────────────────────────────────────────────────────
-const uniqueTipos = computed(() =>
-  [...new Set(tableData.value.map((r) => r.tipo))].sort(),
-);
-const uniqueStatuses = computed(() =>
-  [...new Set(tableData.value.map((r) => r.status))].sort(),
-);
-const availableProjects = computed(() => {
-  const rows = filters.value.programa
-    ? tableData.value.filter((r) => r.programa === filters.value.programa)
-    : tableData.value;
-  return [...new Set(rows.map((r) => r.projeto))].sort();
-});
-const uniqueResponsaveis = computed(() =>
-  [...new Set(tableData.value.map((r) => r.responsavel))].sort(),
-);
-const uniqueProgramas = computed(() =>
-  [...new Set(tableData.value.map((r) => r.programa))].sort(),
-);
-const activeFilterEntries = computed(() =>
-  [
-    { key: "tipo", label: "Tipo", value: filters.value.tipo },
-    { key: "status", label: "Status", value: filters.value.status },
-    { key: "programa", label: "Programa", value: filters.value.programa },
-    { key: "projeto", label: "Projeto", value: filters.value.projeto },
-    {
-      key: "responsavel",
-      label: "Responsável",
-      value: filters.value.responsavel,
-    },
-  ].filter((entry) => Boolean(entry.value)),
-);
-const hasActiveFilters = computed(() => activeFilterEntries.value.length > 0);
+// ─── KPIs from API data ───────────────────────────────────────────────────────
+const kpis = computed(() => ({
+  concluidas: tableData.value.filter((r) => r.status === "Aprovado").length,
+  parciais:   tableData.value.filter((r) => r.status === "Parcial").length,
+  falhas:     tableData.value.filter((r) => r.status === "Rejeitado").length,
+}));
 
-// ─── Computed ────────────────────────────────────────────────────────────────
-const filteredData = computed(() => {
-  const f = filters.value;
-  return tableData.value
-    .filter(
-      (r) =>
-        (!f.tipo || r.tipo === f.tipo) &&
-        (!f.status || r.status === f.status) &&
-        (!f.projeto || r.projeto === f.projeto) &&
-        (!f.responsavel || r.responsavel === f.responsavel) &&
-        (!f.programa || r.programa === f.programa),
-    )
-    .sort((a, b) => {
-      const av = a[sortKey.value],
-        bv = b[sortKey.value];
-      return typeof av === "string"
-        ? av.localeCompare(bv as string) * sortDir.value
-        : ((av as number) - (bv as number)) * sortDir.value;
-    });
-});
+const pct = (v: number) =>
+  tableData.value.length > 0 ? ((v / tableData.value.length) * 100).toFixed(1) : "0.0";
 
-const kpis = computed(() => {
-  const d = filteredData.value;
-  return {
-    aprovados: d.filter((r) => r.status === "Aprovado").length,
-    pendentes: d.filter(
-      (r) => r.status === "Pendente" || r.status === "Em Análise",
-    ).length,
-    rejeitados: d.filter((r) => r.status === "Rejeitado").length,
-  };
-});
-
-const totalPages = computed(() =>
-  Math.max(1, Math.ceil(filteredData.value.length / PER_PAGE)),
-);
-const pagedData = computed(() =>
-  filteredData.value.slice((page.value - 1) * PER_PAGE, page.value * PER_PAGE),
-);
-const visiblePages = computed(() => {
-  const p = page.value,
-    t = totalPages.value;
-  const s = Math.max(1, p - 2),
-    e = Math.min(t, p + 2);
-  return Array.from({ length: e - s + 1 }, (_, i) => s + i);
-});
-
-// ─── Watchers ────────────────────────────────────────────────────────────────
-watch(filteredData, (val) => {
-  page.value = 1;
-  nextTick(() => updateCharts(val));
-});
-
-
-
-// ─── Helpers ─────────────────────────────────────────────────────────────────
-const fmt = (v: number) => v.toLocaleString("pt-BR");
-
-function sortBy(k: keyof AuditoriaRow) {
-  if (sortKey.value === k) sortDir.value = (sortDir.value * -1) as 1 | -1;
-  else {
-    sortKey.value = k;
-    sortDir.value = -1;
-  }
-}
-const sortIcon = (k: keyof AuditoriaRow) => {
-  if (sortKey.value === k) return sortDir.value > 0 ? "↑" : "↓";
-  return "↕";
-};
-
-function statusClass(s: string) {
-  const map: Record<string, string> = {
-    Aprovado: "badge badge-st",
-    Pendente: "badge badge-sg",
-    "Em Análise": "badge badge-hw",
-    Rejeitado: "badge badge-rd",
-  };
-  return map[s] ?? "badge badge-hw";
-}
-
-function tipoClass(t: string) {
-  const map: Record<string, string> = {
-    Ingestão: "badge badge-hw",
-    Transformação: "badge badge-cl",
-    Exportação: "badge badge-sg",
-  };
-  return map[t] ?? "badge badge-hw";
-}
-
-function exportCSV() {
-  const header =
-    "Tipo,Descrição,Projeto,Programa,Responsável,Data Registro,Data Revisão,Linhas Afetadas,Status";
-  const rows = filteredData.value.map((r) =>
-    [
-      r.tipo,
-      r.descricao,
-      r.projeto,
-      r.programa,
-      r.responsavel,
-      r.dataRegistro,
-      r.dataRevisao,
-      r.valorImpacto,
-      r.status,
-    ].join(","),
-  );
-  const csv = [header, ...rows].join("\n");
-  const a = document.createElement("a");
-  a.href = "data:text/csv;charset=utf-8," + encodeURIComponent(csv);
-  a.download = "auditoria.csv";
-  a.click();
-}
-
-
-function removeFilter(key: string) {
-  (filters.value as Record<string, string>)[key] = "";
-}
-function clearFilters() {
-  filters.value = {
-    tipo: "",
-    status: "",
-    projeto: "",
-    responsavel: "",
-    programa: "",
-  };
-}
-
-// ─── Charts ──────────────────────────────────────────────────────────────────
-const { buildCharts, updateCharts, destroyCharts } = useChartsAuditoria();
-
+// ─── API fetch ────────────────────────────────────────────────────────────────
 async function loadData() {
   try {
-    const params = new URLSearchParams();
-    if (filters.value.programa) params.set("programa", filters.value.programa);
-    if (filters.value.projeto) params.set("projeto", filters.value.projeto);
-    const query = params.toString() ? `?${params.toString()}` : "";
-    const res = await fetch(`${API_URL}${query}`);
+    const res = await fetch(`${CONFIG.API_BASE_URL}/audit/`);
     if (!res.ok) return;
     const raw: ApiRow[] = await res.json();
-    tableData.value = raw.map(toRow);
+    tableData.value = raw.map((r) => ({
+      id: r.id,
+      status: STATUS_MAP[r.status] ?? r.status,
+    }));
   } catch {
     // keep existing data on error
   }
 }
 
-watch(
-  () => [filters.value.programa, filters.value.projeto],
-  () => { void loadData(); },
-);
+onMounted(() => { void loadData(); });
 
-onMounted(async () => {
-  await loadData();
-  nextTick(() => buildCharts(tableData.value));
-});
-onUnmounted(destroyCharts);
+// ─── File import ──────────────────────────────────────────────────────────────
+function triggerFileInput(fileKey: string) {
+  const el = document.getElementById(`file-input-${fileKey}`) as HTMLInputElement | null;
+  el?.click();
+}
+
+async function handleFileChange(fileKey: string, event: Event) {
+  const file = (event.target as HTMLInputElement).files?.[0];
+  if (!file) return;
+
+  if (!file.name.endsWith(".csv")) {
+    importStatus.value = {
+      ...importStatus.value,
+      [fileKey]: { status: "error", message: "Arquivo deve ser do tipo CSV" },
+    };
+    return;
+  }
+
+  importStatus.value = {
+    ...importStatus.value,
+    [fileKey]: { status: "processing", message: "Processando arquivo..." },
+  };
+
+  try {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const res = await fetch(`${CONFIG.API_BASE_URL}${IMPORT_ENDPOINTS[fileKey]}`, {
+      method: "POST",
+      body: formData,
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      const detail = data.colunas_ausentes?.length
+        ? `Colunas ausentes: ${(data.colunas_ausentes as string[]).join(", ")}`
+        : (data.error ?? "Erro ao importar arquivo");
+      importStatus.value = {
+        ...importStatus.value,
+        [fileKey]: { status: "error", message: detail },
+      };
+      return;
+    }
+
+    importStatus.value = {
+      ...importStatus.value,
+      [fileKey]: {
+        status: "success",
+        message: "Importação concluída com sucesso",
+        recordsProcessed: data.linhas_recebidas ?? 0,
+      },
+    };
+  } catch {
+    importStatus.value = {
+      ...importStatus.value,
+      [fileKey]: { status: "error", message: "Erro de conexão com o servidor" },
+    };
+  }
+}
+
+function importBadgeClass(status: ImportStatus) {
+  const map: Record<ImportStatus, string> = {
+    idle:       "import-badge idle",
+    processing: "import-badge processing",
+    success:    "import-badge success",
+    error:      "import-badge error",
+  };
+  return map[status];
+}
+
+function importBadgeLabel(status: ImportStatus) {
+  const map: Record<ImportStatus, string> = {
+    idle:       "Aguardando",
+    processing: "Processando",
+    success:    "Concluído",
+    error:      "Erro",
+  };
+  return map[status];
+}
 </script>
 
 <style scoped>
@@ -642,17 +558,9 @@ onUnmounted(destroyCharts);
   font-size: 14px;
 }
 
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-::-webkit-scrollbar-track {
-  background: var(--bg2);
-}
-::-webkit-scrollbar-thumb {
-  background: var(--border2);
-  border-radius: 3px;
-}
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--bg2); }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
 
 .main {
   padding: 24px 28px;
@@ -662,7 +570,31 @@ onUnmounted(destroyCharts);
   gap: 20px;
 }
 
-/* ── Metrics ──────────────────────────────────────────────────────────────── */
+/* ── Page Header ──────────────────────────────────────────────────────────── */
+.page-header { animation: fadeIn 0.3s ease both; }
+
+.header-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 6px;
+  font-size: 22px;
+  font-weight: 400;
+  color: var(--text);
+}
+.shield-icon {
+  width: 22px;
+  height: 22px;
+  color: #f5793a;
+  flex-shrink: 0;
+}
+.header-subtitle {
+  font-size: 13px;
+  color: var(--text2);
+  margin: 0;
+}
+
+/* ── KPI Cards ────────────────────────────────────────────────────────────── */
 .metrics {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -672,348 +604,205 @@ onUnmounted(destroyCharts);
   background: var(--bg2);
   border: 1px solid var(--border);
   border-radius: 10px;
-  padding: 18px 22px;
+  padding: 20px 22px;
   transition: border-color 0.2s;
   animation: fadeIn 0.35s ease both;
 }
-.metric-card:nth-child(2) {
-  animation-delay: 0.06s;
+.metric-card:nth-child(2) { animation-delay: 0.06s; }
+.metric-card:nth-child(3) { animation-delay: 0.12s; }
+.metric-card:nth-child(4) { animation-delay: 0.18s; }
+.metric-card:hover { border-color: var(--border2); }
+
+.metric-icon-wrap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  margin-bottom: 14px;
 }
-.metric-card:nth-child(3) {
-  animation-delay: 0.12s;
-}
-.metric-card:nth-child(4) {
-  animation-delay: 0.18s;
-}
-.metric-card:hover {
-  border-color: var(--border2);
-}
+.metric-icon-wrap svg { width: 18px; height: 18px; }
+.metric-icon-wrap.blue  { background: rgba(77, 143, 255, 0.12); color: var(--blue); }
+.metric-icon-wrap.green { background: rgba(45, 212, 160, 0.12); color: var(--green); }
+.metric-icon-wrap.amber { background: rgba(245, 166, 35, 0.12); color: var(--amber); }
+.metric-icon-wrap.red   { background: rgba(245, 90, 90, 0.12);  color: var(--red); }
+
 .metric-label {
-  font-size: 11px;
-  color: var(--text3);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  margin-bottom: 8px;
+  font-size: 12px;
+  color: var(--text2);
+  margin-bottom: 6px;
 }
 .metric-value {
-  font-size: 26px;
-  font-weight: 600;
+  font-size: 30px;
+  font-weight: 400;
   font-family: "IBM Plex Mono", monospace;
-  letter-spacing: -0.5px;
   color: var(--text);
+  line-height: 1;
+  margin-bottom: 4px;
 }
-.metric-value.blue {
-  color: var(--blue);
-}
-.metric-value.green {
-  color: var(--green);
-}
-.metric-value.amber {
-  color: var(--amber);
-}
-.metric-value.red {
-  color: var(--red);
+.metric-sub {
+  font-size: 11px;
+  color: var(--text3);
+  margin: 0;
 }
 
-/* ── Filters ──────────────────────────────────────────────────────────────── */
-.filters-card {
+/* ── Tabs Container ───────────────────────────────────────────────────────── */
+.tabs-container {
   background: var(--bg2);
   border: 1px solid var(--border);
   border-radius: 10px;
-  padding: 16px 20px;
+  overflow: hidden;
   animation: fadeIn 0.35s ease both;
+  animation-delay: 0.1s;
 }
-.filters-title {
+
+.tabs-nav {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+}
+.tab-btn {
+  flex: 1;
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
+  padding: 14px 16px;
   font-size: 13px;
   font-weight: 500;
-  margin-bottom: 14px;
+  font-family: inherit;
   color: var(--text2);
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  transition: color 0.2s, border-color 0.2s;
+  white-space: nowrap;
 }
-.filters-title svg {
-  width: 14px;
-  height: 14px;
-  color: var(--text3);
-}
-.filters-row {
+.tab-btn svg { width: 15px; height: 15px; flex-shrink: 0; }
+.tab-btn:hover { color: var(--text); }
+.tab-btn.active { color: var(--blue); border-bottom-color: var(--blue); }
+
+.tabs-content { padding: 24px; }
+.tab-panel { min-height: 40px; }
+
+/* ── Import Sections ──────────────────────────────────────────────────────── */
+.import-sections { display: flex; flex-direction: column; gap: 28px; }
+
+.section-header {
   display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
   align-items: center;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+.section-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+.section-icon svg { width: 15px; height: 15px; }
+.section-icon.blue   { background: rgba(77, 143, 255, 0.12);  color: var(--blue); }
+.section-icon.green  { background: rgba(45, 212, 160, 0.12);  color: var(--green); }
+.section-icon.purple { background: rgba(155, 127, 255, 0.12); color: var(--purple); }
+
+.section-title {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--text);
+  margin: 0;
+}
+.section-desc {
+  font-size: 12px;
+  color: var(--text2);
+  margin: 0 0 14px 0;
 }
 
-.filter-select {
+.upload-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+.upload-card {
   background: var(--bg3);
   border: 1px solid var(--border);
-  color: var(--text);
-  border-radius: 7px;
-  padding: 7px 30px 7px 10px;
-  font-size: 12px;
-  font-family: inherit;
-  appearance: none;
-  cursor: pointer;
-  min-width: 155px;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%238b92aa'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 10px center;
+  border-radius: 8px;
+  padding: 14px;
   transition: border-color 0.2s;
 }
-.filter-select:focus {
-  outline: none;
-  border-color: var(--blue2);
-}
+.upload-card:hover { border-color: var(--blue2); }
 
-.export-btn {
+.upload-card-header {
   display: flex;
   align-items: center;
-  gap: 6px;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.file-name-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+}
+.file-icon { width: 14px; height: 14px; color: var(--text3); flex-shrink: 0; }
+.file-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.upload-message {
+  font-size: 11px;
+  color: var(--text2);
+  margin: 0 0 10px 0;
+}
+.upload-message.error { color: var(--red); }
+
+.upload-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 8px 14px;
   background: var(--blue2);
   color: #fff;
   border: none;
   border-radius: 7px;
-  padding: 7px 16px;
   font-size: 12px;
   font-family: inherit;
   font-weight: 500;
   cursor: pointer;
   transition: background 0.2s;
-  white-space: nowrap;
-  margin-left: auto;
 }
-.export-btn:hover {
-  background: var(--blue);
-}
-.export-btn svg {
-  width: 14px;
-  height: 14px;
-}
-.clear-btn {
-  background: transparent;
-  border: 1px solid var(--border2);
-  color: var(--text2);
-  border-radius: 7px;
-  padding: 7px 12px;
-  font-size: 12px;
-  cursor: pointer;
-}
-.clear-btn:hover {
-  color: var(--text);
-  border-color: var(--blue2);
-}
-.active-filters {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  align-items: center;
-  margin-top: 12px;
-}
-.active-filters-label {
-  font-size: 11px;
+.upload-btn:hover { background: var(--blue); }
+.upload-btn:disabled {
+  background: var(--border2);
   color: var(--text3);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-}
-.filter-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  background: var(--bg3);
-  border: 1px solid var(--border2);
-  color: var(--text);
-  border-radius: 999px;
-  padding: 4px 10px;
-  font-size: 11px;
-}
-
-/* ── Charts ───────────────────────────────────────────────────────────────── */
-.charts-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 14px;
-}
-.chart-card {
-  background: var(--bg2);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 18px 20px;
-  animation: fadeIn 0.35s ease both;
-}
-.chart-title {
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--text2);
-  margin-bottom: 16px;
-}
-.chart-wrap {
-  position: relative;
-  height: 220px;
-}
-.chart-wrap.tall {
-  height: 360px;
-}
-
-/* ── Table ────────────────────────────────────────────────────────────────── */
-.table-card {
-  background: var(--bg2);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  overflow: hidden;
-  animation: fadeIn 0.35s ease both;
-}
-.table-header {
-  padding: 16px 20px;
-  border-bottom: 1px solid var(--border);
-}
-.table-header h2 {
-  font-size: 14px;
-  font-weight: 500;
-}
-.table-wrap {
-  overflow-x: auto;
-}
-
-table {
-  width: 100%;
-  min-width: 1200px;
-  border-collapse: collapse;
-}
-thead tr {
-  border-bottom: 1px solid var(--border);
-}
-th {
-  padding: 11px 16px;
-  text-align: left;
-  font-size: 11px;
-  font-weight: 500;
-  color: var(--text3);
-  text-transform: uppercase;
-  letter-spacing: 0.07em;
-  white-space: nowrap;
-}
-th.sort-col {
-  cursor: pointer;
-  user-select: none;
-}
-th.sort-col:hover {
-  color: var(--text2);
-}
-tbody tr {
-  border-bottom: 1px solid var(--border);
-  transition: background 0.15s;
-}
-tbody tr:hover {
-  background: var(--bg3);
-}
-tbody tr:last-child {
-  border-bottom: none;
-}
-td {
-  padding: 13px 16px;
-  font-size: 13px;
-  color: var(--text);
-  white-space: nowrap;
-}
-td.material-name {
-  font-weight: 500;
-  color: var(--text);
-  max-width: 280px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-td.muted {
-  color: var(--text2);
-}
-td.mono {
-  font-family: "IBM Plex Mono", monospace;
-  font-size: 12px;
-}
-td.total {
-  font-family: "IBM Plex Mono", monospace;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--green);
-}
-.table-feedback {
-  text-align: center;
-  padding: 24px 16px;
-}
-.table-feedback.muted {
-  color: var(--text3);
-}
-
-/* ── Badges ───────────────────────────────────────────────────────────────── */
-.badge {
-  display: inline-block;
-  padding: 3px 9px;
-  border-radius: 5px;
-  font-size: 11px;
-  font-weight: 500;
-}
-.badge-hw {
-  background: rgba(77, 143, 255, 0.15);
-  color: var(--blue);
-}
-.badge-st {
-  background: rgba(45, 212, 160, 0.12);
-  color: var(--green);
-}
-.badge-cl {
-  background: rgba(155, 127, 255, 0.12);
-  color: var(--purple);
-}
-.badge-sg {
-  background: rgba(245, 166, 35, 0.12);
-  color: var(--amber);
-}
-.badge-sw {
-  background: rgba(245, 166, 35, 0.12);
-  color: var(--amber);
-}
-.badge-rd {
-  background: rgba(245, 90, 90, 0.12);
-  color: var(--red);
-}
-
-/* ── Pagination ───────────────────────────────────────────────────────────── */
-.pagination {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 12px 20px;
-  border-top: 1px solid var(--border);
-  font-size: 12px;
-  color: var(--text3);
-}
-.pg-btns {
-  display: flex;
-  gap: 4px;
-}
-.pg-btn {
-  background: var(--bg3);
-  border: 1px solid var(--border);
-  color: var(--text2);
-  border-radius: 5px;
-  padding: 5px 10px;
-  cursor: pointer;
-  font-size: 12px;
-  transition: all 0.15s;
-}
-.pg-btn:hover {
-  border-color: var(--blue2);
-  color: var(--blue);
-}
-.pg-btn.active {
-  background: var(--blue2);
-  border-color: var(--blue2);
-  color: #fff;
-}
-.pg-btn:disabled {
-  opacity: 0.3;
   cursor: not-allowed;
 }
+.upload-btn svg { width: 13px; height: 13px; }
 
+.import-badge {
+  flex-shrink: 0;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 10px;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+.import-badge.idle       { background: rgba(139,146,170,0.1); color: var(--text3);  border-color: var(--border); }
+.import-badge.processing { background: rgba(77,143,255,0.1);  color: var(--blue);   border-color: rgba(77,143,255,0.2); }
+.import-badge.success    { background: rgba(45,212,160,0.1);  color: var(--green);  border-color: rgba(45,212,160,0.2); }
+.import-badge.error      { background: rgba(245,90,90,0.1);   color: var(--red);    border-color: rgba(245,90,90,0.2); }
+
+/* ── Utilities ────────────────────────────────────────────────────────────── */
 .sr-only {
   position: absolute;
   width: 1px;
@@ -1027,32 +816,7 @@ td.total {
 }
 
 @keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(8px);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
-
-.chip-remove {
-  background: none;
-  border: none;
-  color: var(--text3);
-  cursor: pointer;
-  font-size: 14px;
-  font-weight: 400;
-  line-height: 1;
-  padding: 0 1px;
-  display: flex;
-  align-items: center;
-  opacity: 0.5;
-  transition: opacity 0.15s, color 0.15s;
-}
-.chip-remove:hover {
-  opacity: 1;
-  color: #e05252;
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: none; }
 }
 </style>
