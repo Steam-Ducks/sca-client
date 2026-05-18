@@ -35,7 +35,7 @@ test.describe("Gestão de Materiais", () => {
     await page.route("**/cost-by-project/**", (route) =>
       route.fulfill({ contentType: "application/json", body: JSON.stringify(MOCK_COST_BY_PROJECT) }),
     );
-    await page.goto("http://localhost:5173");
+    await page.goto("/");
   });
 
   test("CT02: should filter by period", async ({ page }) => {
