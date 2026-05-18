@@ -167,6 +167,18 @@ describe("Auditoria.vue", () => {
 
       expect(getVm(wrapper).tableData.length).toBe(0);
     });
+
+    it("não atualiza tableData se /audit/ retornar status não-ok", async () => {
+      vi.stubGlobal(
+        "fetch",
+        vi.fn().mockResolvedValue({ ok: false, status: 500, json: async () => ({}) }),
+      );
+      const wrapper = mount(Auditoria);
+      await flushPromises();
+      await nextTick();
+
+      expect(getVm(wrapper).tableData.length).toBe(0);
+    });
   });
 
   // ── Navegação de abas ───────────────────────────────────────────────────────
@@ -271,6 +283,28 @@ describe("Auditoria.vue", () => {
       await nextTick();
 
       expect(getVm(wrapper).importStatus["programas"].status).toBe("processing");
+
+      resolveResponse({ ok: true, json: async () => ({ run_id: "x", tabela: "programas", linhas_recebidas: 10 }) });
+    });
+
+    it("desativa o botão de upload enquanto está processando", async () => {
+      let resolveResponse!: (v: unknown) => void;
+      vi.stubGlobal(
+        "fetch",
+        vi.fn()
+          .mockResolvedValueOnce({ ok: true, json: async () => API_ROWS })
+          .mockReturnValueOnce(new Promise((r) => { resolveResponse = r; })),
+      );
+
+      const wrapper = mount(Auditoria);
+      await flushPromises();
+
+      getVm(wrapper).handleFileChange("programas", csvFileEvent());
+      await nextTick();
+
+      const card = wrapper.findAll(".upload-card")
+        .find((c) => c.text().includes("programas.csv"));
+      expect(card?.find(".upload-btn").attributes("disabled")).toBeDefined();
 
       resolveResponse({ ok: true, json: async () => ({ run_id: "x", tabela: "programas", linhas_recebidas: 10 }) });
     });
