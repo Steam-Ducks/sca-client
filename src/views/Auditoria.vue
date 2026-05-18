@@ -434,9 +434,9 @@ const horasFiles = [
 ];
 
 // ─── State ────────────────────────────────────────────────────────────────────
-const activeTab   = ref<TabType>("importacao");
+const activeTab    = ref<TabType>("importacao");
 const importStatus = ref<Record<string, FileImportStatus>>({});
-const tableData   = ref<DataRow[]>([]);
+const tableData    = ref<DataRow[]>([]);
 
 // ─── KPIs from API data ───────────────────────────────────────────────────────
 const kpis = computed(() => ({

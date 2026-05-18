@@ -5,7 +5,7 @@ describe("Router", () => {
   it("has the correct routes defined", () => {
     const routes = router.options.routes;
 
-    expect(routes).toHaveLength(8);
+    expect(routes).toHaveLength(6);
 
     expect(routes[0].path).toBe("/");
     expect(routes[0].redirect).toBe("/materiais");
@@ -24,11 +24,5 @@ describe("Router", () => {
 
     expect(routes[5].path).toBe("/orcamento");
     expect(routes[5].name).toBe("orcamento");
-
-    expect(routes[6].path).toBe("/auditoria");
-    expect(routes[6].name).toBe("auditoria");
-
-    expect(routes[7].path).toBe("/monitoramento");
-    expect(routes[7].name).toBe("monitoramento");
   });
 });

@@ -1,6 +1,4 @@
 // src/composables/useChartsTechnical.ts
-// Chart.js composable for TechnicalHours — matches exact visual style of Materiais charts
-
 import { Chart, registerables } from "chart.js";
 Chart.register(...registerables);
 
@@ -17,30 +15,19 @@ export interface HoraRow {
   tarefa: string;
 }
 
+export interface TemporalPoint {
+  periodo: string;
+  total_horas: number;
+  total_custo: number;
+}
+
 // ─── Shared chart config helpers ──────────────────────────────────────────────
 const FONT = "'IBM Plex Sans', sans-serif";
 const MONO = "'IBM Plex Mono', monospace";
 
-const gridColor = "rgba(42,47,69,0.8)"; // --border
-const textColor = "#555d7a"; // --text3
-const text2Color = "#8b92aa"; // --text2
-
-const baseScales = (axis: "x" | "y" = "x") => ({
-  x: {
-    grid: { color: axis === "x" ? gridColor : "transparent" },
-    border: { display: false },
-    ticks: { color: textColor, font: { family: MONO, size: 11 } },
-  },
-  y: {
-    grid: { color: axis === "y" ? gridColor : "transparent" },
-    border: { display: false },
-    ticks: {
-      color: text2Color,
-      font: { family: FONT, size: 11 },
-      maxTicksLimit: 8,
-    },
-  },
-});
+const gridColor = "rgba(42,47,69,0.8)";
+const textColor = "#555d7a";
+const text2Color = "#8b92aa";
 
 const baseOptions = (indexAxis: "x" | "y" = "y") => ({
   indexAxis,
@@ -69,12 +56,9 @@ let chartCustoColaborador: Chart | null = null;
 let chartTemporal: Chart | null = null;
 
 function destroyAll() {
-  [
-    chartHorasProjeto,
-    chartCustoProjeto,
-    chartCustoColaborador,
-    chartTemporal,
-  ].forEach((c) => c?.destroy());
+  [chartHorasProjeto, chartCustoProjeto, chartCustoColaborador, chartTemporal].forEach(
+    (c) => c?.destroy(),
+  );
   chartHorasProjeto =
     chartCustoProjeto =
     chartCustoColaborador =
@@ -83,17 +67,26 @@ function destroyAll() {
 }
 
 // ─── Aggregation helpers ──────────────────────────────────────────────────────
-function groupBy<T>(
-  data: T[],
-  keyFn: (r: T) => string,
-  valFn: (r: T) => number,
-) {
+function groupBy<T>(data: T[], keyFn: (r: T) => string, valFn: (r: T) => number) {
   const map: Record<string, number> = {};
   data.forEach((r) => {
     const k = keyFn(r);
     map[k] = (map[k] || 0) + valFn(r);
   });
   return Object.entries(map).sort((a, b) => b[1] - a[1]);
+}
+
+function aggregateTemporal(data: HoraRow[], allPeriodos: string[]): TemporalPoint[] {
+  const map: Record<string, TemporalPoint> = {};
+  for (const row of data) {
+    if (!map[row.periodo]) map[row.periodo] = { periodo: row.periodo, total_horas: 0, total_custo: 0 };
+    map[row.periodo].total_horas += row.horas;
+    map[row.periodo].total_custo += row.custoTotal;
+  }
+  const labels = allPeriodos.length > 0
+    ? allPeriodos
+    : [...new Set(data.map((r) => r.periodo))].sort();
+  return labels.map((p) => map[p] ?? { periodo: p, total_horas: 0, total_custo: 0 });
 }
 
 function fmtR$(v: number) {
@@ -103,7 +96,8 @@ function fmtR$(v: number) {
 }
 
 // ─── Build charts ─────────────────────────────────────────────────────────────
-function buildCharts(data: HoraRow[]) {
+function buildCharts(data: HoraRow[], allPeriodos: string[] = []) {
+  const temporalData = aggregateTemporal(data, allPeriodos);
   destroyAll();
 
   // 1. Total de Horas por Projeto — horizontal bars, blue
@@ -133,7 +127,6 @@ function buildCharts(data: HoraRow[]) {
       options: {
         ...baseOptions("y"),
         scales: {
-          ...baseScales("x"),
           x: {
             grid: { color: gridColor },
             border: { display: false },
@@ -148,9 +141,7 @@ function buildCharts(data: HoraRow[]) {
           ...baseOptions("y").plugins,
           tooltip: {
             ...baseOptions("y").plugins.tooltip,
-            callbacks: {
-              label: (ctx) => ` ${ctx.parsed.x}h`,
-            },
+            callbacks: { label: (ctx) => ` ${ctx.parsed.x}h` },
           },
         },
       },
@@ -202,9 +193,7 @@ function buildCharts(data: HoraRow[]) {
           ...baseOptions("y").plugins,
           tooltip: {
             ...baseOptions("y").plugins.tooltip,
-            callbacks: {
-              label: (ctx) => ` ${fmtR$(ctx.parsed.x ?? 0)}`,
-            },
+            callbacks: { label: (ctx) => ` ${fmtR$(ctx.parsed.x ?? 0)}` },
           },
         },
       },
@@ -212,11 +201,7 @@ function buildCharts(data: HoraRow[]) {
   }
 
   // 3. Top 10 - Custo por Colaborador — horizontal bars, amber
-  const custoColab = groupBy(
-    data,
-    (r) => r.colaborador,
-    (r) => r.custoTotal,
-  ).slice(0, 10);
+  const custoColab = groupBy(data, (r) => r.colaborador, (r) => r.custoTotal).slice(0, 10);
 
   const ctxCC = (
     document.getElementById("chartCustoColaborador") as HTMLCanvasElement
@@ -256,23 +241,14 @@ function buildCharts(data: HoraRow[]) {
           ...baseOptions("y").plugins,
           tooltip: {
             ...baseOptions("y").plugins.tooltip,
-            callbacks: {
-              label: (ctx) => ` ${fmtR$(ctx.parsed.x ?? 0)}`,
-            },
+            callbacks: { label: (ctx) => ` ${fmtR$(ctx.parsed.x ?? 0)}` },
           },
         },
       },
     });
   }
 
-  // 4. Evolução Temporal das Horas — line chart, purple
-  const temporalMap: Record<string, number> = {};
-  data.forEach((r) => {
-    temporalMap[r.periodo] = (temporalMap[r.periodo] || 0) + r.horas;
-  });
-  const periodos = Object.keys(temporalMap).sort((a, b) => a.localeCompare(b));
-  const horasPorPeriodo = periodos.map((p) => temporalMap[p]);
-
+  // 4. Evolução Temporal — dual-line: horas (purple, left) + custo (blue, right)
   const ctxT = (
     document.getElementById("chartTemporal") as HTMLCanvasElement
   )?.getContext("2d");
@@ -280,10 +256,11 @@ function buildCharts(data: HoraRow[]) {
     chartTemporal = new Chart(ctxT, {
       type: "line",
       data: {
-        labels: periodos,
+        labels: temporalData.map((p) => p.periodo),
         datasets: [
           {
-            data: horasPorPeriodo,
+            label: "Horas",
+            data: temporalData.map((p) => p.total_horas),
             borderColor: "#9b7fff",
             backgroundColor: "rgba(155,127,255,0.12)",
             borderWidth: 2.5,
@@ -294,6 +271,22 @@ function buildCharts(data: HoraRow[]) {
             pointHoverRadius: 7,
             fill: true,
             tension: 0.35,
+            yAxisID: "y",
+          },
+          {
+            label: "Custo (R$)",
+            data: temporalData.map((p) => p.total_custo),
+            borderColor: "#4d8fff",
+            backgroundColor: "rgba(77,143,255,0.06)",
+            borderWidth: 2,
+            pointBackgroundColor: "#4d8fff",
+            pointBorderColor: "#141720",
+            pointBorderWidth: 0,
+            pointRadius: 4,
+            pointHoverRadius: 6,
+            fill: false,
+            tension: 0.35,
+            yAxisID: "y1",
           },
         ],
       },
@@ -302,7 +295,10 @@ function buildCharts(data: HoraRow[]) {
         maintainAspectRatio: false,
         animation: { duration: 500 },
         plugins: {
-          legend: { display: false },
+          legend: {
+            display: true,
+            labels: { color: text2Color, font: { family: FONT, size: 11 }, boxWidth: 12 },
+          },
           tooltip: {
             backgroundColor: "#1c2030",
             borderColor: "#2a2f45",
@@ -313,7 +309,10 @@ function buildCharts(data: HoraRow[]) {
             bodyFont: { family: MONO, size: 12 },
             padding: 10,
             callbacks: {
-              label: (ctx) => ` ${ctx.parsed.y}h`,
+              label: (ctx) =>
+                ctx.datasetIndex === 0
+                  ? ` ${(ctx.parsed.y as number).toFixed(2)}h`
+                  : ` ${fmtR$(ctx.parsed.y as number)}`,
             },
           },
         },
@@ -324,12 +323,23 @@ function buildCharts(data: HoraRow[]) {
             ticks: { color: text2Color, font: { family: FONT, size: 11 } },
           },
           y: {
+            position: "left",
             grid: { color: gridColor },
             border: { display: false },
             ticks: {
               color: textColor,
               font: { family: MONO, size: 11 },
-              callback: (v) => `${v}`,
+              callback: (v) => `${v}h`,
+            },
+          },
+          y1: {
+            position: "right",
+            grid: { drawOnChartArea: false },
+            border: { display: false },
+            ticks: {
+              color: text2Color,
+              font: { family: MONO, size: 11 },
+              callback: (v) => fmtR$(v as number),
             },
           },
         },
@@ -339,8 +349,8 @@ function buildCharts(data: HoraRow[]) {
 }
 
 // ─── Update charts (called on filter change) ──────────────────────────────────
-function updateCharts(data: HoraRow[]) {
-  // Horas por projeto
+function updateCharts(data: HoraRow[], allPeriodos: string[] = []) {
+  const temporalData = aggregateTemporal(data, allPeriodos);
   const horasProjeto = groupBy(
     data,
     (r) => `${r.programa} - ${r.projeto}`,
@@ -352,7 +362,6 @@ function updateCharts(data: HoraRow[]) {
     chartHorasProjeto.update();
   }
 
-  // Custo por projeto
   const custoProjeto = groupBy(
     data,
     (r) => `${r.programa} - ${r.projeto}`,
@@ -364,27 +373,19 @@ function updateCharts(data: HoraRow[]) {
     chartCustoProjeto.update();
   }
 
-  // Custo por colaborador
-  const custoColab = groupBy(
-    data,
-    (r) => r.colaborador,
-    (r) => r.custoTotal,
-  ).slice(0, 10);
+  const custoColab = groupBy(data, (r) => r.colaborador, (r) => r.custoTotal).slice(0, 10);
   if (chartCustoColaborador) {
     chartCustoColaborador.data.labels = custoColab.map(([l]) => l);
     chartCustoColaborador.data.datasets[0].data = custoColab.map(([, v]) => v);
     chartCustoColaborador.update();
   }
 
-  // Temporal
-  const temporalMap: Record<string, number> = {};
-  data.forEach((r) => {
-    temporalMap[r.periodo] = (temporalMap[r.periodo] || 0) + r.horas;
-  });
-  const periodos = Object.keys(temporalMap).sort((a, b) => a.localeCompare(b));
   if (chartTemporal) {
-    chartTemporal.data.labels = periodos;
-    chartTemporal.data.datasets[0].data = periodos.map((p) => temporalMap[p]);
+    chartTemporal.data.labels = temporalData.map((p) => p.periodo);
+    chartTemporal.data.datasets[0].data = temporalData.map((p) => p.total_horas);
+    if (chartTemporal.data.datasets[1]) {
+      chartTemporal.data.datasets[1].data = temporalData.map((p) => p.total_custo);
+    }
     chartTemporal.update();
   }
 }
