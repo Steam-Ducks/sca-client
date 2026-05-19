@@ -25,9 +25,8 @@ export interface TemporalPoint {
 const FONT = "'IBM Plex Sans', sans-serif";
 const MONO = "'IBM Plex Mono', monospace";
 
-const gridColor = "rgba(42,47,69,0.8)";
-const textColor = "#555d7a";
-const text2Color = "#8b92aa";
+const css = (v: string) =>
+  getComputedStyle(document.documentElement).getPropertyValue(v).trim();
 
 const baseOptions = (indexAxis: "x" | "y" = "y") => ({
   indexAxis,
@@ -37,11 +36,11 @@ const baseOptions = (indexAxis: "x" | "y" = "y") => ({
   plugins: {
     legend: { display: false },
     tooltip: {
-      backgroundColor: "#1c2030",
-      borderColor: "#2a2f45",
-      borderWidth: 0,
-      titleColor: "#e2e6f0",
-      bodyColor: "#8b92aa",
+      backgroundColor: css("--bg3"),
+      borderColor: css("--border"),
+      borderWidth: 1,
+      titleColor: css("--text"),
+      bodyColor: css("--text2"),
       titleFont: { family: FONT, size: 12 },
       bodyFont: { family: MONO, size: 12 },
       padding: 10,
@@ -99,6 +98,9 @@ function fmtR$(v: number) {
 function buildCharts(data: HoraRow[], allPeriodos: string[] = []) {
   const temporalData = aggregateTemporal(data, allPeriodos);
   destroyAll();
+  const gridColor = css("--border");
+  const textColor = css("--text3");
+  const text2Color = css("--text2");
 
   // 1. Total de Horas por Projeto — horizontal bars, blue
   const horasProjeto = groupBy(
@@ -300,14 +302,7 @@ function buildCharts(data: HoraRow[], allPeriodos: string[] = []) {
             labels: { color: text2Color, font: { family: FONT, size: 11 }, boxWidth: 12 },
           },
           tooltip: {
-            backgroundColor: "#1c2030",
-            borderColor: "#2a2f45",
-            borderWidth: 0,
-            titleColor: "#e2e6f0",
-            bodyColor: "#8b92aa",
-            titleFont: { family: FONT, size: 12 },
-            bodyFont: { family: MONO, size: 12 },
-            padding: 10,
+            ...baseOptions().plugins.tooltip,
             callbacks: {
               label: (ctx) =>
                 ctx.datasetIndex === 0
