@@ -6,9 +6,9 @@ Chart.register(...registerables);
 
 const FONT = "'IBM Plex Sans', sans-serif";
 const MONO = "'IBM Plex Mono', monospace";
-const gridColor = "rgba(42,47,69,0.8)";
-const textColor = "#555d7a";
-const text2Color = "#8b92aa";
+
+const css = (v: string) =>
+  getComputedStyle(document.documentElement).getPropertyValue(v).trim();
 
 const SAUDE_COLORS: Record<BudgetHealthStatus, string> = {
   Saudável: "rgba(45,212,160,0.85)",
@@ -16,16 +16,16 @@ const SAUDE_COLORS: Record<BudgetHealthStatus, string> = {
   Crítico: "rgba(245,90,90,0.85)",
 };
 
-const tooltipBase = {
-  backgroundColor: "#1c2030",
-  borderColor: "#2a2f45",
-  borderWidth: 0,
-  titleColor: "#e2e6f0",
-  bodyColor: "#8b92aa",
+const tooltipBase = () => ({
+  backgroundColor: css("--bg3"),
+  borderColor: css("--border"),
+  borderWidth: 1,
+  titleColor: css("--text"),
+  bodyColor: css("--text2"),
   titleFont: { family: FONT, size: 12 },
   bodyFont: { family: MONO, size: 12 },
   padding: 10,
-};
+});
 
 function fmtBRL(v: number): string {
   if (v >= 1_000_000) return `R$ ${(v / 1_000_000).toFixed(1)}M`;
@@ -49,6 +49,9 @@ function destroyAll() {
 
 function buildChartsOrcamento(pagedData: BudgetProjectRow[], fullData: BudgetProjectRow[]) {
   destroyAll();
+  const gridColor = css("--border");
+  const textColor = css("--text3");
+  const text2Color = css("--text2");
 
   const labels = pagedData.map((p) => p.projeto);
 
@@ -93,7 +96,7 @@ function buildChartsOrcamento(pagedData: BudgetProjectRow[], fullData: BudgetPro
             },
           },
           tooltip: {
-            ...tooltipBase,
+            ...tooltipBase(),
             callbacks: {
               label: (ctx: TooltipItem<"bar">) =>
                 ` ${fmtBRL(ctx.parsed.y ?? 0)}`,
@@ -144,7 +147,7 @@ function buildChartsOrcamento(pagedData: BudgetProjectRow[], fullData: BudgetPro
         plugins: {
           legend: { display: false },
           tooltip: {
-            ...tooltipBase,
+            ...tooltipBase(),
             callbacks: {
               label: (ctx: TooltipItem<"bar">) =>
                 ` ${(ctx.parsed.y ?? 0).toFixed(1)}%`,
@@ -219,7 +222,7 @@ function buildChartsOrcamento(pagedData: BudgetProjectRow[], fullData: BudgetPro
             },
           },
           tooltip: {
-            ...tooltipBase,
+            ...tooltipBase(),
             callbacks: {
               label: (ctx: TooltipItem<"doughnut">) =>
                 ` ${ctx.label}: ${ctx.parsed} projetos`,

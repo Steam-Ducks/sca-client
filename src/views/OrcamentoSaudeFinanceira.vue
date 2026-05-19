@@ -918,10 +918,10 @@ onUnmounted(() => {
 .main {
   flex: 1;
   overflow-y: auto;
-  padding: 20px;
+  padding: 24px 28px;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 20px;
 }
 
 .sr-only {
@@ -956,24 +956,42 @@ onUnmounted(() => {
 .metrics {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 12px;
+  gap: 14px;
 }
-
-.metric-card,
-
 
 .metric-card {
-  padding: 16px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 18px 22px;
+  transition: border-color 0.2s;
+  animation: fadeIn 0.35s ease both;
 }
 
-.metric-label,
+.metric-card:hover {
+  border-color: var(--border2);
+}
 
+.metric-label {
+  font-size: 11px;
+  color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 8px;
+}
 
 .metric-value {
-  font-size: 18px;
-  font-weight: 700;
-  color: var(--text);
+  font-size: 22px;
+  font-weight: 600;
   font-family: "IBM Plex Mono", monospace;
+  letter-spacing: -0.5px;
+  color: var(--text);
+}
+
+.metric-sub {
+  font-size: 10px;
+  color: var(--text3);
+  margin-top: 4px;
 }
 
 .metric-value.blue {
@@ -993,7 +1011,15 @@ onUnmounted(() => {
 }
 
 .metric-value.date {
-  font-size: 15px;
+  font-size: 14px;
+}
+
+.chart-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text2);
+  margin-bottom: 14px;
+  letter-spacing: 0.01em;
 }
 
 
@@ -1123,6 +1149,7 @@ onUnmounted(() => {
 }
 
 .project-card-top {
+  display: flex;
   justify-content: space-between;
   align-items: flex-start;
   margin-bottom: 12px;
@@ -1132,6 +1159,13 @@ onUnmounted(() => {
 .material-name {
   color: var(--text);
   font-weight: 600;
+  font-size: 13px;
+}
+
+.project-program {
+  font-size: 11px;
+  color: var(--text3);
+  margin-top: 2px;
 }
 
 .project-stats {
@@ -1140,7 +1174,13 @@ onUnmounted(() => {
 }
 
 .project-stat {
+  display: flex;
   justify-content: space-between;
+  font-size: 12px;
+}
+
+.stat-label {
+  color: var(--text3);
 }
 
 .stat-value,
@@ -1201,7 +1241,9 @@ onUnmounted(() => {
 }
 
 .table-header {
+  display: flex;
   justify-content: space-between;
+  align-items: center;
   padding: 16px;
   border-bottom: 1px solid var(--border);
 }
@@ -1416,5 +1458,10 @@ td {
 .clear-btn:hover {
   color: var(--text);
   border-color: var(--blue2);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: none; }
 }
 </style>
