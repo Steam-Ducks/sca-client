@@ -1,5 +1,6 @@
 import type { Filters } from "@/types/materiais";
 import { CONFIG } from "@/utils/config";
+import { apiFetch } from "@/utils/apiFetch";
 
 export interface MaterialsApiRow {
   id: number;
@@ -41,7 +42,8 @@ function buildQueryParams(filters: Filters): string {
 export const materiaisService = {
   async fetchMateriais(filters: Filters): Promise<MaterialsApiRow[]> {
     const qs = buildQueryParams(filters);
-    const response = await fetch(`${CONFIG.API_BASE_URL}/compras/${qs}`);
+    const response = await apiFetch(`${CONFIG.API_BASE_URL}/compras/${qs}`)
+
 
     if (!response.ok) {
       throw new Error("Não foi possível carregar a tabela de materiais.");
@@ -53,7 +55,7 @@ export const materiaisService = {
   async fetchTopMaterials(filters: Filters): Promise<TopMaterial[]> {
     const qs = buildQueryParams(filters);
 
-    const response = await fetch(
+    const response = await apiFetch(
       `${CONFIG.API_BASE_URL}/top-materials/${qs}`
     );
 
@@ -67,7 +69,7 @@ export const materiaisService = {
   async fetchCostByProject(filters: Filters): Promise<CostByProject[]> {
     const qs = buildQueryParams(filters);
 
-    const response = await fetch(
+    const response = await apiFetch(
       `${CONFIG.API_BASE_URL}/cost-by-project/${qs}`
     );
 
