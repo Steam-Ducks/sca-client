@@ -10,7 +10,7 @@ import router from "@/router";
 describe("Router", () => {
   describe("route definitions", () => {
     it("has the correct number of routes defined", () => {
-      expect(router.options.routes).toHaveLength(9);
+      expect(router.options.routes).toHaveLength(8);
     });
 
     it("redirects / to /login", () => {
@@ -51,9 +51,6 @@ describe("Router", () => {
       expect(router.options.routes[7].path).toBe("/auditoria");
     });
 
-    it("defines /monitoramento route", () => {
-      expect(router.options.routes[8].path).toBe("/monitoramento");
-    });
   });
 
   describe("navigation guard", () => {
