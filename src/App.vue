@@ -1,18 +1,22 @@
 <template>
   <div class="app-shell">
-    <AppHeader />
-    <main class="page-container">
+    <AppHeader v-if="!isPublicRoute" />
+    <main :class="isPublicRoute ? 'page-full' : 'page-container'">
       <RouterView />
     </main>
   </div>
 </template>
 
 <script setup lang="ts">
-import { RouterView } from 'vue-router'
+import { computed } from 'vue'
+import { RouterView, useRoute } from 'vue-router'
 import AppHeader from '@/components/AppHeader.vue'
 import { useTheme } from '@/composables/useTheme'
 
 useTheme()
+
+const route = useRoute()
+const isPublicRoute = computed(() => !!route.meta.public)
 </script>
 
 <style>
@@ -64,7 +68,7 @@ useTheme()
 body {
   background: var(--bg);
   color: var(--text);
-  font-family: "IBM Plex Sans", sans-serif;
+  font-family: "Nunito", sans-serif;
   font-size: 14px;
 }
 </style>
@@ -77,5 +81,9 @@ body {
 
 .page-container {
   min-height: calc(100vh - 48px);
+}
+
+.page-full {
+  min-height: 100vh;
 }
 </style>
