@@ -1,63 +1,59 @@
 <template>
   <div class="login-page">
-    <div class="login-header">
-      <img
-        class="login-logo"
-        :class="theme === 'dark' ? 'logo-dark' : 'logo-light'"
-        src="@/assets/logo.png"
-        alt="SCAR"
-      />
-      <h1 class="login-title">Sistema de Gestão de Custos</h1>
-      <p class="login-subtitle">Faça login para acessar o dashboard</p>
-    </div>
+    <div class="login-container">
+      <div class="login-header">
+        <AppLogo class="login-logo" />
+        <p class="login-subtitle">Faça login para acessar o dashboard</p>
+      </div>
 
-    <div class="login-card">
-      <form @submit.prevent="handleSubmit" novalidate>
-        <div class="field-group">
-          <label class="field-label" for="username">Usuário</label>
-          <div class="input-wrapper" :class="{ 'input-error': errors.username }">
-            <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
-            </svg>
-            <input
-              id="username"
-              v-model="form.username"
-              type="text"
-              class="field-input"
-              placeholder="Digite seu usuário"
-              autocomplete="username"
-              @blur="validateUsername"
-            />
+      <div class="login-card">
+        <form @submit.prevent="handleSubmit" novalidate>
+          <div class="field-group">
+            <label class="field-label" for="username">Usuário</label>
+            <div class="input-wrapper" :class="{ 'input-error': errors.username }">
+              <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
+              </svg>
+              <input
+                id="username"
+                v-model="form.username"
+                type="text"
+                class="field-input"
+                placeholder="Digite seu usuário"
+                autocomplete="username"
+                @blur="validateUsername"
+              />
+            </div>
+            <span v-if="errors.username" class="error-msg">{{ errors.username }}</span>
           </div>
-          <span v-if="errors.username" class="error-msg">{{ errors.username }}</span>
-        </div>
 
-        <div class="field-group">
-          <label class="field-label" for="password">Senha</label>
-          <div class="input-wrapper" :class="{ 'input-error': errors.password }">
-            <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" />
-            </svg>
-            <input
-              id="password"
-              v-model="form.password"
-              type="password"
-              class="field-input"
-              placeholder="Digite sua senha"
-              autocomplete="current-password"
-              @blur="validatePassword"
-            />
+          <div class="field-group">
+            <label class="field-label" for="password">Senha</label>
+            <div class="input-wrapper" :class="{ 'input-error': errors.password }">
+              <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" />
+              </svg>
+              <input
+                id="password"
+                v-model="form.password"
+                type="password"
+                class="field-input"
+                placeholder="Digite sua senha"
+                autocomplete="current-password"
+                @blur="validatePassword"
+              />
+            </div>
+            <span v-if="errors.password" class="error-msg">{{ errors.password }}</span>
           </div>
-          <span v-if="errors.password" class="error-msg">{{ errors.password }}</span>
-        </div>
 
-        <span v-if="errors.general" class="error-msg error-general">{{ errors.general }}</span>
+          <span v-if="errors.general" class="error-msg error-general">{{ errors.general }}</span>
 
-        <button type="submit" class="btn-entrar" :disabled="loading">
-          <span v-if="loading" class="btn-spinner" />
-          <span>{{ loading ? 'Entrando...' : 'Entrar' }}</span>
-        </button>
-      </form>
+          <button type="submit" class="btn-entrar" :disabled="loading">
+            <span v-if="loading" class="btn-spinner" />
+            <span>{{ loading ? 'Entrando...' : 'Entrar' }}</span>
+          </button>
+        </form>
+      </div>
     </div>
   </div>
 </template>
@@ -66,9 +62,8 @@
 import { reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { authService } from '@/services/authService'
-import { useTheme } from '@/composables/useTheme'
+import AppLogo from '@/components/AppLogo.vue'
 
-const { theme } = useTheme()
 const router = useRouter()
 
 const form = reactive({ username: '', password: '' })
@@ -109,48 +104,41 @@ async function handleSubmit() {
 .login-page {
   min-height: 100vh;
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
   background: var(--bg);
   padding: 2rem 1rem;
-  gap: 2rem;
+}
+
+.login-container {
+  width: 100%;
+  max-width: 440px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
 }
 
 .login-header {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.75rem;
   text-align: center;
+  width: 100%;
 }
 
 .login-logo {
-  height: 100px;
-  width: auto;
-  object-fit: contain;
-  margin-bottom: 0.5rem;
-}
-
-.logo-dark {
-  mix-blend-mode: screen;
-}
-
-.logo-light {
-  filter: invert(1);
-  mix-blend-mode: multiply;
-}
-
-.login-title {
-  font-size: 1.75rem;
-  font-weight: 600;
+  width: 80%;
+  max-width: 320px;
+  height: auto;
   color: var(--text);
-  letter-spacing: -0.01em;
 }
 
 .login-subtitle {
   font-size: 0.9rem;
   color: var(--text2);
+  margin: 0;
 }
 
 .login-card {
@@ -159,7 +147,6 @@ async function handleSubmit() {
   border-radius: 12px;
   padding: 2rem;
   width: 100%;
-  max-width: 440px;
 }
 
 .field-group {
@@ -173,6 +160,7 @@ async function handleSubmit() {
   font-size: 0.85rem;
   font-weight: 500;
   color: var(--text);
+  padding-left: 8px;
 }
 
 .input-wrapper {
