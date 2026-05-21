@@ -281,6 +281,7 @@
       <button
         class="nav-logout"
         type="button"
+        @click="handleLogout"
       >
         Sair
       </button>
@@ -289,10 +290,17 @@
 </template>
 
 <script setup lang="ts">
-import { RouterLink } from 'vue-router'
+import { RouterLink, useRouter } from 'vue-router'
+import { authService } from '@/services/authService'
 import { useTheme } from '@/composables/useTheme'
 
 const { theme, toggle } = useTheme()
+const router = useRouter()
+
+function handleLogout() {
+  authService.clearSession()
+  router.push('/login')
+}
 </script>
 
 <style scoped>

@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from "vue-router";
+import { authService } from "@/services/authService";
 import { logger } from "@/utils/logger";
 import { trackMetric } from "@/utils/metrics";
 
@@ -9,7 +10,13 @@ const router = createRouter({
   routes: [
     {
       path: "/",
-      redirect: "/materiais",
+      redirect: "/login",
+    },
+    {
+      path: "/login",
+      name: "login",
+      component: () => import("@/views/LoginView.vue"),
+      meta: { public: true },
     },
     {
       path: "/materiais",
@@ -46,6 +53,17 @@ const router = createRouter({
 
 router.beforeEach((to, from, next) => {
   startTime = performance.now();
+
+  if (!to.meta.public && !authService.isAuthenticated()) {
+    next("/login");
+    return;
+  }
+
+  if (to.path === "/login" && authService.isAuthenticated()) {
+    next("/materiais");
+    return;
+  }
+
   next();
 });
 
