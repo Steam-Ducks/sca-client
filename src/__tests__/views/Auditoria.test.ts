@@ -3,41 +3,53 @@ import { flushPromises, mount } from "@vue/test-utils";
 import { nextTick } from "vue";
 import Auditoria from "@/views/Auditoria.vue";
 
-// ── API fixture ───────────────────────────────────────────────────────────────
-const API_ROWS = [
-  {
-    id: 1, operation: "INGEST", status: "SUCCESS",
-    table_schema: "bronze", table_name: "materiais",
-    affected_rows: 150, started_at: "2026-03-11T23:00:00Z",
-    finalized_at: "2026-03-11T23:45:00Z", operation_metadata: {},
-  },
-  {
-    id: 2, operation: "TRANSFORM", status: "SUCCESS",
-    table_schema: "silver", table_name: "horas",
-    affected_rows: 80, started_at: "2026-03-10T23:00:00Z",
-    finalized_at: "2026-03-10T23:42:00Z", operation_metadata: {},
-  },
-  {
-    id: 3, operation: "INGEST", status: "PARTIAL",
-    table_schema: "bronze", table_name: "fornecedores",
-    affected_rows: 5, started_at: "2026-03-09T23:00:00Z",
-    finalized_at: "2026-03-09T23:38:00Z", operation_metadata: {},
-  },
-  {
-    id: 4, operation: "EXPORT", status: "FAILED",
-    table_schema: null, table_name: null,
-    affected_rows: 0, started_at: "2026-03-06T23:00:00Z",
-    finalized_at: "2026-03-06T23:05:00Z", operation_metadata: {},
-  },
-];
+// ── Fixtures ──────────────────────────────────────────────────────────────────
+const EXECUCOES_RESPONSE = {
+  count: 4,
+  results: [
+    {
+      id: 1, run_id: "uuid-1", fonte: "csv_upload", tabela: "materiais",
+      status: "SUCCESS", linhas_processadas: 150, erros: 0, avisos: 0,
+      detalhes_falha: null,
+      iniciado_em: "2026-03-11T23:00:00", finalizado_em: "2026-03-11T23:45:00",
+    },
+    {
+      id: 2, run_id: "uuid-2", fonte: "csv_upload", tabela: "horas",
+      status: "SUCCESS", linhas_processadas: 80, erros: 0, avisos: 0,
+      detalhes_falha: null,
+      iniciado_em: "2026-03-10T23:00:00", finalizado_em: "2026-03-10T23:42:00",
+    },
+    {
+      id: 3, run_id: "uuid-3", fonte: "csv_upload", tabela: "fornecedores",
+      status: "PARTIAL", linhas_processadas: 5, erros: 5, avisos: 12,
+      detalhes_falha: "5 registros com inconsistência",
+      iniciado_em: "2026-03-09T23:00:00", finalizado_em: "2026-03-09T23:38:00",
+    },
+    {
+      id: 4, run_id: "uuid-4", fonte: "csv_upload", tabela: "programas",
+      status: "FAILED", linhas_processadas: 0, erros: 1, avisos: 0,
+      detalhes_falha: "Erro durante processamento dos dados",
+      iniciado_em: "2026-03-06T23:00:00", finalizado_em: "2026-03-06T23:05:00",
+    },
+  ],
+};
+
+const EMPTY_EXECUCOES = { count: 0, results: [] };
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 interface VmType {
   activeTab: string;
   importStatus: Record<string, { status: string; message?: string; recordsProcessed?: number }>;
-  tableData: { id: number; status: string }[];
+  falhasRows: typeof EXECUCOES_RESPONSE.results;
+  falhasTotal: number;
+  falhasLoading: boolean;
+  falhasError: string | null;
+  falhasPage: number;
+  falhasTotalPages: number;
+  falhasFilters: { status: string; data_inicio: string; data_fim: string };
   kpis: { concluidas: number; parciais: number; falhas: number };
   handleFileChange: (key: string, event: Event) => Promise<void>;
+  loadFalhas: () => Promise<void>;
 }
 
 const getVm = (wrapper: ReturnType<typeof mount>) =>
@@ -59,7 +71,7 @@ describe("Auditoria.vue", () => {
     vi.restoreAllMocks();
     vi.stubGlobal(
       "fetch",
-      vi.fn().mockResolvedValue({ ok: true, json: async () => API_ROWS }),
+      vi.fn().mockResolvedValue({ ok: true, json: async () => EXECUCOES_RESPONSE }),
     );
   });
 
@@ -90,16 +102,22 @@ describe("Auditoria.vue", () => {
       expect(wrapper.text()).toContain("Falhas");
     });
 
-    it("renderiza as 4 abas de navegação", async () => {
+    it("renderiza 3 abas de navegação", async () => {
       const wrapper = mount(Auditoria);
       await nextTick();
 
       const tabs = wrapper.findAll(".tab-btn");
-      expect(tabs.length).toBe(4);
+      expect(tabs.length).toBe(3);
       expect(tabs[0].text()).toContain("Importação de Dados");
       expect(tabs[1].text()).toContain("Histórico de Execuções");
       expect(tabs[2].text()).toContain("Falhas e Inconsistências");
-      expect(tabs[3].text()).toContain("Rastreabilidade");
+    });
+
+    it("não exibe aba Rastreabilidade", async () => {
+      const wrapper = mount(Auditoria);
+      await nextTick();
+
+      expect(wrapper.text()).not.toContain("Rastreabilidade");
     });
 
     it("abre na aba Importação de Dados por padrão", async () => {
@@ -111,19 +129,18 @@ describe("Auditoria.vue", () => {
     });
   });
 
-  // ── KPIs via API ────────────────────────────────────────────────────────────
+  // ── KPIs via /monitoring/execucoes/ ─────────────────────────────────────────
   describe("KPIs carregados da API", () => {
-    it("busca dados da API no mount", async () => {
+    it("busca dados de /monitoring/execucoes/ no mount", async () => {
       mount(Auditoria);
       await flushPromises();
 
-      expect(fetch).toHaveBeenCalledWith(expect.stringContaining("/audit/"));
+      expect(fetch).toHaveBeenCalledWith(expect.stringContaining("/monitoring/execucoes/"));
     });
 
     it("computa concluídas a partir dos registros SUCCESS", async () => {
       const wrapper = mount(Auditoria);
       await flushPromises();
-      await nextTick();
 
       expect(getVm(wrapper).kpis.concluidas).toBe(2);
     });
@@ -131,7 +148,6 @@ describe("Auditoria.vue", () => {
     it("computa parciais a partir dos registros PARTIAL", async () => {
       const wrapper = mount(Auditoria);
       await flushPromises();
-      await nextTick();
 
       expect(getVm(wrapper).kpis.parciais).toBe(1);
     });
@@ -139,38 +155,36 @@ describe("Auditoria.vue", () => {
     it("computa falhas a partir dos registros FAILED", async () => {
       const wrapper = mount(Auditoria);
       await flushPromises();
-      await nextTick();
 
       expect(getVm(wrapper).kpis.falhas).toBe(1);
     });
 
-    it("exibe total de cargas igual ao total de registros da API", async () => {
+    it("exibe total de cargas igual ao count da API", async () => {
       const wrapper = mount(Auditoria);
       await flushPromises();
-      await nextTick();
 
-      expect(getVm(wrapper).tableData.length).toBe(4);
+      expect(getVm(wrapper).falhasTotal).toBe(4);
     });
 
-    it("mantém dados existentes se a API falhar", async () => {
+    it("mantém KPIs em zero se a API falhar", async () => {
       vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("network")));
       const wrapper = mount(Auditoria);
       await flushPromises();
-      await nextTick();
 
-      expect(getVm(wrapper).tableData.length).toBe(0);
+      expect(getVm(wrapper).kpis.concluidas).toBe(0);
+      expect(getVm(wrapper).kpis.parciais).toBe(0);
+      expect(getVm(wrapper).kpis.falhas).toBe(0);
     });
 
-    it("não atualiza tableData se /audit/ retornar status não-ok", async () => {
+    it("não atualiza dados se /monitoring/execucoes/ retornar status não-ok", async () => {
       vi.stubGlobal(
         "fetch",
         vi.fn().mockResolvedValue({ ok: false, status: 500, json: async () => ({}) }),
       );
       const wrapper = mount(Auditoria);
       await flushPromises();
-      await nextTick();
 
-      expect(getVm(wrapper).tableData.length).toBe(0);
+      expect(getVm(wrapper).falhasRows.length).toBe(0);
     });
   });
 
@@ -194,15 +208,6 @@ describe("Auditoria.vue", () => {
 
       expect(getVm(wrapper).activeTab).toBe("falhas");
     });
-
-    it("troca para Rastreabilidade ao clicar na aba", async () => {
-      const wrapper = mount(Auditoria);
-      await nextTick();
-
-      await wrapper.findAll(".tab-btn")[3].trigger("click");
-
-      expect(getVm(wrapper).activeTab).toBe("rastreabilidade");
-    });
   });
 
   // ── Aba de Importação – estrutura ───────────────────────────────────────────
@@ -216,13 +221,6 @@ describe("Auditoria.vue", () => {
       expect(wrapper.text()).toContain("Importação de Horas Técnicas");
     });
 
-    it("renderiza card para programas.csv", async () => {
-      const wrapper = mount(Auditoria);
-      await nextTick();
-
-      expect(wrapper.text()).toContain("programas.csv");
-    });
-
     it("renderiza todos os 11 cards de upload", async () => {
       const wrapper = mount(Auditoria);
       await nextTick();
@@ -234,16 +232,18 @@ describe("Auditoria.vue", () => {
       const wrapper = mount(Auditoria);
       await nextTick();
 
-      const btns = wrapper.findAll(".upload-btn");
-      btns.forEach((btn) => expect(btn.text()).toContain("Selecionar Arquivo"));
+      wrapper.findAll(".upload-btn").forEach((btn) =>
+        expect(btn.text()).toContain("Selecionar Arquivo"),
+      );
     });
 
     it("todos os inputs aceitam apenas .csv", async () => {
       const wrapper = mount(Auditoria);
       await nextTick();
 
-      const inputs = wrapper.findAll("input[type='file']");
-      inputs.forEach((input) => expect(input.attributes("accept")).toBe(".csv"));
+      wrapper.findAll("input[type='file']").forEach((input) =>
+        expect(input.attributes("accept")).toBe(".csv"),
+      );
     });
   });
 
@@ -261,12 +261,12 @@ describe("Auditoria.vue", () => {
     });
 
     it("exibe status 'processing' antes da resposta da API", async () => {
-      let resolveResponse!: (v: unknown) => void;
+      let resolveImport!: (v: unknown) => void;
       vi.stubGlobal(
         "fetch",
         vi.fn()
-          .mockResolvedValueOnce({ ok: true, json: async () => API_ROWS })
-          .mockReturnValueOnce(new Promise((r) => { resolveResponse = r; })),
+          .mockResolvedValueOnce({ ok: true, json: async () => EXECUCOES_RESPONSE })
+          .mockReturnValueOnce(new Promise((r) => { resolveImport = r; })),
       );
 
       const wrapper = mount(Auditoria);
@@ -277,16 +277,16 @@ describe("Auditoria.vue", () => {
 
       expect(getVm(wrapper).importStatus["programas"].status).toBe("processing");
 
-      resolveResponse({ ok: true, json: async () => ({ run_id: "x", tabela: "programas", linhas_recebidas: 10 }) });
+      resolveImport({ ok: true, json: async () => ({ run_id: "x", linhas_recebidas: 10 }) });
     });
 
     it("desativa o botão de upload enquanto está processando", async () => {
-      let resolveResponse!: (v: unknown) => void;
+      let resolveImport!: (v: unknown) => void;
       vi.stubGlobal(
         "fetch",
         vi.fn()
-          .mockResolvedValueOnce({ ok: true, json: async () => API_ROWS })
-          .mockReturnValueOnce(new Promise((r) => { resolveResponse = r; })),
+          .mockResolvedValueOnce({ ok: true, json: async () => EXECUCOES_RESPONSE })
+          .mockReturnValueOnce(new Promise((r) => { resolveImport = r; })),
       );
 
       const wrapper = mount(Auditoria);
@@ -295,22 +295,76 @@ describe("Auditoria.vue", () => {
       getVm(wrapper).handleFileChange("programas", csvFileEvent());
       await nextTick();
 
-      const card = wrapper.findAll(".upload-card")
-        .find((c) => c.text().includes("programas.csv"));
+      const card = wrapper.findAll(".upload-card").find((c) => c.text().includes("programas.csv"));
       expect(card?.find(".upload-btn").attributes("disabled")).toBeDefined();
 
-      resolveResponse({ ok: true, json: async () => ({ run_id: "x", tabela: "programas", linhas_recebidas: 10 }) });
+      resolveImport({ ok: true, json: async () => ({ run_id: "x", linhas_recebidas: 10 }) });
     });
   });
 
-  // ── handleFileChange – resposta 200 ─────────────────────────────────────────
+  // ── handleFileChange – tipo_esperado ────────────────────────────────────────
+  describe("handleFileChange – erro tipo_esperado do backend", () => {
+    it("exibe nome do arquivo esperado quando backend retorna tipo_esperado", async () => {
+      vi.stubGlobal(
+        "fetch",
+        vi.fn()
+          .mockResolvedValueOnce({ ok: true, json: async () => EXECUCOES_RESPONSE })
+          .mockResolvedValueOnce({
+            ok: false, status: 400,
+            json: async () => ({ error: "Arquivo incompatível", tipo_esperado: "materiais" }),
+          })
+          .mockResolvedValueOnce({ ok: true, json: async () => EXECUCOES_RESPONSE }),
+      );
+
+      const wrapper = mount(Auditoria);
+      await flushPromises();
+
+      await getVm(wrapper).handleFileChange("materiais", csvFileEvent("projetos.csv"));
+      await flushPromises();
+
+      const msg = getVm(wrapper).importStatus["materiais"].message ?? "";
+      expect(msg).toContain("materiais.csv");
+      expect(getVm(wrapper).importStatus["materiais"].status).toBe("error");
+    });
+
+    it("inclui colunas_ausentes na mensagem quando presentes junto com tipo_esperado", async () => {
+      vi.stubGlobal(
+        "fetch",
+        vi.fn()
+          .mockResolvedValueOnce({ ok: true, json: async () => EXECUCOES_RESPONSE })
+          .mockResolvedValueOnce({
+            ok: false, status: 400,
+            json: async () => ({
+              error: "Arquivo incompatível",
+              tipo_esperado: "materiais",
+              colunas_ausentes: ["material_id", "descricao"],
+            }),
+          })
+          .mockResolvedValueOnce({ ok: true, json: async () => EXECUCOES_RESPONSE }),
+      );
+
+      const wrapper = mount(Auditoria);
+      await flushPromises();
+
+      await getVm(wrapper).handleFileChange("materiais", csvFileEvent());
+      await flushPromises();
+
+      const msg = getVm(wrapper).importStatus["materiais"].message ?? "";
+      expect(msg).toContain("materiais.csv");
+      expect(msg).toContain("material_id");
+      expect(msg).toContain("descricao");
+    });
+  });
+
+  // ── handleFileChange – sucesso ───────────────────────────────────────────────
   describe("handleFileChange – sucesso (HTTP 200)", () => {
     it("exibe status success após resposta 200", async () => {
       vi.stubGlobal(
         "fetch",
         vi.fn()
-          .mockResolvedValueOnce({ ok: true, json: async () => API_ROWS })
-          .mockResolvedValueOnce({ ok: true, json: async () => ({ run_id: "abc", tabela: "programas", linhas_recebidas: 320 }) }),
+          .mockResolvedValueOnce({ ok: true, json: async () => EXECUCOES_RESPONSE })
+          .mockResolvedValueOnce({ ok: true, json: async () => ({ run_id: "abc", linhas_recebidas: 320 }) })
+          .mockResolvedValueOnce({ ok: true, json: async () => EXECUCOES_RESPONSE }),
       );
 
       const wrapper = mount(Auditoria);
@@ -326,8 +380,9 @@ describe("Auditoria.vue", () => {
       vi.stubGlobal(
         "fetch",
         vi.fn()
-          .mockResolvedValueOnce({ ok: true, json: async () => API_ROWS })
-          .mockResolvedValueOnce({ ok: true, json: async () => ({ run_id: "abc", tabela: "programas", linhas_recebidas: 320 }) }),
+          .mockResolvedValueOnce({ ok: true, json: async () => EXECUCOES_RESPONSE })
+          .mockResolvedValueOnce({ ok: true, json: async () => ({ run_id: "abc", linhas_recebidas: 320 }) })
+          .mockResolvedValueOnce({ ok: true, json: async () => EXECUCOES_RESPONSE }),
       );
 
       const wrapper = mount(Auditoria);
@@ -339,21 +394,23 @@ describe("Auditoria.vue", () => {
       expect(getVm(wrapper).importStatus["programas"].recordsProcessed).toBe(320);
     });
 
-    it("exibe mensagem de sucesso", async () => {
-      vi.stubGlobal(
-        "fetch",
-        vi.fn()
-          .mockResolvedValueOnce({ ok: true, json: async () => API_ROWS })
-          .mockResolvedValueOnce({ ok: true, json: async () => ({ run_id: "abc", tabela: "projetos", linhas_recebidas: 50 }) }),
-      );
+    it("chama loadFalhas após import bem-sucedido", async () => {
+      const fetchMock = vi.fn()
+        .mockResolvedValueOnce({ ok: true, json: async () => EXECUCOES_RESPONSE })
+        .mockResolvedValueOnce({ ok: true, json: async () => ({ run_id: "abc", linhas_recebidas: 10 }) })
+        .mockResolvedValueOnce({ ok: true, json: async () => EXECUCOES_RESPONSE });
+      vi.stubGlobal("fetch", fetchMock);
 
       const wrapper = mount(Auditoria);
       await flushPromises();
 
-      await getVm(wrapper).handleFileChange("projetos", csvFileEvent());
+      await getVm(wrapper).handleFileChange("programas", csvFileEvent());
       await flushPromises();
 
-      expect(getVm(wrapper).importStatus["projetos"].message).toContain("sucesso");
+      const monitoringCalls = fetchMock.mock.calls.filter(([url]: [string]) =>
+        String(url).includes("/monitoring/execucoes/"),
+      );
+      expect(monitoringCalls.length).toBeGreaterThanOrEqual(2);
     });
   });
 
@@ -363,11 +420,12 @@ describe("Auditoria.vue", () => {
       vi.stubGlobal(
         "fetch",
         vi.fn()
-          .mockResolvedValueOnce({ ok: true, json: async () => API_ROWS })
+          .mockResolvedValueOnce({ ok: true, json: async () => EXECUCOES_RESPONSE })
           .mockResolvedValueOnce({
             ok: false, status: 400,
             json: async () => ({ error: "Arquivo inválido", colunas_ausentes: ["programa_id", "nome"] }),
-          }),
+          })
+          .mockResolvedValueOnce({ ok: true, json: async () => EXECUCOES_RESPONSE }),
       );
 
       const wrapper = mount(Auditoria);
@@ -382,15 +440,16 @@ describe("Auditoria.vue", () => {
       expect(getVm(wrapper).importStatus["materiais"].status).toBe("error");
     });
 
-    it("exibe mensagem de error genérico em resposta 400 sem colunas_ausentes", async () => {
+    it("exibe mensagem genérica em resposta 400 sem colunas_ausentes", async () => {
       vi.stubGlobal(
         "fetch",
         vi.fn()
-          .mockResolvedValueOnce({ ok: true, json: async () => API_ROWS })
+          .mockResolvedValueOnce({ ok: true, json: async () => EXECUCOES_RESPONSE })
           .mockResolvedValueOnce({
             ok: false, status: 400,
             json: async () => ({ error: "Arquivo muito grande" }),
-          }),
+          })
+          .mockResolvedValueOnce({ ok: true, json: async () => EXECUCOES_RESPONSE }),
       );
 
       const wrapper = mount(Auditoria);
@@ -407,11 +466,12 @@ describe("Auditoria.vue", () => {
       vi.stubGlobal(
         "fetch",
         vi.fn()
-          .mockResolvedValueOnce({ ok: true, json: async () => API_ROWS })
+          .mockResolvedValueOnce({ ok: true, json: async () => EXECUCOES_RESPONSE })
           .mockResolvedValueOnce({
             ok: false, status: 500,
             json: async () => ({ error: "Erro interno de ingestão" }),
-          }),
+          })
+          .mockResolvedValueOnce({ ok: true, json: async () => EXECUCOES_RESPONSE }),
       );
 
       const wrapper = mount(Auditoria);
@@ -428,8 +488,9 @@ describe("Auditoria.vue", () => {
       vi.stubGlobal(
         "fetch",
         vi.fn()
-          .mockResolvedValueOnce({ ok: true, json: async () => API_ROWS })
-          .mockRejectedValueOnce(new Error("network error")),
+          .mockResolvedValueOnce({ ok: true, json: async () => EXECUCOES_RESPONSE })
+          .mockRejectedValueOnce(new Error("network error"))
+          .mockResolvedValueOnce({ ok: true, json: async () => EXECUCOES_RESPONSE }),
       );
 
       const wrapper = mount(Auditoria);
@@ -440,6 +501,25 @@ describe("Auditoria.vue", () => {
 
       expect(getVm(wrapper).importStatus["tempo_tarefas"].status).toBe("error");
       expect(getVm(wrapper).importStatus["tempo_tarefas"].message).toContain("conexão");
+    });
+
+    it("chama loadFalhas após erro HTTP", async () => {
+      const fetchMock = vi.fn()
+        .mockResolvedValueOnce({ ok: true, json: async () => EXECUCOES_RESPONSE })
+        .mockResolvedValueOnce({ ok: false, status: 400, json: async () => ({ error: "Inválido" }) })
+        .mockResolvedValueOnce({ ok: true, json: async () => EXECUCOES_RESPONSE });
+      vi.stubGlobal("fetch", fetchMock);
+
+      const wrapper = mount(Auditoria);
+      await flushPromises();
+
+      await getVm(wrapper).handleFileChange("programas", csvFileEvent());
+      await flushPromises();
+
+      const monitoringCalls = fetchMock.mock.calls.filter(([url]: [string]) =>
+        String(url).includes("/monitoring/execucoes/"),
+      );
+      expect(monitoringCalls.length).toBeGreaterThanOrEqual(2);
     });
   });
 
@@ -462,8 +542,9 @@ describe("Auditoria.vue", () => {
     cases.forEach(([key, endpoint]) => {
       it(`chama o endpoint correto para ${key}`, async () => {
         const fetchMock = vi.fn()
-          .mockResolvedValueOnce({ ok: true, json: async () => API_ROWS })
-          .mockResolvedValueOnce({ ok: true, json: async () => ({ run_id: "x", tabela: key, linhas_recebidas: 1 }) });
+          .mockResolvedValueOnce({ ok: true, json: async () => EXECUCOES_RESPONSE })
+          .mockResolvedValueOnce({ ok: true, json: async () => ({ run_id: "x", linhas_recebidas: 1 }) })
+          .mockResolvedValueOnce({ ok: true, json: async () => EXECUCOES_RESPONSE });
         vi.stubGlobal("fetch", fetchMock);
 
         const wrapper = mount(Auditoria);
@@ -472,15 +553,18 @@ describe("Auditoria.vue", () => {
         await getVm(wrapper).handleFileChange(key, csvFileEvent());
         await flushPromises();
 
-        const uploadCall = fetchMock.mock.calls[1];
-        expect(uploadCall[0]).toContain(endpoint);
+        const importCall = fetchMock.mock.calls.find(([url]: [string]) =>
+          String(url).includes(endpoint),
+        );
+        expect(importCall).toBeDefined();
       });
     });
 
     it("envia o arquivo via FormData com campo 'file'", async () => {
       const fetchMock = vi.fn()
-        .mockResolvedValueOnce({ ok: true, json: async () => API_ROWS })
-        .mockResolvedValueOnce({ ok: true, json: async () => ({ run_id: "x", tabela: "programas", linhas_recebidas: 5 }) });
+        .mockResolvedValueOnce({ ok: true, json: async () => EXECUCOES_RESPONSE })
+        .mockResolvedValueOnce({ ok: true, json: async () => ({ run_id: "x", linhas_recebidas: 5 }) })
+        .mockResolvedValueOnce({ ok: true, json: async () => EXECUCOES_RESPONSE });
       vi.stubGlobal("fetch", fetchMock);
 
       const wrapper = mount(Auditoria);
@@ -489,10 +573,196 @@ describe("Auditoria.vue", () => {
       await getVm(wrapper).handleFileChange("programas", csvFileEvent("programas.csv"));
       await flushPromises();
 
-      const [, options] = fetchMock.mock.calls[1] as [string, RequestInit];
-      expect(options.method).toBe("POST");
-      expect(options.body).toBeInstanceOf(FormData);
-      expect((options.body as FormData).get("file")).toBeInstanceOf(File);
+      const importCall = fetchMock.mock.calls.find(([url]: [string]) =>
+        String(url).includes("/import/programas/"),
+      ) as [string, RequestInit];
+      expect(importCall[1].method).toBe("POST");
+      expect(importCall[1].body).toBeInstanceOf(FormData);
+      expect((importCall[1].body as FormData).get("file")).toBeInstanceOf(File);
+    });
+  });
+
+  // ── Aba Falhas e Inconsistências ─────────────────────────────────────────────
+  describe("Aba Falhas e Inconsistências", () => {
+    it("exibe subtítulo da aba", async () => {
+      const wrapper = mount(Auditoria);
+      await flushPromises();
+      await wrapper.findAll(".tab-btn")[2].trigger("click");
+      await nextTick();
+
+      expect(wrapper.text()).toContain("Identificação de falhas");
+    });
+
+    it("exibe cabeçalho 'Falhas Detectadas'", async () => {
+      const wrapper = mount(Auditoria);
+      await flushPromises();
+      await wrapper.findAll(".tab-btn")[2].trigger("click");
+      await nextTick();
+
+      expect(wrapper.text()).toContain("Falhas Detectadas");
+    });
+
+    it("exibe colunas corretas na tabela", async () => {
+      const wrapper = mount(Auditoria);
+      await flushPromises();
+      await wrapper.findAll(".tab-btn")[2].trigger("click");
+      await nextTick();
+
+      const text = wrapper.text();
+      expect(text).toContain("Data/Hora");
+      expect(text).toContain("Tabela");
+      expect(text).toContain("Mensagem de Falha");
+      expect(text).toContain("Erros");
+      expect(text).toContain("Avisos");
+      expect(text).toContain("Status");
+    });
+
+    it("exibe registros retornados pela API", async () => {
+      const wrapper = mount(Auditoria);
+      await flushPromises();
+      await wrapper.findAll(".tab-btn")[2].trigger("click");
+      await nextTick();
+
+      expect(wrapper.text()).toContain("materiais");
+      expect(wrapper.text()).toContain("fornecedores");
+    });
+
+    it("exibe badges de status corretos", async () => {
+      const wrapper = mount(Auditoria);
+      await flushPromises();
+      await wrapper.findAll(".tab-btn")[2].trigger("click");
+      await nextTick();
+
+      expect(wrapper.text()).toContain("Sucesso");
+      expect(wrapper.text()).toContain("Parcial");
+      expect(wrapper.text()).toContain("Falha");
+    });
+
+    it("exibe estado vazio quando API retorna lista vazia", async () => {
+      vi.stubGlobal(
+        "fetch",
+        vi.fn().mockResolvedValue({ ok: true, json: async () => EMPTY_EXECUCOES }),
+      );
+
+      const wrapper = mount(Auditoria);
+      await flushPromises();
+      await wrapper.findAll(".tab-btn")[2].trigger("click");
+      await nextTick();
+
+      expect(wrapper.text()).toContain("Nenhum registro encontrado");
+    });
+
+    it("exibe mensagem de erro quando API falha", async () => {
+      vi.stubGlobal(
+        "fetch",
+        vi.fn().mockResolvedValue({ ok: false, status: 500, json: async () => ({}) }),
+      );
+
+      const wrapper = mount(Auditoria);
+      await flushPromises();
+      await wrapper.findAll(".tab-btn")[2].trigger("click");
+      await nextTick();
+
+      expect(getVm(wrapper).falhasError).not.toBeNull();
+    });
+
+    it("exibe mensagem de erro em falha de rede", async () => {
+      vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("network")));
+
+      const wrapper = mount(Auditoria);
+      await flushPromises();
+      await wrapper.findAll(".tab-btn")[2].trigger("click");
+      await nextTick();
+
+      expect(getVm(wrapper).falhasError).toContain("conexão");
+    });
+
+    it("envia query param ?status= ao filtrar por status", async () => {
+      const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => EXECUCOES_RESPONSE });
+      vi.stubGlobal("fetch", fetchMock);
+
+      const wrapper = mount(Auditoria);
+      await flushPromises();
+
+      getVm(wrapper).falhasFilters.status = "FAILED";
+      await getVm(wrapper).loadFalhas();
+      await flushPromises();
+
+      const calls = fetchMock.mock.calls.map(([url]: [string]) => String(url));
+      expect(calls.some((url) => url.includes("status=FAILED"))).toBe(true);
+    });
+
+    it("envia query params de data ao filtrar por período", async () => {
+      const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => EXECUCOES_RESPONSE });
+      vi.stubGlobal("fetch", fetchMock);
+
+      const wrapper = mount(Auditoria);
+      await flushPromises();
+
+      getVm(wrapper).falhasFilters.data_inicio = "2026-01-01";
+      getVm(wrapper).falhasFilters.data_fim    = "2026-12-31";
+      await getVm(wrapper).loadFalhas();
+      await flushPromises();
+
+      const calls = fetchMock.mock.calls.map(([url]: [string]) => String(url));
+      expect(calls.some((url) => url.includes("data_inicio=2026-01-01"))).toBe(true);
+      expect(calls.some((url) => url.includes("data_fim=2026-12-31"))).toBe(true);
+    });
+
+    it("reseta para página 1 ao carregar novos dados", async () => {
+      const wrapper = mount(Auditoria);
+      await flushPromises();
+
+      getVm(wrapper).falhasPage = 3;
+      await getVm(wrapper).loadFalhas();
+      await flushPromises();
+
+      expect(getVm(wrapper).falhasPage).toBe(1);
+    });
+
+    it("reseta para página 1 ao ordenar", async () => {
+      const wrapper = mount(Auditoria);
+      await flushPromises();
+
+      getVm(wrapper).falhasPage = 2;
+      await nextTick();
+
+      await wrapper.findAll(".tab-btn")[2].trigger("click");
+      await nextTick();
+
+      const sortHeader = wrapper.find(".falhas-table th.sort-col");
+      await sortHeader.trigger("click");
+
+      expect(getVm(wrapper).falhasPage).toBe(1);
+    });
+
+    it("mostra paginação com total de registros", async () => {
+      const wrapper = mount(Auditoria);
+      await flushPromises();
+      await wrapper.findAll(".tab-btn")[2].trigger("click");
+      await nextTick();
+
+      expect(wrapper.text()).toContain("4 registros");
+    });
+
+    it("não mostra mais de 10 linhas por página", async () => {
+      const manyResults = Array.from({ length: 15 }, (_, i) => ({
+        id: i + 1, run_id: `uuid-${i}`, fonte: "csv_upload", tabela: "materiais",
+        status: "SUCCESS" as const, linhas_processadas: 10, erros: 0, avisos: 0,
+        detalhes_falha: null,
+        iniciado_em: "2026-01-01T00:00:00", finalizado_em: "2026-01-01T00:01:00",
+      }));
+      vi.stubGlobal(
+        "fetch",
+        vi.fn().mockResolvedValue({ ok: true, json: async () => ({ count: 15, results: manyResults }) }),
+      );
+
+      const wrapper = mount(Auditoria);
+      await flushPromises();
+      await wrapper.findAll(".tab-btn")[2].trigger("click");
+      await nextTick();
+
+      expect(wrapper.findAll(".falhas-table tbody tr").length).toBe(10);
     });
   });
 });

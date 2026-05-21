@@ -42,7 +42,7 @@
             </svg>
           </div>
           <p class="metric-label">Total de Cargas</p>
-          <p class="metric-value">{{ tableData.length }}</p>
+          <p class="metric-value">{{ falhasTotal }}</p>
         </div>
 
         <div class="metric-card">
@@ -161,23 +161,6 @@
               <line x1="12" y1="17" x2="12.01" y2="17" stroke-width="2" />
             </svg>
             Falhas e Inconsistências
-          </button>
-          <button
-            :class="['tab-btn', { active: activeTab === 'rastreabilidade' }]"
-            @click="activeTab = 'rastreabilidade'"
-          >
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <circle cx="11" cy="11" r="8" />
-              <line x1="21" y1="21" x2="16.65" y2="16.65" />
-            </svg>
-            Rastreabilidade
           </button>
         </div>
 
@@ -351,11 +334,133 @@
           <!-- ── Histórico de Execuções ─── empty ───────────────────── -->
           <div v-show="activeTab === 'historico'" class="tab-panel" />
 
-          <!-- ── Falhas e Inconsistências ─── empty ────────────────── -->
-          <div v-show="activeTab === 'falhas'" class="tab-panel" />
+          <!-- ── Falhas e Inconsistências ──────────────────────────── -->
+          <div v-show="activeTab === 'falhas'" class="tab-panel">
+            <p class="falhas-subtitle">
+              Identificação de falhas ocorridas durante processos de importação e integração de dados
+            </p>
 
-          <!-- ── Rastreabilidade ─── empty ──────────────────────────── -->
-          <div v-show="activeTab === 'rastreabilidade'" class="tab-panel" />
+            <!-- Filters -->
+            <div class="falhas-filters">
+              <select v-model="falhasFilters.status" class="falhas-select" @change="loadFalhas">
+                <option value="">Todos os status</option>
+                <option value="SUCCESS">Sucesso</option>
+                <option value="PARTIAL">Parcial</option>
+                <option value="FAILED">Falha</option>
+              </select>
+              <input
+                v-model="falhasFilters.data_inicio"
+                type="date"
+                class="falhas-input"
+                @change="loadFalhas"
+              />
+              <input
+                v-model="falhasFilters.data_fim"
+                type="date"
+                class="falhas-input"
+                @change="loadFalhas"
+              />
+            </div>
+
+            <!-- Table card -->
+            <div class="falhas-card">
+              <div class="falhas-card-header">
+                <span class="falhas-card-title">Falhas Detectadas</span>
+                <span class="falhas-count">{{ falhasTotal }} registros</span>
+              </div>
+
+              <!-- Loading -->
+              <div v-if="falhasLoading" class="falhas-feedback">
+                <span class="falhas-spinner" />
+                Carregando...
+              </div>
+
+              <!-- Error -->
+              <div v-else-if="falhasError" class="falhas-feedback falhas-feedback--error">
+                {{ falhasError }}
+              </div>
+
+              <!-- Empty -->
+              <div v-else-if="falhasRows.length === 0" class="falhas-feedback falhas-feedback--muted">
+                Nenhum registro encontrado.
+              </div>
+
+              <!-- Table -->
+              <div v-else class="falhas-table-wrap">
+                <table class="falhas-table">
+                  <thead>
+                    <tr>
+                      <th class="sort-col" @click="sortFalhas('iniciado_em')">
+                        Data/Hora {{ sortIcon('iniciado_em') }}
+                      </th>
+                      <th>Tabela</th>
+                      <th>Mensagem de Falha</th>
+                      <th class="sort-col num-col" @click="sortFalhas('erros')">
+                        Erros {{ sortIcon('erros') }}
+                      </th>
+                      <th class="sort-col num-col" @click="sortFalhas('avisos')">
+                        Avisos {{ sortIcon('avisos') }}
+                      </th>
+                      <th class="sort-col num-col" @click="sortFalhas('linhas_processadas')">
+                        Registros {{ sortIcon('linhas_processadas') }}
+                      </th>
+                      <th class="sort-col" @click="sortFalhas('status')">
+                        Status {{ sortIcon('status') }}
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="row in falhasPagedData" :key="row.id">
+                      <td class="mono">{{ formatDate(row.iniciado_em) }}</td>
+                      <td>{{ row.tabela }}</td>
+                      <td :class="['falha-msg', { 'falha-msg--red': row.status === 'FAILED', 'falha-msg--amber': row.status === 'PARTIAL' }]">
+                        {{ row.detalhes_falha || '—' }}
+                      </td>
+                      <td class="mono num-col erros-col">{{ row.erros }}</td>
+                      <td class="mono num-col avisos-col">{{ row.avisos }}</td>
+                      <td class="mono num-col">{{ row.linhas_processadas }}</td>
+                      <td>
+                        <span :class="falhaStatusClass(row.status)">
+                          <svg v-if="row.status === 'PARTIAL'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+                            <line x1="12" y1="9" x2="12" y2="13" />
+                            <line x1="12" y1="17" x2="12.01" y2="17" />
+                          </svg>
+                          <svg v-else-if="row.status === 'FAILED'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10" />
+                            <line x1="15" y1="9" x2="9" y2="15" />
+                            <line x1="9" y1="9" x2="15" y2="15" />
+                          </svg>
+                          <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                            <polyline points="22 4 12 14.01 9 11.01" />
+                          </svg>
+                          {{ falhaStatusLabel(row.status) }}
+                        </span>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <div class="pagination">
+                <span>{{ sortedFalhas.length }} registros · página {{ falhasPage }} de {{ falhasTotalPages }}</span>
+                <div class="pg-btns">
+                  <button class="pg-btn" :disabled="falhasPage === 1" @click="falhasPage = 1">«</button>
+                  <button class="pg-btn" :disabled="falhasPage === 1" @click="falhasPage--">‹</button>
+                  <button
+                    v-for="p in falhasVisiblePages"
+                    :key="p"
+                    class="pg-btn"
+                    :class="{ active: p === falhasPage }"
+                    @click="falhasPage = p"
+                  >{{ p }}</button>
+                  <button class="pg-btn" :disabled="falhasPage === falhasTotalPages" @click="falhasPage++">›</button>
+                  <button class="pg-btn" :disabled="falhasPage === falhasTotalPages" @click="falhasPage = falhasTotalPages">»</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
 
         </div>
       </div>
@@ -364,10 +469,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, watch } from "vue";
 import { CONFIG } from "@/utils/config";
 
-type TabType = "importacao" | "historico" | "falhas" | "rastreabilidade";
+type TabType = "importacao" | "historico" | "falhas";
 type ImportStatus = "idle" | "processing" | "success" | "error";
 
 interface FileImportStatus {
@@ -376,28 +481,6 @@ interface FileImportStatus {
   recordsProcessed?: number;
 }
 
-interface ApiRow {
-  id: number;
-  operation: string;
-  status: string;
-  table_schema: string | null;
-  table_name: string | null;
-  affected_rows: number | null;
-  started_at: string;
-  finalized_at: string | null;
-  operation_metadata: Record<string, unknown> | null;
-}
-
-interface DataRow {
-  id: number;
-  status: string;
-}
-
-const STATUS_MAP: Record<string, string> = {
-  SUCCESS: "Aprovado",
-  FAILED:  "Rejeitado",
-  PARTIAL: "Parcial",
-};
 
 // ─── Endpoint map ────────────────────────────────────────────────────────────
 const IMPORT_ENDPOINTS: Record<string, string> = {
@@ -436,34 +519,19 @@ const horasFiles = [
 // ─── State ────────────────────────────────────────────────────────────────────
 const activeTab    = ref<TabType>("importacao");
 const importStatus = ref<Record<string, FileImportStatus>>({});
-const tableData    = ref<DataRow[]>([]);
 
-// ─── KPIs from API data ───────────────────────────────────────────────────────
+// ─── KPIs derived from monitoring data ───────────────────────────────────────
 const kpis = computed(() => ({
-  concluidas: tableData.value.filter((r) => r.status === "Aprovado").length,
-  parciais:   tableData.value.filter((r) => r.status === "Parcial").length,
-  falhas:     tableData.value.filter((r) => r.status === "Rejeitado").length,
+  concluidas: falhasRows.value.filter((r) => r.status === "SUCCESS").length,
+  parciais:   falhasRows.value.filter((r) => r.status === "PARTIAL").length,
+  falhas:     falhasRows.value.filter((r) => r.status === "FAILED").length,
 }));
 
 const pct = (v: number) =>
-  tableData.value.length > 0 ? ((v / tableData.value.length) * 100).toFixed(1) : "0.0";
+  falhasRows.value.length > 0 ? ((v / falhasRows.value.length) * 100).toFixed(1) : "0.0";
 
-// ─── API fetch ────────────────────────────────────────────────────────────────
-async function loadData() {
-  try {
-    const res = await fetch(`${CONFIG.API_BASE_URL}/audit/`);
-    if (!res.ok) return;
-    const raw: ApiRow[] = await res.json();
-    tableData.value = raw.map((r) => ({
-      id: r.id,
-      status: STATUS_MAP[r.status] ?? r.status,
-    }));
-  } catch {
-    // keep existing data on error
-  }
-}
+onMounted(() => { void loadFalhas(); });
 
-onMounted(() => { void loadData(); });
 
 // ─── File import ──────────────────────────────────────────────────────────────
 function triggerFileInput(fileKey: string) {
@@ -500,13 +568,22 @@ async function handleFileChange(fileKey: string, event: Event) {
     const data = await res.json();
 
     if (!res.ok) {
-      const detail = data.colunas_ausentes?.length
-        ? `Colunas ausentes: ${(data.colunas_ausentes as string[]).join(", ")}`
-        : (data.error ?? "Erro ao importar arquivo");
+      let detail: string;
+      if (data.tipo_esperado) {
+        detail = `Arquivo incorreto. Este campo espera: ${data.tipo_esperado}.csv`;
+        if (data.colunas_ausentes?.length) {
+          detail += `. Colunas ausentes: ${(data.colunas_ausentes as string[]).join(", ")}`;
+        }
+      } else if (data.colunas_ausentes?.length) {
+        detail = `Colunas ausentes: ${(data.colunas_ausentes as string[]).join(", ")}`;
+      } else {
+        detail = data.error ?? "Erro ao importar arquivo";
+      }
       importStatus.value = {
         ...importStatus.value,
         [fileKey]: { status: "error", message: detail },
       };
+      void loadFalhas();
       return;
     }
 
@@ -518,11 +595,13 @@ async function handleFileChange(fileKey: string, event: Event) {
         recordsProcessed: data.linhas_recebidas ?? 0,
       },
     };
+    void loadFalhas();
   } catch {
     importStatus.value = {
       ...importStatus.value,
       [fileKey]: { status: "error", message: "Erro de conexão com o servidor" },
     };
+    void loadFalhas();
   }
 }
 
@@ -535,6 +614,112 @@ function importBadgeClass(status: ImportStatus) {
   };
   return map[status];
 }
+
+// ─── Falhas e Inconsistências ─────────────────────────────────────────────────
+interface ExecucaoRow {
+  id: number;
+  run_id: string;
+  fonte: string;
+  tabela: string;
+  status: "SUCCESS" | "FAILED" | "PARTIAL";
+  linhas_processadas: number;
+  erros: number;
+  avisos: number;
+  detalhes_falha: string | null;
+  iniciado_em: string;
+  finalizado_em: string | null;
+}
+
+const FALHAS_PER_PAGE = 10;
+
+const falhasRows    = ref<ExecucaoRow[]>([]);
+const falhasTotal   = ref(0);
+const falhasLoading = ref(false);
+const falhasError   = ref<string | null>(null);
+const falhasPage    = ref(1);
+
+const falhasFilters = ref({ status: "", data_inicio: "", data_fim: "" });
+
+const falhasSortKey = ref<keyof ExecucaoRow>("iniciado_em");
+const falhasSortDir = ref<1 | -1>(-1);
+
+const sortedFalhas = computed(() => {
+  const key = falhasSortKey.value;
+  const dir = falhasSortDir.value;
+  return [...falhasRows.value].sort((a, b) => {
+    const av = a[key] ?? "";
+    const bv = b[key] ?? "";
+    return typeof av === "number"
+      ? ((av as number) - (bv as number)) * dir
+      : String(av).localeCompare(String(bv)) * dir;
+  });
+});
+
+const falhasTotalPages = computed(() =>
+  Math.max(1, Math.ceil(sortedFalhas.value.length / FALHAS_PER_PAGE)),
+);
+const falhasPagedData = computed(() =>
+  sortedFalhas.value.slice((falhasPage.value - 1) * FALHAS_PER_PAGE, falhasPage.value * FALHAS_PER_PAGE),
+);
+const falhasVisiblePages = computed(() => {
+  const p = falhasPage.value, t = falhasTotalPages.value;
+  const s = Math.max(1, p - 2), e = Math.min(t, p + 2);
+  return Array.from({ length: e - s + 1 }, (_, i) => s + i);
+});
+
+function sortFalhas(key: keyof ExecucaoRow) {
+  if (falhasSortKey.value === key) falhasSortDir.value = (falhasSortDir.value * -1) as 1 | -1;
+  else { falhasSortKey.value = key; falhasSortDir.value = -1; }
+  falhasPage.value = 1;
+}
+
+function sortIcon(key: keyof ExecucaoRow) {
+  if (falhasSortKey.value !== key) return "↕";
+  return falhasSortDir.value > 0 ? "↑" : "↓";
+}
+
+async function loadFalhas() {
+  falhasPage.value = 1;
+  falhasLoading.value = true;
+  falhasError.value = null;
+  try {
+    const params = new URLSearchParams();
+    if (falhasFilters.value.status)      params.set("status",      falhasFilters.value.status);
+    if (falhasFilters.value.data_inicio) params.set("data_inicio", falhasFilters.value.data_inicio);
+    if (falhasFilters.value.data_fim)    params.set("data_fim",    falhasFilters.value.data_fim);
+    const query = params.toString() ? `?${params.toString()}` : "";
+    const res = await fetch(`${CONFIG.API_BASE_URL}/monitoring/execucoes/${query}`);
+    if (!res.ok) { falhasError.value = "Erro ao carregar registros."; return; }
+    const data: { count: number; results: ExecucaoRow[] } = await res.json();
+    falhasTotal.value = data.count;
+    falhasRows.value  = data.results;
+  } catch {
+    falhasError.value = "Erro de conexão com o servidor.";
+  } finally {
+    falhasLoading.value = false;
+  }
+}
+
+
+function falhaStatusClass(status: string) {
+  const map: Record<string, string> = {
+    SUCCESS: "exec-badge exec-badge--success",
+    PARTIAL: "exec-badge exec-badge--partial",
+    FAILED:  "exec-badge exec-badge--failed",
+  };
+  return map[status] ?? "exec-badge";
+}
+
+function falhaStatusLabel(status: string) {
+  const map: Record<string, string> = { SUCCESS: "Sucesso", PARTIAL: "Parcial", FAILED: "Falha" };
+  return map[status] ?? status;
+}
+
+function formatDate(iso: string) {
+  return iso ? iso.replace("T", " ").slice(0, 19) : "—";
+}
+
+watch(() => falhasFilters.value.status, () => void loadFalhas());
 
 function importBadgeLabel(status: ImportStatus) {
   const map: Record<ImportStatus, string> = {
@@ -801,6 +986,173 @@ function importBadgeLabel(status: ImportStatus) {
 .import-badge.processing { background: rgba(77,143,255,0.1);  color: var(--blue);   border-color: rgba(77,143,255,0.2); }
 .import-badge.success    { background: rgba(45,212,160,0.1);  color: var(--green);  border-color: rgba(45,212,160,0.2); }
 .import-badge.error      { background: rgba(245,90,90,0.1);   color: var(--red);    border-color: rgba(245,90,90,0.2); }
+
+/* ── Falhas e Inconsistências ─────────────────────────────────────────────── */
+.falhas-subtitle {
+  font-size: 13px;
+  color: var(--text2);
+  margin: 0 0 16px 0;
+}
+
+.falhas-filters {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.falhas-select,
+.falhas-input {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 13px;
+  padding: 7px 10px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.falhas-select:focus,
+.falhas-input:focus { border-color: var(--blue2); }
+
+.falhas-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.falhas-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
+}
+.falhas-card-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text);
+}
+.falhas-count {
+  font-size: 12px;
+  color: var(--text3);
+}
+
+.falhas-feedback {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 28px 18px;
+  font-size: 13px;
+  color: var(--text2);
+}
+.falhas-feedback--error { color: var(--red); }
+.falhas-feedback--muted { color: var(--text3); }
+
+.falhas-spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--border2);
+  border-top-color: var(--blue);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.falhas-table-wrap { overflow-x: auto; }
+
+.falhas-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.falhas-table thead tr {
+  border-bottom: 1px solid var(--border);
+}
+.falhas-table th {
+  padding: 10px 16px;
+  text-align: left;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  white-space: nowrap;
+}
+.falhas-table th.sort-col {
+  cursor: pointer;
+  user-select: none;
+}
+.falhas-table th.sort-col:hover { color: var(--text2); }
+.falhas-table th.num-col,
+.falhas-table td.num-col { text-align: right; }
+
+.falhas-table tbody tr {
+  border-bottom: 1px solid var(--border);
+  transition: background 0.15s;
+}
+.falhas-table tbody tr:last-child { border-bottom: none; }
+.falhas-table tbody tr:hover { background: var(--bg3); }
+
+.falhas-table td {
+  padding: 12px 16px;
+  font-size: 13px;
+  color: var(--text);
+  white-space: nowrap;
+}
+.falhas-table td.mono {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 12px;
+}
+
+.falha-msg { max-width: 360px; white-space: normal; }
+.falha-msg--red   { color: var(--red); }
+.falha-msg--amber { color: var(--amber); }
+
+.erros-col  { color: var(--red); }
+.avisos-col { color: var(--amber); }
+
+.exec-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 500;
+  border: 1px solid transparent;
+}
+.exec-badge svg { width: 12px; height: 12px; flex-shrink: 0; }
+.exec-badge--success { background: rgba(45,212,160,0.1);  color: var(--green);  border-color: rgba(45,212,160,0.2); }
+.exec-badge--partial { background: rgba(245,166,35,0.1);  color: var(--amber);  border-color: rgba(245,166,35,0.2); }
+.exec-badge--failed  { background: rgba(245,90,90,0.1);   color: var(--red);    border-color: rgba(245,90,90,0.2); }
+
+/* ── Pagination ───────────────────────────────────────────────────────────── */
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 20px;
+  border-top: 1px solid var(--border);
+  font-size: 12px;
+  color: var(--text3);
+}
+.pg-btns { display: flex; gap: 4px; }
+.pg-btn {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  color: var(--text2);
+  border-radius: 5px;
+  padding: 5px 10px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: all 0.15s;
+}
+.pg-btn:hover { border-color: var(--blue2); color: var(--blue); }
+.pg-btn.active { background: var(--blue2); border-color: var(--blue2); color: #fff; }
+.pg-btn:disabled { opacity: 0.3; cursor: not-allowed; }
 
 /* ── Utilities ────────────────────────────────────────────────────────────── */
 .sr-only {
