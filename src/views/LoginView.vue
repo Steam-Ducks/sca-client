@@ -1,0 +1,271 @@
+<template>
+  <div class="login-page">
+    <div class="login-header">
+      <img
+        class="login-logo"
+        :class="theme === 'dark' ? 'logo-dark' : 'logo-light'"
+        src="@/assets/logo.png"
+        alt="SCAR"
+      />
+      <h1 class="login-title">Sistema de Gestão de Custos</h1>
+      <p class="login-subtitle">Faça login para acessar o dashboard</p>
+    </div>
+
+    <div class="login-card">
+      <form @submit.prevent="handleSubmit" novalidate>
+        <div class="field-group">
+          <label class="field-label" for="username">Usuário</label>
+          <div class="input-wrapper" :class="{ 'input-error': errors.username }">
+            <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
+            </svg>
+            <input
+              id="username"
+              v-model="form.username"
+              type="text"
+              class="field-input"
+              placeholder="Digite seu usuário"
+              autocomplete="username"
+              @blur="validateUsername"
+            />
+          </div>
+          <span v-if="errors.username" class="error-msg">{{ errors.username }}</span>
+        </div>
+
+        <div class="field-group">
+          <label class="field-label" for="password">Senha</label>
+          <div class="input-wrapper" :class="{ 'input-error': errors.password }">
+            <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" />
+            </svg>
+            <input
+              id="password"
+              v-model="form.password"
+              type="password"
+              class="field-input"
+              placeholder="Digite sua senha"
+              autocomplete="current-password"
+              @blur="validatePassword"
+            />
+          </div>
+          <span v-if="errors.password" class="error-msg">{{ errors.password }}</span>
+        </div>
+
+        <span v-if="errors.general" class="error-msg error-general">{{ errors.general }}</span>
+
+        <button type="submit" class="btn-entrar" :disabled="loading">
+          <span v-if="loading" class="btn-spinner" />
+          <span>{{ loading ? 'Entrando...' : 'Entrar' }}</span>
+        </button>
+      </form>
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { reactive, ref } from 'vue'
+import { useRouter } from 'vue-router'
+import { authService } from '@/services/authService'
+import { useTheme } from '@/composables/useTheme'
+
+const { theme } = useTheme()
+const router = useRouter()
+
+const form = reactive({ username: '', password: '' })
+const errors = reactive({ username: '', password: '', general: '' })
+const loading = ref(false)
+
+function validateUsername() {
+  errors.username = form.username.trim() ? '' : 'O usuário é obrigatório.'
+}
+
+function validatePassword() {
+  errors.password = form.password ? '' : 'A senha é obrigatória.'
+}
+
+function validateAll(): boolean {
+  validateUsername()
+  validatePassword()
+  return !errors.username && !errors.password
+}
+
+async function handleSubmit() {
+  errors.general = ''
+  if (!validateAll()) return
+  loading.value = true
+  try {
+    const response = await authService.login({ username: form.username, password: form.password })
+    authService.saveSession(response)
+    router.push('/materiais')
+  } catch (err) {
+    errors.general = err instanceof Error ? err.message : 'Erro inesperado. Tente novamente.'
+  } finally {
+    loading.value = false
+  }
+}
+</script>
+
+<style scoped>
+.login-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg);
+  padding: 2rem 1rem;
+  gap: 2rem;
+}
+
+.login-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  text-align: center;
+}
+
+.login-logo {
+  height: 100px;
+  width: auto;
+  object-fit: contain;
+  margin-bottom: 0.5rem;
+}
+
+.logo-dark {
+  mix-blend-mode: screen;
+}
+
+.logo-light {
+  filter: invert(1);
+  mix-blend-mode: multiply;
+}
+
+.login-title {
+  font-size: 1.75rem;
+  font-weight: 600;
+  color: var(--text);
+  letter-spacing: -0.01em;
+}
+
+.login-subtitle {
+  font-size: 0.9rem;
+  color: var(--text2);
+}
+
+.login-card {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 2rem;
+  width: 100%;
+  max-width: 440px;
+}
+
+.field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  margin-bottom: 1.25rem;
+}
+
+.field-label {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.input-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  background: var(--bg4);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0 0.875rem;
+  transition: border-color 0.15s;
+}
+
+.input-wrapper:focus-within {
+  border-color: var(--blue);
+}
+
+.input-wrapper.input-error {
+  border-color: var(--red);
+}
+
+.input-icon {
+  width: 18px;
+  height: 18px;
+  color: var(--text3);
+  flex-shrink: 0;
+}
+
+.field-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 0.9rem;
+  padding: 0.7rem 0;
+}
+
+.field-input::placeholder {
+  color: var(--text3);
+}
+
+.error-msg {
+  font-size: 0.78rem;
+  color: var(--red);
+}
+
+.error-general {
+  display: block;
+  text-align: center;
+  margin-bottom: 0.75rem;
+}
+
+.btn-entrar {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  background: var(--blue);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 0.75rem;
+  font-size: 1rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.15s, opacity 0.15s;
+  margin-top: 0.25rem;
+}
+
+.btn-entrar:hover:not(:disabled) {
+  background: var(--blue2);
+}
+
+.btn-entrar:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+</style>

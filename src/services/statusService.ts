@@ -1,4 +1,5 @@
 import { CONFIG } from "@/utils/config";
+import { apiFetch } from "@/utils/apiFetch";
 
 export interface ServiceStatus {
   status: "ok" | "error" | "degraded" | "unavailable";
@@ -81,7 +82,7 @@ export interface StatusResponse {
 export const statusService = {
   async fetch(): Promise<StatusResponse | null> {
     try {
-      const response = await fetch(`${CONFIG.API_BASE_URL}/status/`);
+      const response = await apiFetch(`${CONFIG.API_BASE_URL}/status/`);
       if (!response.ok) return null;
       return (await response.json()) as StatusResponse;
     } catch {

@@ -5,6 +5,7 @@ import type {
   ConsolidadoRow,
 } from "@/types/api";
 import { CONFIG } from "@/utils/config";
+import { apiFetch } from "@/utils/apiFetch";
 
 const apiBaseUrl = CONFIG.API_BASE_URL;
 
@@ -112,7 +113,7 @@ export const consolidatedService = {
   async fetchConsolidatedSnapshot(
     filters: ConsolidatedFilters = {},
   ): Promise<ConsolidatedSnapshot> {
-    const response = await fetch(`${apiBaseUrl}/consolidated/${buildQuery(filters)}`);
+    const response = await apiFetch(`${apiBaseUrl}/consolidated/${buildQuery(filters)}`);
     if (!response.ok) throw new Error("Erro ao buscar dados consolidados");
 
     const payload = (await response.json()) as
