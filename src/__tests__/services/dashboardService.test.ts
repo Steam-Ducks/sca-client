@@ -26,6 +26,7 @@ describe("dashboardService", () => {
     await dashboardService.fetchKPIs();
     expect(fetch).toHaveBeenCalledWith(
       expect.stringContaining("/dashboard/kpis/"),
+      expect.any(Object),
     );
   });
 
@@ -56,6 +57,7 @@ describe("dashboardService", () => {
     await dashboardService.fetchKPIs({ start_date: "2024-01-01" });
     expect(fetch).toHaveBeenCalledWith(
       expect.stringContaining("start_date=2024-01-01"),
+      expect.any(Object),
     );
   });
 
@@ -70,6 +72,7 @@ describe("dashboardService", () => {
     await dashboardService.fetchKPIs({ end_date: "2024-12-31" });
     expect(fetch).toHaveBeenCalledWith(
       expect.stringContaining("end_date=2024-12-31"),
+      expect.any(Object),
     );
   });
 
@@ -84,6 +87,7 @@ describe("dashboardService", () => {
     await dashboardService.fetchKPIs({ status: "Em andamento" });
     expect(fetch).toHaveBeenCalledWith(
       expect.stringContaining("status=Em+andamento"),
+      expect.any(Object),
     );
   });
 

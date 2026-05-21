@@ -55,6 +55,9 @@ describe("userService", () => {
 
       expect(fetchMock).toHaveBeenCalledWith(
         "http://localhost:3000/api/users/",
+        expect.objectContaining({
+          headers: expect.objectContaining({ "Content-Type": "application/json" }),
+        }),
       );
       expect(result).toEqual(mockUsers);
     });
