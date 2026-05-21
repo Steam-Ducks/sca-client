@@ -59,6 +59,7 @@ describe("materiaisService", () => {
 
       expect(fetchMock).toHaveBeenCalledWith(
         "http://localhost:3000/api/compras/",
+        expect.any(Object),
       );
       expect(result).toEqual(mockRows);
     });
@@ -82,6 +83,7 @@ describe("materiaisService", () => {
 
       expect(fetchMock).toHaveBeenCalledWith(
         "http://localhost:3000/api/compras/?periodo=2024-01&programa=Infraestrutura&categoria=Hardware&fornecedor=Dell&material=notebook+gamer",
+        expect.any(Object),
       );
     });
 
@@ -122,6 +124,7 @@ describe("materiaisService", () => {
 
       expect(fetchMock).toHaveBeenCalledWith(
         "http://localhost:3000/api/top-materials/",
+        expect.any(Object),
       );
       expect(result).toEqual(mockResponse);
     });
@@ -143,6 +146,7 @@ describe("materiaisService", () => {
 
       expect(fetchMock).toHaveBeenCalledWith(
         "http://localhost:3000/api/top-materials/?periodo=2024-01&programa=Infraestrutura&categoria=Hardware",
+        expect.any(Object),
       );
     });
 
@@ -185,6 +189,7 @@ describe("materiaisService", () => {
 
       expect(fetchMock).toHaveBeenCalledWith(
         "http://localhost:3000/api/cost-by-project/",
+        expect.any(Object),
       );
       expect(result).toEqual(mockCostByProject);
     });
@@ -218,6 +223,7 @@ describe("materiaisService", () => {
 
       expect(fetchMock).toHaveBeenCalledWith(
         "http://localhost:3000/api/cost-by-project/?periodo=2024-01&programa=Infraestrutura",
+        expect.any(Object),
       );
     });
 
@@ -239,6 +245,7 @@ describe("materiaisService", () => {
 
       expect(fetchMock).toHaveBeenCalledWith(
         "http://localhost:3000/api/cost-by-project/?periodo=2024-03&programa=Cloud&categoria=Software&fornecedor=Microsoft",
+        expect.any(Object),
       );
     });
 
