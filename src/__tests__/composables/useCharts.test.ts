@@ -76,7 +76,7 @@ describe("useCharts", () => {
       },
     ];
 
-    useChartsInstance.buildCharts(mockData);
+    useChartsInstance.buildCharts(mockData, mockData, mockData);
 
     // Chart constructor should have been called
     expect(vi.mocked(Chart)).toHaveBeenCalled();
@@ -100,7 +100,7 @@ describe("useCharts", () => {
     canvas4.id = "chartTemporal";
     document.body.appendChild(canvas4);
 
-    useChartsInstance.buildCharts([]);
+    useChartsInstance.buildCharts([], [], []);
 
     // Chart constructor should have been called even with empty data
     expect(vi.mocked(Chart)).toHaveBeenCalled();
@@ -125,6 +125,6 @@ describe("useCharts", () => {
     ];
 
     // Should not throw error when canvas elements don't exist
-    expect(() => useChartsInstance.buildCharts(mockData)).not.toThrow();
+    expect(() => useChartsInstance.buildCharts(mockData, mockData, mockData)).not.toThrow();
   });
 });

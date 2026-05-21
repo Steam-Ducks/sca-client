@@ -187,34 +187,14 @@
           fill="none"
           stroke="currentColor"
           stroke-width="1.5"
+          stroke-linecap="round"
+          stroke-linejoin="round"
         >
-          <path
-            d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"
-            stroke-linejoin="round"
-          />
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
         </svg>
         Auditoria
       </RouterLink>
 
-      <RouterLink
-        class="nav-tab"
-        to="/monitoramento"
-      >
-        <svg
-          class="tab-icon"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="1.5"
-        >
-          <path
-            d="M22 12h-4l-3 9L9 3l-3 9H2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          />
-        </svg>
-        Monitoramento
-      </RouterLink>
     </nav>
 
     <div class="nav-right">
@@ -372,7 +352,10 @@ function handleLogout() {
   align-items: center;
   gap: 2px;
   flex: 1;
+  overflow-x: auto;
+  scrollbar-width: none;
 }
+.nav-tabs::-webkit-scrollbar { display: none; }
 
 .nav-tab {
   display: flex;

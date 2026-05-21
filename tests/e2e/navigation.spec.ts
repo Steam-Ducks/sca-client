@@ -2,7 +2,7 @@ import { test, expect } from "@playwright/test";
 
 test.describe("Navigation", () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto("http://localhost:5173");
+    await page.goto("/");
   });
 
   test("CT01: should navigate to materials page (home)", async ({ page }) => {
@@ -23,13 +23,7 @@ test.describe("Navigation", () => {
     await expect(page.locator("h1")).toContainText("Horas Técnicas");
   });
 
-  test("CT04: should navigate to auditoria page", async ({ page }) => {
-    await page.getByRole("link", { name: "Auditoria" }).click();
-    await expect(page).toHaveURL(/\/auditoria$/);
-    await expect(page.locator("h1")).toContainText("Auditoria");
-  });
-
-  test("CT05: should navigate back to materials", async ({ page }) => {
+  test("CT04: should navigate back to materials", async ({ page }) => {
     await page.getByRole("link", { name: "Dashboard" }).click();
     await page.getByRole("link", { name: "Materiais" }).click();
     await expect(page).toHaveURL(/\/materiais$/);

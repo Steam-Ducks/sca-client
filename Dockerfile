@@ -8,8 +8,6 @@ RUN npm install
 
 COPY . .
 
-RUN npx playwright install --with-deps chromium
-
 EXPOSE 5173
 
 CMD ["npm", "run", "dev"]

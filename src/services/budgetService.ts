@@ -1,6 +1,8 @@
 import type {
   BudgetApiResponse,
   BudgetApiRow,
+  BudgetIndicators,
+  BudgetIndicatorsSnapshot,
   BudgetProjectRow,
   BudgetSnapshot,
 } from "@/types/api";
@@ -70,6 +72,32 @@ function extractLastUpdatedAt(
 }
 
 export const budgetService = {
+  async fetchBudgetIndicators(filters: BudgetFilters = {}): Promise<BudgetIndicatorsSnapshot> {
+    const params = new URLSearchParams();
+    if (filters.periodo) params.set("periodo", filters.periodo);
+    if (filters.programa) params.set("programa", filters.programa);
+    if (filters.projeto) params.set("projeto", filters.projeto);
+    if (filters.saude) params.set("saude", filters.saude);
+
+    const query = params.toString() ? `?${params.toString()}` : "";
+    const response = await fetch(`${CONFIG.API_BASE_URL}/budget/indicators/${query}`);
+    if (!response.ok) throw new Error("Erro ao buscar indicadores de orçamento");
+
+    const payload = await response.json() as { data: BudgetIndicators; last_updated_at: string | null };
+
+    return {
+      indicators: {
+        budgetTotal: Number(payload.data.budgetTotal ?? 0),
+        custoRealTotal: Number(payload.data.custoRealTotal ?? 0),
+        desvioPercentMedio: Number(payload.data.desvioPercentMedio ?? 0),
+        projetosSaudaveis: Number(payload.data.projetosSaudaveis ?? 0),
+        projetosAtencao: Number(payload.data.projetosAtencao ?? 0),
+        projetosCriticos: Number(payload.data.projetosCriticos ?? 0),
+      },
+      lastUpdatedAt: isValidDate(payload.last_updated_at) ? payload.last_updated_at : null,
+    };
+  },
+
   async fetchBudgetSnapshot(filters: BudgetFilters = {}): Promise<BudgetSnapshot> {
     const params = new URLSearchParams();
     if (filters.periodo) params.set("periodo", filters.periodo);

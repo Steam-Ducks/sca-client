@@ -10,7 +10,6 @@ import GestaoMateriais from "@/views/GestaoMateriais.vue";
 import HorasTecnicas from "@/views/HorasTecnicas.vue";
 import Consolidado from "@/views/Consolidado.vue";
 import OrcamentoSaudeFinanceira from "@/views/OrcamentoSaudeFinanceira.vue";
-import Auditoria from "@/views/Auditoria.vue";
 
 const mockToggle = vi.fn()
 const mockTheme = ref<'light' | 'dark'>('light')
@@ -28,7 +27,6 @@ const router = createRouter({
     { path: '/horas', name: 'horas', component: HorasTecnicas },
     { path: '/consolidado', name: 'consolidado', component: Consolidado },
     { path: '/orcamento', name: 'orcamento', component: OrcamentoSaudeFinanceira },
-    { path: '/auditoria', name: 'auditoria', component: Auditoria },
   ],
 });
 

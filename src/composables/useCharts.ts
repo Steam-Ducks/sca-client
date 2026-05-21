@@ -24,36 +24,31 @@ Chart.register(
   Filler,
 );
 
+const FONT = "'IBM Plex Sans', sans-serif";
+const MONO = "'IBM Plex Mono', monospace";
+
 const shortName = (name: string) => name.split(" ").slice(0, 2).join(" ");
 const fmtK = (v: number) => "R$" + Math.round(v / 1000) + "K";
 
-const BASE_OPTS = {
-  color: "#8b92aa",
+const css = (v: string) =>
+  getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+
+const BASE_OPTS = () => ({
   plugins: {
     legend: { display: false },
     tooltip: {
       enabled: true,
-      backgroundColor: "#222639",
-      titleColor: "#8b92aa",
-      bodyColor: "#fff",
-      borderColor: "#353c58",
-      borderWidth: 0,
+      backgroundColor: css("--bg3"),
+      titleColor: css("--text2"),
+      bodyColor: css("--text"),
+      borderColor: css("--border"),
+      borderWidth: 1,
       padding: 10,
-      titleFont: { family: "IBM Plex Sans" },
-      bodyFont: { family: "IBM Plex Mono" },
+      titleFont: { family: FONT, size: 12 },
+      bodyFont: { family: MONO, size: 12 },
     },
   },
-  scales: {
-    x: {
-      grid: { color: "rgba(255,255,255,.04)" },
-      ticks: { color: "#555d7a", font: { family: "IBM Plex Sans", size: 11 } },
-    },
-    y: {
-      grid: { color: "rgba(255,255,255,.06)" },
-      ticks: { color: "#555d7a", font: { family: "IBM Plex Sans", size: 11 } },
-    },
-  },
-};
+});
 
 let chartCusto: Chart | null = null;
 let chartQtd: Chart | null = null;
@@ -63,19 +58,24 @@ let chartTemporal: Chart | null = null;
 function tempEntries(data: Material[]) {
   const map: Record<string, number> = {};
   data.forEach((r) => {
-    map[r.periodo] = (map[r.periodo] || 0) + r.valorTotal;
+    const month = r.periodo ? r.periodo.slice(0, 7) : null;
+    if (!month) return;
+    map[month] = (map[month] || 0) + r.valorTotal;
   });
   return Object.entries(map).sort((a, b) => a[0].localeCompare(b[0]));
 }
 
-function buildCharts(raw: Material[]) {
+function buildCharts(topData: Material[], tableData: Material[], projectData: Material[]) {
+  const gridColor = css("--border");
+  const tickStyle = { color: css("--text3"), font: { family: FONT, size: 11 } };
+
   // ───────────── TOP CUSTO ─────────────
-  const top10c = [...raw]
+  const top10c = [...topData]
     .sort((a, b) => b.valorTotal - a.valorTotal)
     .slice(0, 10);
 
   chartCusto = new Chart(
-    document.getElementById("chartCusto") as HTMLCanvasElement,
+    document.getElementById("chartCusto"),
     {
       type: "bar",
       data: {
@@ -90,17 +90,14 @@ function buildCharts(raw: Material[]) {
         ],
       },
       options: {
-        ...BASE_OPTS,
+        ...BASE_OPTS(),
         responsive: true,
         maintainAspectRatio: false,
         scales: {
-          x: { ...BASE_OPTS.scales.x },
+          x: { grid: { color: gridColor }, ticks: tickStyle },
           y: {
-            ...BASE_OPTS.scales.y,
-            ticks: {
-              ...BASE_OPTS.scales.y.ticks,
-              callback: (v) => fmtK(Number(v)),
-            },
+            grid: { color: gridColor },
+            ticks: { ...tickStyle, callback: (v) => fmtK(Number(v)) },
           },
         },
       },
@@ -108,12 +105,12 @@ function buildCharts(raw: Material[]) {
   );
 
   // ───────────── TOP QUANTIDADE ─────────────
-  const top10q = [...raw]
+  const top10q = [...tableData]
     .sort((a, b) => b.quantidade - a.quantidade)
     .slice(0, 10);
 
   chartQtd = new Chart(
-    document.getElementById("chartQtd") as HTMLCanvasElement,
+    document.getElementById("chartQtd"),
     {
       type: "bar",
       data: {
@@ -127,20 +124,28 @@ function buildCharts(raw: Material[]) {
           },
         ],
       },
-      options: { ...BASE_OPTS, responsive: true, maintainAspectRatio: false },
+      options: {
+        ...BASE_OPTS(),
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          x: { grid: { color: gridColor }, ticks: tickStyle },
+          y: { grid: { color: gridColor }, ticks: tickStyle },
+        },
+      },
     },
   );
 
   // ───────────── PROJETO ─────────────
-  const labelsProjeto = raw.map((r) => r.projeto);
-  const dataProjeto = raw.map((r) => r.valorTotal);
+  const labelsProjeto = projectData.map((r) => r.projeto);
+  const dataProjeto = projectData.map((r) => r.valorTotal);
 
   if (chartProjeto) {
     chartProjeto.destroy();
   }
 
   chartProjeto = new Chart(
-    document.getElementById("chartProjeto") as HTMLCanvasElement,
+    document.getElementById("chartProjeto"),
     {
       type: "bar",
       data: {
@@ -155,24 +160,18 @@ function buildCharts(raw: Material[]) {
         ],
       },
       options: {
-        ...BASE_OPTS,
+        ...BASE_OPTS(),
         indexAxis: "y" as const,
         responsive: true,
         maintainAspectRatio: false,
         scales: {
           x: {
-            ...BASE_OPTS.scales.x,
-            ticks: {
-              ...BASE_OPTS.scales.x.ticks,
-              callback: (v) => fmtK(Number(v)),
-            },
+            grid: { color: gridColor },
+            ticks: { ...tickStyle, callback: (v) => fmtK(Number(v)) },
           },
           y: {
-            ...BASE_OPTS.scales.y,
-            ticks: {
-              ...BASE_OPTS.scales.y.ticks,
-              font: { size: 10, family: "IBM Plex Sans" },
-            },
+            grid: { color: gridColor },
+            ticks: { ...tickStyle, font: { size: 10, family: FONT } },
           },
         },
       },
@@ -180,10 +179,10 @@ function buildCharts(raw: Material[]) {
   );
 
   // ───────────── TEMPORAL ─────────────
-  const ts = tempEntries(raw);
+  const ts = tempEntries(tableData);
 
   chartTemporal = new Chart(
-    document.getElementById("chartTemporal") as HTMLCanvasElement,
+    document.getElementById("chartTemporal"),
     {
       type: "line",
       data: {
@@ -202,17 +201,14 @@ function buildCharts(raw: Material[]) {
         ],
       },
       options: {
-        ...BASE_OPTS,
+        ...BASE_OPTS(),
         responsive: true,
         maintainAspectRatio: false,
         scales: {
-          x: { ...BASE_OPTS.scales.x },
+          x: { grid: { color: gridColor }, ticks: tickStyle },
           y: {
-            ...BASE_OPTS.scales.y,
-            ticks: {
-              ...BASE_OPTS.scales.y.ticks,
-              callback: (v) => fmtK(Number(v)),
-            },
+            grid: { color: gridColor },
+            ticks: { ...tickStyle, callback: (v) => fmtK(Number(v)) },
           },
         },
       },
@@ -220,8 +216,19 @@ function buildCharts(raw: Material[]) {
   );
 }
 
-function updateCharts(filtered: Material[]) {
-  const top10c = [...filtered]
+function updateCharts(topData: Material[], tableDataArg?: Material[], projectData?: Material[]) {
+  if (!tableDataArg || !projectData) {
+    const labelsProjeto = topData.map((r) => r.projeto);
+    const dataProjeto = topData.map((r) => r.valorTotal);
+    if (chartProjeto) {
+      chartProjeto.data.labels = labelsProjeto;
+      chartProjeto.data.datasets[0].data = dataProjeto;
+      chartProjeto.update();
+    }
+    return;
+  }
+
+  const top10c = [...topData]
     .sort((a, b) => b.valorTotal - a.valorTotal)
     .slice(0, 10);
 
@@ -231,7 +238,7 @@ function updateCharts(filtered: Material[]) {
     chartCusto.update();
   }
 
-  const top10q = [...filtered]
+  const top10q = [...tableDataArg]
     .sort((a, b) => b.quantidade - a.quantidade)
     .slice(0, 10);
 
@@ -241,9 +248,8 @@ function updateCharts(filtered: Material[]) {
     chartQtd.update();
   }
 
-  // ───────────── UPDATE PROJETO ─────────────
-  const labelsProjeto = filtered.map((r) => r.projeto);
-  const dataProjeto = filtered.map((r) => r.valorTotal);
+  const labelsProjeto = projectData.map((r) => r.projeto);
+  const dataProjeto = projectData.map((r) => r.valorTotal);
 
   if (chartProjeto) {
     chartProjeto.data.labels = labelsProjeto;
@@ -251,7 +257,7 @@ function updateCharts(filtered: Material[]) {
     chartProjeto.update();
   }
 
-  const ts = tempEntries(filtered);
+  const ts = tempEntries(tableDataArg);
 
   if (chartTemporal) {
     chartTemporal.data.labels = ts.map((e) => e[0]);
