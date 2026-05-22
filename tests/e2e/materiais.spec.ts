@@ -26,6 +26,9 @@ const MOCK_COST_BY_PROJECT = [
 
 test.describe("Gestão de Materiais", () => {
   test.beforeEach(async ({ page }) => {
+    await page.addInitScript(() => {
+      localStorage.setItem("sca_access_token", "fake-e2e-token");
+    });
     await page.route("**/compras/**", (route) =>
       route.fulfill({ contentType: "application/json", body: JSON.stringify(MOCK_COMPRAS) }),
     );
@@ -35,7 +38,7 @@ test.describe("Gestão de Materiais", () => {
     await page.route("**/cost-by-project/**", (route) =>
       route.fulfill({ contentType: "application/json", body: JSON.stringify(MOCK_COST_BY_PROJECT) }),
     );
-    await page.goto("/");
+    await page.goto("/materiais");
   });
 
   test("CT02: should filter by period", async ({ page }) => {

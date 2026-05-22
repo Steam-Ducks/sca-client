@@ -10,6 +10,9 @@ import { test, expect } from "@playwright/test";
 
 test.describe("Navegação com backend real", () => {
   test.beforeEach(async ({ page }) => {
+    await page.addInitScript(() => {
+      localStorage.setItem("sca_access_token", "fake-e2e-token");
+    });
     await page.goto("/");
     // Aguarda a página carregar dados da API antes de qualquer asserção
     await page.waitForLoadState("networkidle");

@@ -177,6 +177,24 @@
         Orçamento e Saúde Financeira
       </RouterLink>
 
+      <RouterLink
+        class="nav-tab"
+        to="/auditoria"
+      >
+        <svg
+          class="tab-icon"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.5"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+        </svg>
+        Auditoria
+      </RouterLink>
+
     </nav>
 
     <div class="nav-right">
@@ -263,6 +281,7 @@
       <button
         class="nav-logout"
         type="button"
+        @click="handleLogout"
       >
         Sair
       </button>
@@ -271,10 +290,17 @@
 </template>
 
 <script setup lang="ts">
-import { RouterLink } from 'vue-router'
+import { RouterLink, useRouter } from 'vue-router'
+import { authService } from '@/services/authService'
 import { useTheme } from '@/composables/useTheme'
 
 const { theme, toggle } = useTheme()
+const router = useRouter()
+
+function handleLogout() {
+  authService.clearSession()
+  router.push('/login')
+}
 </script>
 
 <style scoped>
@@ -326,7 +352,10 @@ const { theme, toggle } = useTheme()
   align-items: center;
   gap: 2px;
   flex: 1;
+  overflow-x: auto;
+  scrollbar-width: none;
 }
+.nav-tabs::-webkit-scrollbar { display: none; }
 
 .nav-tab {
   display: flex;

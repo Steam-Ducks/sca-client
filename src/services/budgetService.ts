@@ -7,6 +7,7 @@ import type {
   BudgetSnapshot,
 } from "@/types/api";
 import { CONFIG } from "@/utils/config";
+import { apiFetch } from "@/utils/apiFetch";
 
 export type BudgetFilters = {
   periodo?: string;
@@ -105,7 +106,7 @@ export const budgetService = {
     if (filters.saude) params.set("saude", filters.saude);
 
     const query = params.toString() ? `?${params.toString()}` : "";
-    const response = await fetch(`${CONFIG.API_BASE_URL}/budget/${query}`);
+    const response = await apiFetch(`${CONFIG.API_BASE_URL}/budget/${query}`);
     if (!response.ok) throw new Error("Erro ao buscar orçamento por projeto");
 
     const payload = (await response.json()) as BudgetApiResponse | BudgetApiRow[];
