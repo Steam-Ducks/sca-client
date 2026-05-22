@@ -194,7 +194,6 @@
         </svg>
         Auditoria
       </RouterLink>
-
     </nav>
 
     <div class="nav-right">
