@@ -3,7 +3,7 @@
     :src="logoUrl"
     :class="['app-logo-img', theme === 'dark' ? 'logo-dark' : 'logo-light']"
     alt="SCAR"
-  />
+  >
 </template>
 
 <script setup lang="ts">
