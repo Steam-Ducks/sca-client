@@ -6,6 +6,8 @@ COPY package*.json ./
 
 RUN npm install
 
+RUN npx playwright install --with-deps chromium
+
 COPY . .
 
 EXPOSE 5173
