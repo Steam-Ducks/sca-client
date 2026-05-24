@@ -5,10 +5,14 @@ export async function apiFetch(
   options: RequestInit = {},
 ): Promise<Response> {
   const token = authService.getToken();
+
+  // Não define Content-Type para FormData — o browser seta automaticamente com boundary
+  const isFormData = options.body instanceof FormData;
+
   const response = await fetch(url, {
     ...options,
     headers: {
-      "Content-Type": "application/json",
+      ...(isFormData ? {} : { "Content-Type": "application/json" }),
       ...(options.headers as Record<string, string>),
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },

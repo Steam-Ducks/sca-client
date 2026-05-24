@@ -399,6 +399,7 @@
 import { ref, computed, watch, onMounted, onUnmounted, nextTick } from "vue";
 import { useChartsTechnical } from "@/composables/useChartsTechnical";
 import { CONFIG } from "@/utils/config";
+import { apiFetch } from "@/utils/apiFetch";
 
 const PER_PAGE = 8;
 
@@ -734,7 +735,7 @@ async function loadData() {
     if (filters.value.projeto) params.set("projeto", filters.value.projeto);
     const query = params.toString() ? `?${params.toString()}` : "";
 
-    const res = await fetch(`${CONFIG.API_BASE_URL}/horas-tecnicas/${query}`);
+    const res = await apiFetch(`${CONFIG.API_BASE_URL}/horas-tecnicas/${query}`);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = (await res.json()) as ApiRow[];
     tableData.value = data.map(mapApiRow);

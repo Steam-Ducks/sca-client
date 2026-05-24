@@ -96,6 +96,62 @@ describe("OrcamentoSaudeFinanceira.vue", () => {
     document.body.innerHTML = "";
   });
 
+  // CT01 — filtragem por período
+  it("filters by period (CT01)", async () => {
+    const wrapper = await mountView();
+    await wrapper.find('[data-testid="filter-periodo"]').setValue("2026-01");
+    await flushPromises();
+    const rows = wrapper.findAll('[data-testid^="row-"]');
+    expect(rows.length).toBe(2);
+    expect(wrapper.text()).toContain("Projeto A");
+    expect(wrapper.text()).toContain("Projeto B");
+    expect(wrapper.text()).not.toContain("Projeto C");
+  });
+
+  // CT03 — filtragem por projeto
+  it("filters by project (CT03)", async () => {
+    const wrapper = await mountView();
+    await wrapper.find('[data-testid="filter-projeto"]').setValue("Projeto A");
+    await flushPromises();
+    expect(wrapper.findAll('[data-testid^="row-"]').length).toBe(1);
+    expect(wrapper.text()).toContain("Projeto A");
+    expect(wrapper.text()).not.toContain("Projeto B");
+  });
+
+  // CT05 — combinação de filtros (período + programa)
+  it("applies combined period and program filters (CT05)", async () => {
+    const wrapper = await mountView();
+    await wrapper.find('[data-testid="filter-periodo"]').setValue("2026-01");
+    await flushPromises();
+    await wrapper.find('[data-testid="filter-programa"]').setValue("Programa Alpha");
+    await flushPromises();
+    expect(wrapper.findAll('[data-testid^="row-"]').length).toBe(2);
+    expect(wrapper.text()).toContain("Projeto A");
+    expect(wrapper.text()).toContain("Projeto B");
+    expect(wrapper.text()).not.toContain("Projeto C");
+  });
+
+  // CT06 — projeto dropdown restrito ao programa selecionado
+  it("restricts project options to selected program (CT06)", async () => {
+    const wrapper = await mountView();
+    await wrapper.find('[data-testid="filter-programa"]').setValue("Programa Beta");
+    await flushPromises();
+    const projetoSelect = wrapper.find('[data-testid="filter-projeto"]');
+    const projectOptions = projetoSelect.findAll("option").filter((o) => o.element.value !== "");
+    expect(projectOptions.length).toBe(1);
+    expect(projectOptions[0].text()).toBe("Projeto C");
+  });
+
+  // CT08 — indicadores re-buscados após mudança de filtro
+  it("re-fetches indicators when a filter changes (CT08)", async () => {
+    const wrapper = await mountView();
+    const fetchIndicatorsMock = vi.mocked(budgetService.fetchBudgetIndicators);
+    const callsBefore = fetchIndicatorsMock.mock.calls.length;
+    await wrapper.find('[data-testid="filter-periodo"]').setValue("2026-01");
+    await flushPromises();
+    expect(fetchIndicatorsMock.mock.calls.length).toBeGreaterThan(callsBefore);
+  });
+
   it("renders the main layout and metrics", async () => {
     const wrapper = await mountView();
     expect(wrapper.find(".main").exists()).toBe(true);

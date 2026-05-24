@@ -877,6 +877,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from "vue";
 import { CONFIG } from "@/utils/config";
+import { apiFetch } from "@/utils/apiFetch";
 
 type TabType = "importacao" | "historico" | "falhas";
 type ImportStatus = "idle" | "processing" | "success" | "error";
@@ -966,7 +967,7 @@ async function handleFileChange(fileKey: string, event: Event) {
     const formData = new FormData();
     formData.append("file", file);
 
-    const res = await fetch(`${CONFIG.API_BASE_URL}${IMPORT_ENDPOINTS[fileKey]}`, {
+    const res = await apiFetch(`${CONFIG.API_BASE_URL}${IMPORT_ENDPOINTS[fileKey]}`, {
       method: "POST",
       body: formData,
     });
@@ -1094,7 +1095,7 @@ async function loadFalhas() {
     if (falhasFilters.value.data_inicio) params.set("data_inicio", falhasFilters.value.data_inicio);
     if (falhasFilters.value.data_fim)    params.set("data_fim",    falhasFilters.value.data_fim);
     const query = params.toString() ? `?${params.toString()}` : "";
-    const res = await fetch(`${CONFIG.API_BASE_URL}/monitoring/execucoes/${query}`);
+    const res = await apiFetch(`${CONFIG.API_BASE_URL}/monitoring/execucoes/${query}`);
     if (!res.ok) { falhasError.value = "Erro ao carregar registros."; return; }
     const data: { count: number; results: ExecucaoRow[] } = await res.json();
     falhasTotal.value = data.count;

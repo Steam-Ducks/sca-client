@@ -439,6 +439,7 @@ import { useChartsDashboard } from "@/composables/useChartsDashboard";
 import type { DashboardRow } from "@/composables/useChartsDashboard";
 import { dashboardService } from "@/services/dashboardService";
 import { CONFIG } from "@/utils/config";
+import { apiFetch } from "@/utils/apiFetch";
 import type {
   CompositionData,
   DashboardKPIs,
@@ -558,7 +559,7 @@ async function fetchTableData() {
     if (f.projeto)  p.append("projeto",  f.projeto);
     if (f.periodo)  p.append("status",   f.periodo);
     const qs = p.toString() ? `?${p.toString()}` : "";
-    const response = await fetch(`${CONFIG.API_BASE_URL}/consolidated/${qs}`);
+    const response = await apiFetch(`${CONFIG.API_BASE_URL}/consolidated/${qs}`);
     if (!response.ok)
       throw new Error(`Erro ao buscar tabela: ${response.status}`);
     // Consolidated returns { data: [...], last_updated_at: "..." }
