@@ -42,7 +42,23 @@ export const authService = {
     localStorage.removeItem(USER_KEY);
   },
 
+  isTokenExpired(): boolean {
+    const token = this.getToken();
+    if (!token) return true;
+    try {
+      const payload = JSON.parse(atob(token.split(".")[1]));
+      return payload.exp * 1000 < Date.now();
+    } catch {
+      return true;
+    }
+  },
+
   isAuthenticated(): boolean {
-    return !!this.getToken();
+    if (!this.getToken()) return false;
+    if (this.isTokenExpired()) {
+      this.clearSession();
+      return false;
+    }
+    return true;
   },
 };

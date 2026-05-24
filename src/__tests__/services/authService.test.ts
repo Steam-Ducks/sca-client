@@ -122,10 +122,53 @@ describe("authService", () => {
     });
   });
 
+  describe("isTokenExpired", () => {
+    function makeJWT(exp: number): string {
+      const header = btoa(JSON.stringify({ alg: "HS256", typ: "JWT" }));
+      const payload = btoa(JSON.stringify({ sub: "1", exp }));
+      return `${header}.${payload}.signature`;
+    }
+
+    it("returns false for a valid (non-expired) token", () => {
+      const future = Math.floor(Date.now() / 1000) + 3600;
+      localStorage.setItem("sca_access_token", makeJWT(future));
+      expect(authService.isTokenExpired()).toBe(false);
+    });
+
+    it("returns true for an expired token", () => {
+      const past = Math.floor(Date.now() / 1000) - 3600;
+      localStorage.setItem("sca_access_token", makeJWT(past));
+      expect(authService.isTokenExpired()).toBe(true);
+    });
+
+    it("returns true when no token is stored", () => {
+      expect(authService.isTokenExpired()).toBe(true);
+    });
+
+    it("returns true for a malformed token", () => {
+      localStorage.setItem("sca_access_token", "not.a.jwt");
+      expect(authService.isTokenExpired()).toBe(true);
+    });
+  });
+
   describe("isAuthenticated", () => {
-    it("returns true when token is present", () => {
-      localStorage.setItem("sca_access_token", "some_token");
+    function makeJWT(exp: number): string {
+      const header = btoa(JSON.stringify({ alg: "HS256", typ: "JWT" }));
+      const payload = btoa(JSON.stringify({ sub: "1", exp }));
+      return `${header}.${payload}.signature`;
+    }
+
+    it("returns true when token is present and not expired", () => {
+      const future = Math.floor(Date.now() / 1000) + 3600;
+      localStorage.setItem("sca_access_token", makeJWT(future));
       expect(authService.isAuthenticated()).toBe(true);
+    });
+
+    it("returns false and clears session when token is expired", () => {
+      const past = Math.floor(Date.now() / 1000) - 3600;
+      localStorage.setItem("sca_access_token", makeJWT(past));
+      expect(authService.isAuthenticated()).toBe(false);
+      expect(authService.getToken()).toBeNull();
     });
 
     it("returns false when token is absent", () => {
