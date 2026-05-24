@@ -7,7 +7,10 @@
       </h1>
       <!-- METRICS -->
       <div class="metrics">
-        <div class="metric-card">
+        <div
+          v-if="!isProjetos"
+          class="metric-card"
+        >
           <div class="metric-label">
             Custo Total Consolidado
           </div>
@@ -15,7 +18,10 @@
             {{ kpisLoading ? "..." : fmt(kpis.total_consolidated_cost) }}
           </div>
         </div>
-        <div class="metric-card">
+        <div
+          v-if="!isProjetos"
+          class="metric-card"
+        >
           <div class="metric-label">
             Custo Total de Materiais
           </div>
@@ -23,7 +29,10 @@
             {{ kpisLoading ? "..." : fmt(kpis.total_materials_cost) }}
           </div>
         </div>
-        <div class="metric-card">
+        <div
+          v-if="!isProjetos"
+          class="metric-card"
+        >
           <div class="metric-label">
             Custo Total de Horas Técnicas
           </div>
@@ -162,7 +171,10 @@
         </div>
       </div>
       <!-- TOP CHARTS -->
-      <div class="charts-row">
+      <div
+        v-if="!isProjetos"
+        class="charts-row"
+      >
         <div class="chart-card">
           <div class="chart-title">
             Custo Total por Programa
@@ -182,7 +194,10 @@
       </div>
       <!-- BOTTOM CHARTS -->
       <div class="charts-row">
-        <div class="chart-card">
+        <div
+          v-if="!isProjetos"
+          class="chart-card"
+        >
           <div class="chart-title">
             Top 10 – Projetos por Custo Total
           </div>
@@ -335,8 +350,11 @@
           </div>
         </div>
       </div>
-      <!-- SUMMARY TABLE -->
-      <div class="table-card">
+      <!-- SUMMARY TABLE: hidden for projetos (program-level aggregation) -->
+      <div
+        v-if="!isProjetos"
+        class="table-card"
+      >
         <div class="table-header">
           <h2>Resumo Agregado por Programa</h2>
         </div>
@@ -436,6 +454,7 @@
 import { ref, computed, watch, onMounted, onUnmounted, nextTick } from "vue";
 import { useTheme } from "@/composables/useTheme";
 import { useChartsDashboard } from "@/composables/useChartsDashboard";
+import { usePermissions } from "@/composables/usePermissions";
 import type { DashboardRow } from "@/composables/useChartsDashboard";
 import { dashboardService } from "@/services/dashboardService";
 import { CONFIG } from "@/utils/config";
@@ -742,6 +761,7 @@ const summarySortIcon = (k: keyof SummaryRow) => {
 // ─── Charts ──────────────────────────────────────────────────────────────────
 const { buildCharts, updateCharts, destroyCharts } = useChartsDashboard();
 const { theme } = useTheme();
+const { isProjetos } = usePermissions();
 
 watch(theme, () => {
   nextTick(() => buildCharts(tableData.value, compositionData.value ?? undefined, topProjectsData.value, summaryData.value, costEvolutionData.value));

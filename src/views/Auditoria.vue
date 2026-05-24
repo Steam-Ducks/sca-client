@@ -247,7 +247,10 @@
           >
             <div class="import-sections">
               <!-- Importação Organizacional -->
-              <div class="import-section">
+              <div
+                v-if="visibleOrgFiles.length > 0"
+                class="import-section"
+              >
                 <div class="section-header">
                   <div class="section-icon blue">
                     <svg
@@ -296,7 +299,7 @@
                 </p>
                 <div class="upload-grid">
                   <div
-                    v-for="file in orgFiles"
+                    v-for="file in visibleOrgFiles"
                     :key="file.key"
                     class="upload-card"
                   >
@@ -378,7 +381,10 @@
               </div>
 
               <!-- Importação de Materiais -->
-              <div class="import-section">
+              <div
+                v-if="visibleMateriaisFiles.length > 0"
+                class="import-section"
+              >
                 <div class="section-header">
                   <div class="section-icon green">
                     <svg
@@ -414,7 +420,7 @@
                 </p>
                 <div class="upload-grid">
                   <div
-                    v-for="file in materiaisFiles"
+                    v-for="file in visibleMateriaisFiles"
                     :key="file.key"
                     class="upload-card"
                   >
@@ -496,7 +502,10 @@
               </div>
 
               <!-- Importação de Horas Técnicas -->
-              <div class="import-section">
+              <div
+                v-if="visibleHorasFiles.length > 0"
+                class="import-section"
+              >
                 <div class="section-header">
                   <div class="section-icon purple">
                     <svg
@@ -526,7 +535,7 @@
                 </p>
                 <div class="upload-grid">
                   <div
-                    v-for="file in horasFiles"
+                    v-for="file in visibleHorasFiles"
                     :key="file.key"
                     class="upload-card"
                   >
@@ -877,6 +886,8 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from "vue";
 import { CONFIG } from "@/utils/config";
+import { authService } from "@/services/authService";
+import { apiFetch } from "@/utils/apiFetch";
 
 type TabType = "importacao" | "historico" | "falhas";
 type ImportStatus = "idle" | "processing" | "success" | "error";
@@ -922,6 +933,30 @@ const horasFiles = [
   { key: "tempo_tarefas",  name: "tempo_tarefas.csv" },
 ];
 
+// ─── Profile-based file visibility ───────────────────────────────────────────
+const _ALLOWED_IMPORT_KEYS: Record<string, Set<string> | null> = {
+  super_admin:  null,
+  financeiro:   new Set(["programas", "projetos", "tarefa_projeto", "tempo_tarefas"]),
+  compras:      new Set(["fornecedores", "pedidos_compras", "solicitacoes_compra", "compras_projeto"]),
+  almoxarifado: new Set(["materiais", "empenho_materiais", "estoque_materiais_projeto"]),
+  projetos:     new Set(["projetos", "tarefa_projeto", "tempo_tarefas"]),
+};
+
+const allowedImportKeys = computed<Set<string> | null>(() => {
+  const profile = authService.getUser()?.perfil ?? null;
+  if (!profile || !(profile in _ALLOWED_IMPORT_KEYS)) return null;
+  return _ALLOWED_IMPORT_KEYS[profile];
+});
+
+function isFileAllowed(key: string): boolean {
+  const allowed = allowedImportKeys.value;
+  return allowed === null || allowed.has(key);
+}
+
+const visibleOrgFiles       = computed(() => orgFiles.filter((f) => isFileAllowed(f.key)));
+const visibleMateriaisFiles = computed(() => materiaisFiles.filter((f) => isFileAllowed(f.key)));
+const visibleHorasFiles     = computed(() => horasFiles.filter((f) => isFileAllowed(f.key)));
+
 // ─── State ────────────────────────────────────────────────────────────────────
 const activeTab    = ref<TabType>("importacao");
 const importStatus = ref<Record<string, FileImportStatus>>({});
@@ -966,8 +1001,10 @@ async function handleFileChange(fileKey: string, event: Event) {
     const formData = new FormData();
     formData.append("file", file);
 
+    const token = authService.getToken();
     const res = await fetch(`${CONFIG.API_BASE_URL}${IMPORT_ENDPOINTS[fileKey]}`, {
       method: "POST",
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
       body: formData,
     });
 
@@ -1094,7 +1131,7 @@ async function loadFalhas() {
     if (falhasFilters.value.data_inicio) params.set("data_inicio", falhasFilters.value.data_inicio);
     if (falhasFilters.value.data_fim)    params.set("data_fim",    falhasFilters.value.data_fim);
     const query = params.toString() ? `?${params.toString()}` : "";
-    const res = await fetch(`${CONFIG.API_BASE_URL}/monitoring/execucoes/${query}`);
+    const res = await apiFetch(`${CONFIG.API_BASE_URL}/monitoring/execucoes/${query}`);
     if (!res.ok) { falhasError.value = "Erro ao carregar registros."; return; }
     const data: { count: number; results: ExecucaoRow[] } = await res.json();
     falhasTotal.value = data.count;

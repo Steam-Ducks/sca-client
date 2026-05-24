@@ -7,7 +7,10 @@
 
       <!-- METRICS -->
       <div class="metrics">
-        <div class="metric-card">
+        <div
+          v-if="!isProjetos"
+          class="metric-card"
+        >
           <div class="metric-label">
             Custo Total - Horas
           </div>
@@ -23,7 +26,10 @@
             {{ fmtH(kpis.totalHoras) }}h
           </div>
         </div>
-        <div class="metric-card">
+        <div
+          v-if="!isProjetos"
+          class="metric-card"
+        >
           <div class="metric-label">
             Custo Médio/Hora
           </div>
@@ -202,7 +208,10 @@
             <canvas id="chartHorasProjeto" />
           </div>
         </div>
-        <div class="chart-card">
+        <div
+          v-if="!isProjetos"
+          class="chart-card"
+        >
           <div class="chart-title">
             Custo de Horas por Projeto
           </div>
@@ -214,7 +223,10 @@
 
       <!-- BOTTOM CHARTS: Custo por Colaborador + Temporal -->
       <div class="charts-row">
-        <div class="chart-card">
+        <div
+          v-if="!isProjetos"
+          class="chart-card"
+        >
           <div class="chart-title">
             Top 10 - Custo por Colaborador
           </div>
@@ -269,12 +281,14 @@
                   Horas {{ sortIcon("horas") }}
                 </th>
                 <th
+                  v-if="!isProjetos"
                   class="sort-col"
                   @click="sortBy('custoPorHora')"
                 >
                   Custo/Hora {{ sortIcon("custoPorHora") }}
                 </th>
                 <th
+                  v-if="!isProjetos"
                   class="sort-col"
                   @click="sortBy('custoTotal')"
                 >
@@ -331,10 +345,16 @@
                 <td class="mono right">
                   {{ fmtH(row.horas) }}h
                 </td>
-                <td class="mono">
+                <td
+                  v-if="!isProjetos"
+                  class="mono"
+                >
                   {{ fmt(row.custoPorHora) }}
                 </td>
-                <td class="total">
+                <td
+                  v-if="!isProjetos"
+                  class="total"
+                >
                   {{ fmt(row.custoTotal) }}
                 </td>
                 <td class="mono">
@@ -398,6 +418,7 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted, nextTick } from "vue";
 import { useChartsTechnical } from "@/composables/useChartsTechnical";
+import { usePermissions } from "@/composables/usePermissions";
 import { CONFIG } from "@/utils/config";
 
 const PER_PAGE = 8;
@@ -825,6 +846,7 @@ function clearFilters() {
 
 // ─── Charts ───────────────────────────────────────────────────────────────────
 const { buildCharts, updateCharts, destroyCharts } = useChartsTechnical();
+const { isProjetos } = usePermissions();
 
 onMounted(async () => {
   await loadData();
