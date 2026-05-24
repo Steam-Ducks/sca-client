@@ -247,7 +247,10 @@
           >
             <div class="import-sections">
               <!-- Importação Organizacional -->
-              <div v-if="visibleOrgFiles.length > 0" class="import-section">
+              <div
+                v-if="visibleOrgFiles.length > 0"
+                class="import-section"
+              >
                 <div class="section-header">
                   <div class="section-icon blue">
                     <svg
@@ -297,7 +300,7 @@
                 <div class="upload-grid">
                   <div v-for="file in visibleOrgFiles" :key="file.key" class="upload-card">
                   <div
-                    v-for="file in orgFiles"
+                    v-for="file in visibleOrgFiles"
                     :key="file.key"
                     class="upload-card"
                   >
@@ -379,7 +382,10 @@
               </div>
 
               <!-- Importação de Materiais -->
-              <div v-if="visibleMateriaisFiles.length > 0" class="import-section">
+              <div
+                v-if="visibleMateriaisFiles.length > 0"
+                class="import-section"
+              >
                 <div class="section-header">
                   <div class="section-icon green">
                     <svg
@@ -416,7 +422,7 @@
                 <div class="upload-grid">
                   <div v-for="file in visibleMateriaisFiles" :key="file.key" class="upload-card">
                   <div
-                    v-for="file in materiaisFiles"
+                    v-for="file in visibleMateriaisFiles"
                     :key="file.key"
                     class="upload-card"
                   >
@@ -498,7 +504,10 @@
               </div>
 
               <!-- Importação de Horas Técnicas -->
-              <div v-if="visibleHorasFiles.length > 0" class="import-section">
+              <div
+                v-if="visibleHorasFiles.length > 0"
+                class="import-section"
+              >
                 <div class="section-header">
                   <div class="section-icon purple">
                     <svg
@@ -529,7 +538,7 @@
                 <div class="upload-grid">
                   <div v-for="file in visibleHorasFiles" :key="file.key" class="upload-card">
                   <div
-                    v-for="file in horasFiles"
+                    v-for="file in visibleHorasFiles"
                     :key="file.key"
                     class="upload-card"
                   >
@@ -881,6 +890,7 @@
 import { ref, computed, onMounted, watch } from "vue";
 import { CONFIG } from "@/utils/config";
 import { authService } from "@/services/authService";
+import { apiFetch } from "@/utils/apiFetch";
 
 type TabType = "importacao" | "historico" | "falhas";
 type ImportStatus = "idle" | "processing" | "success" | "error";
@@ -926,7 +936,7 @@ const horasFiles = [
   { key: "tempo_tarefas",  name: "tempo_tarefas.csv" },
 ];
 
-// ─── Profile-based import file filtering ─────────────────────────────────────
+// ─── Profile-based file visibility ───────────────────────────────────────────
 const _ALLOWED_IMPORT_KEYS: Record<string, Set<string> | null> = {
   super_admin:  null,
   financeiro:   new Set(["programas", "projetos", "tarefa_projeto", "tempo_tarefas"]),
@@ -994,8 +1004,10 @@ async function handleFileChange(fileKey: string, event: Event) {
     const formData = new FormData();
     formData.append("file", file);
 
+    const token = authService.getToken();
     const res = await fetch(`${CONFIG.API_BASE_URL}${IMPORT_ENDPOINTS[fileKey]}`, {
       method: "POST",
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
       body: formData,
     });
 
@@ -1122,7 +1134,7 @@ async function loadFalhas() {
     if (falhasFilters.value.data_inicio) params.set("data_inicio", falhasFilters.value.data_inicio);
     if (falhasFilters.value.data_fim)    params.set("data_fim",    falhasFilters.value.data_fim);
     const query = params.toString() ? `?${params.toString()}` : "";
-    const res = await fetch(`${CONFIG.API_BASE_URL}/monitoring/execucoes/${query}`);
+    const res = await apiFetch(`${CONFIG.API_BASE_URL}/monitoring/execucoes/${query}`);
     if (!res.ok) { falhasError.value = "Erro ao carregar registros."; return; }
     const data: { count: number; results: ExecucaoRow[] } = await res.json();
     falhasTotal.value = data.count;
