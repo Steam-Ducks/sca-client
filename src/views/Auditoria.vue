@@ -298,7 +298,6 @@
                   Atualização das estruturas organizacionais utilizadas no ambiente analítico
                 </p>
                 <div class="upload-grid">
-                  <div v-for="file in visibleOrgFiles" :key="file.key" class="upload-card">
                   <div
                     v-for="file in visibleOrgFiles"
                     :key="file.key"
@@ -420,7 +419,6 @@
                   Atualização dos dados relacionados a materiais, compras, estoque e fornecedores
                 </p>
                 <div class="upload-grid">
-                  <div v-for="file in visibleMateriaisFiles" :key="file.key" class="upload-card">
                   <div
                     v-for="file in visibleMateriaisFiles"
                     :key="file.key"
@@ -536,7 +534,6 @@
                   Atualização dos dados relacionados às tarefas executadas e horas técnicas registradas
                 </p>
                 <div class="upload-grid">
-                  <div v-for="file in visibleHorasFiles" :key="file.key" class="upload-card">
                   <div
                     v-for="file in visibleHorasFiles"
                     :key="file.key"
