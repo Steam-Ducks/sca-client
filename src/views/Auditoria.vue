@@ -172,7 +172,7 @@
             <div class="import-sections">
 
               <!-- Importação Organizacional -->
-              <div class="import-section">
+              <div v-if="visibleOrgFiles.length > 0" class="import-section">
                 <div class="section-header">
                   <div class="section-icon blue">
                     <svg
@@ -198,7 +198,7 @@
                   Atualização das estruturas organizacionais utilizadas no ambiente analítico
                 </p>
                 <div class="upload-grid">
-                  <div v-for="file in orgFiles" :key="file.key" class="upload-card">
+                  <div v-for="file in visibleOrgFiles" :key="file.key" class="upload-card">
                     <div class="upload-card-header">
                       <div class="file-name-row">
                         <svg class="file-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -231,7 +231,7 @@
               </div>
 
               <!-- Importação de Materiais -->
-              <div class="import-section">
+              <div v-if="visibleMateriaisFiles.length > 0" class="import-section">
                 <div class="section-header">
                   <div class="section-icon green">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -247,7 +247,7 @@
                   Atualização dos dados relacionados a materiais, compras, estoque e fornecedores
                 </p>
                 <div class="upload-grid">
-                  <div v-for="file in materiaisFiles" :key="file.key" class="upload-card">
+                  <div v-for="file in visibleMateriaisFiles" :key="file.key" class="upload-card">
                     <div class="upload-card-header">
                       <div class="file-name-row">
                         <svg class="file-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -280,7 +280,7 @@
               </div>
 
               <!-- Importação de Horas Técnicas -->
-              <div class="import-section">
+              <div v-if="visibleHorasFiles.length > 0" class="import-section">
                 <div class="section-header">
                   <div class="section-icon purple">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -296,7 +296,7 @@
                   Atualização dos dados relacionados às tarefas executadas e horas técnicas registradas
                 </p>
                 <div class="upload-grid">
-                  <div v-for="file in horasFiles" :key="file.key" class="upload-card">
+                  <div v-for="file in visibleHorasFiles" :key="file.key" class="upload-card">
                     <div class="upload-card-header">
                       <div class="file-name-row">
                         <svg class="file-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -471,6 +471,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from "vue";
 import { CONFIG } from "@/utils/config";
+import { authService } from "@/services/authService";
 
 type TabType = "importacao" | "historico" | "falhas";
 type ImportStatus = "idle" | "processing" | "success" | "error";
@@ -515,6 +516,30 @@ const horasFiles = [
   { key: "tarefa_projeto", name: "tarefa_projeto.csv" },
   { key: "tempo_tarefas",  name: "tempo_tarefas.csv" },
 ];
+
+// ─── Profile-based import file filtering ─────────────────────────────────────
+const _ALLOWED_IMPORT_KEYS: Record<string, Set<string> | null> = {
+  super_admin:  null,
+  financeiro:   new Set(["programas", "projetos", "tarefa_projeto", "tempo_tarefas"]),
+  compras:      new Set(["fornecedores", "pedidos_compras", "solicitacoes_compra", "compras_projeto"]),
+  almoxarifado: new Set(["materiais", "empenho_materiais", "estoque_materiais_projeto"]),
+  projetos:     new Set(["projetos", "tarefa_projeto", "tempo_tarefas"]),
+};
+
+const allowedImportKeys = computed<Set<string> | null>(() => {
+  const profile = authService.getUser()?.perfil ?? null;
+  if (!profile || !(profile in _ALLOWED_IMPORT_KEYS)) return null;
+  return _ALLOWED_IMPORT_KEYS[profile];
+});
+
+function isFileAllowed(key: string): boolean {
+  const allowed = allowedImportKeys.value;
+  return allowed === null || allowed.has(key);
+}
+
+const visibleOrgFiles       = computed(() => orgFiles.filter((f) => isFileAllowed(f.key)));
+const visibleMateriaisFiles = computed(() => materiaisFiles.filter((f) => isFileAllowed(f.key)));
+const visibleHorasFiles     = computed(() => horasFiles.filter((f) => isFileAllowed(f.key)));
 
 // ─── State ────────────────────────────────────────────────────────────────────
 const activeTab    = ref<TabType>("importacao");
