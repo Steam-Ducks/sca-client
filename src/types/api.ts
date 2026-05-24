@@ -183,3 +183,12 @@ export interface CostEvolutionRow {
   hours_cost: number
   total_cost: number
 }
+
+export type ConsolidatedRow = {
+  nome_projeto: string
+  programa: string | null
+  custo_materiais: number
+  custo_horas: number
+  custo_total: number
+  status: string | null
+}
