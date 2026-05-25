@@ -438,7 +438,6 @@ import { useTheme } from "@/composables/useTheme";
 import { useChartsDashboard } from "@/composables/useChartsDashboard";
 import type { DashboardRow } from "@/composables/useChartsDashboard";
 import { dashboardService } from "@/services/dashboardService";
-import { CONFIG } from "@/utils/config";
 import type {
   CompositionData,
   DashboardKPIs,
