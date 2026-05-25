@@ -278,8 +278,12 @@
                 >
                   Período {{ sortIcon("periodo") }}
                 </th>
-                <th v-if="!isAlmoxarifado && !isProjetos">Fornecedor</th>
-                <th v-if="!isAlmoxarifado && !isProjetos">Categoria</th>
+                <th v-if="!isAlmoxarifado && !isProjetos">
+                  Fornecedor
+                </th>
+                <th v-if="!isAlmoxarifado && !isProjetos">
+                  Categoria
+                </th>
               </tr>
             </thead>
             <tbody>
