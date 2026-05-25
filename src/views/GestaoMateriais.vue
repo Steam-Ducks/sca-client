@@ -3,7 +3,10 @@
     <main class="main">
       <!-- METRICS -->
       <div class="metrics">
-        <div class="metric-card">
+        <div
+          v-if="!isMaterialsLimitedProfile"
+          class="metric-card"
+        >
           <div class="metric-label">
             Custo Total de Materiais
           </div>
@@ -19,7 +22,10 @@
             {{ sortedData.length }}
           </div>
         </div>
-        <div class="metric-card">
+        <div
+          v-if="!isMaterialsLimitedProfile"
+          class="metric-card"
+        >
           <div class="metric-label">
             Custo Médio por Item
           </div>
@@ -174,7 +180,10 @@
 
       <!-- TOP CHARTS -->
       <div class="charts-row">
-        <div class="chart-card">
+        <div
+          v-if="!isMaterialsLimitedProfile"
+          class="chart-card"
+        >
           <div class="chart-title">
             Top 10 Custo por Material
           </div>
@@ -193,7 +202,10 @@
       </div>
 
       <!-- BOTTOM CHARTS -->
-      <div class="charts-row">
+      <div
+        v-if="!isMaterialsLimitedProfile"
+        class="charts-row"
+      >
         <div class="chart-card">
           <div class="chart-title">
             Custo de Materiais por Projeto
@@ -246,12 +258,14 @@
                   Quantidade {{ sortIcon("quantidade") }}
                 </th>
                 <th
+                  v-if="!isMaterialsLimitedProfile"
                   class="sort-col"
                   @click="sort('valorUnitario')"
                 >
                   Valor Unitário {{ sortIcon("valorUnitario") }}
                 </th>
                 <th
+                  v-if="!isMaterialsLimitedProfile"
                   class="sort-col"
                   @click="sort('valorTotal')"
                 >
@@ -308,10 +322,16 @@
                 <td class="mono right">
                   {{ row.quantidade }}
                 </td>
-                <td class="mono">
+                <td
+                  v-if="!isMaterialsLimitedProfile"
+                  class="mono"
+                >
                   {{ fmt(row.valorUnitario) }}
                 </td>
-                <td class="total">
+                <td
+                  v-if="!isMaterialsLimitedProfile"
+                  class="total"
+                >
                   {{ fmt(row.valorTotal) }}
                 </td>
                 <td class="mono">
@@ -377,6 +397,7 @@
 <script setup lang="ts">
 import { ref, reactive, computed, watch, onMounted, onUnmounted, nextTick } from "vue";
 import { useCharts } from "@/composables/useCharts";
+import { usePermissions } from "@/composables/usePermissions";
 import { materiaisService } from "@/services/materiaisService";
 import type { MaterialsApiRow } from "@/services/materiaisService";
 import type { Filters, SortKey, SortDir, Material, Categoria, Status } from "@/types/materiais";
@@ -399,6 +420,7 @@ const filters = reactive<Filters>({
   fornecedor: "",
   status: "",
   area: "",
+  search: "",
 });
 const sortKey = ref<SortKey>("valorTotal");
 const sortDir = ref<SortDir>(-1);
@@ -727,6 +749,7 @@ function exportCSV() {
 
 // ─── Charts ──────────────────────────────────────────────────────────────
 const { buildCharts, updateCharts, destroyCharts } = useCharts();
+const { isMaterialsLimitedProfile } = usePermissions();
 
 watch([topMaterials, tableData, costByProject], () => {
   if (!isMounted.value) return;
