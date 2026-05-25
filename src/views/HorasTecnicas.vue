@@ -177,6 +177,29 @@
             </svg>
             Exportar
           </button>
+          <button
+            class="export-btn"
+            @click="exportExcel"
+          >
+            <svg
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                d="M12 16l-4-4h3V4h2v8h3l-4 4z"
+                stroke-width="1.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+              <path
+                d="M4 20h16"
+                stroke-width="1.5"
+                stroke-linecap="round"
+              />
+            </svg>
+            Exportar Excel
+          </button>
         </div>
         <div
           v-if="hasActiveFilters"
@@ -420,6 +443,7 @@ import { ref, computed, watch, onMounted, onUnmounted, nextTick } from "vue";
 import { useChartsTechnical } from "@/composables/useChartsTechnical";
 import { horasTecnicasService } from '@/services/horasTecnicasService'
 import { usePermissions } from "@/composables/usePermissions";
+import * as XLSX from 'xlsx'
 
 const PER_PAGE = 8;
 
@@ -644,6 +668,23 @@ function exportCSV() {
   a.click();
 }
 
+function exportExcel() {
+  const rows = filteredData.value.map((r) => ({
+    Colaborador: r.colaborador,
+    Projeto: r.projeto,
+    Programa: r.programa,
+    Horas: r.horas,
+    'Custo/Hora': r.custoPorHora,
+    'Custo Total': r.custoTotal,
+    Período: r.periodo,
+    Tarefa: r.tarefa,
+  }))
+
+  const ws = XLSX.utils.json_to_sheet(rows)
+  const wb = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(wb, ws, 'Horas Técnicas')
+  XLSX.writeFile(wb, 'horas-tecnicas.xlsx')
+}
 
 function removeFilter(key: string) {
   (filters.value as Record<string, string>)[key] = "";

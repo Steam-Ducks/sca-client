@@ -150,6 +150,29 @@
             </svg>
             Exportar
           </button>
+          <button
+            class="export-btn"
+            @click="exportExcel"
+          >
+            <svg
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                d="M12 16l-4-4h3V4h2v8h3l-4 4z"
+                stroke-width="1.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+              <path
+                d="M4 20h16"
+                stroke-width="1.5"
+                stroke-linecap="round"
+              />
+            </svg>
+            Exportar Excel
+          </button>
         </div>
         <div
           v-if="hasActiveFilters"
@@ -465,6 +488,7 @@ import type {
   TopProjectRow,
   CostEvolutionRow,
 } from "@/types/api";
+import * as XLSX from 'xlsx'
 
 const PER_PAGE = 8;
 
@@ -690,6 +714,21 @@ function exportCSV() {
   URL.revokeObjectURL(url);
 }
 
+function exportExcel() {
+  const rows = filteredData.value.map((r) => ({
+    Projeto: r.projeto,
+    Programa: r.programa,
+    'Custo Materiais': r.custoMateriais,
+    'Custo Horas': r.custoHoras,
+    'Custo Total': r.custoTotal,
+    Período: r.periodo,
+  }))
+
+  const ws = XLSX.utils.json_to_sheet(rows)
+  const wb = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(wb, ws, 'Dashboard Geral')
+  XLSX.writeFile(wb, 'dashboard-geral.xlsx')
+}
 
 function removeFilter(key: string) {
   (filters.value as Record<string, string>)[key] = "";
