@@ -15,6 +15,7 @@
 
     <nav class="nav-tabs">
       <RouterLink
+        v-if="canAccessDashboard"
         class="nav-tab"
         to="/dashboard"
       >
@@ -87,6 +88,7 @@
       </RouterLink>
 
       <RouterLink
+        v-if="canAccessHoras"
         class="nav-tab"
         to="/horas"
       >
@@ -112,6 +114,7 @@
       </RouterLink>
 
       <RouterLink
+        v-if="canAccessConsolidado"
         class="nav-tab"
         to="/consolidado"
       >
@@ -153,6 +156,7 @@
       </RouterLink>
 
       <RouterLink
+        v-if="canAccessOrcamento"
         class="nav-tab"
         to="/orcamento"
       >
@@ -292,9 +296,11 @@
 import { RouterLink, useRouter } from 'vue-router'
 import { authService } from '@/services/authService'
 import { useTheme } from '@/composables/useTheme'
+import { usePermissions } from '@/composables/usePermissions'
 
 const { theme, toggle } = useTheme()
 const router = useRouter()
+const { canAccessDashboard, canAccessHoras, canAccessConsolidado, canAccessOrcamento } = usePermissions()
 
 function handleLogout() {
   authService.clearSession()

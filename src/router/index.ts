@@ -27,21 +27,25 @@ const router = createRouter({
       path: "/dashboard",
       name: "dashboard",
       component: () => import("@/views/DashboardView.vue"),
+      meta: { allowedProfiles: ["super_admin", "financeiro", "projetos"] },
     },
     {
       path: "/horas",
       name: "horas",
       component: () => import("@/views/HorasTecnicas.vue"),
+      meta: { allowedProfiles: ["super_admin", "financeiro", "projetos"] },
     },
     {
       path: "/consolidado",
       name: "consolidado",
       component: () => import("@/views/Consolidado.vue"),
+      meta: { allowedProfiles: ["super_admin", "financeiro", "projetos"] },
     },
     {
       path: "/orcamento",
       name: "orcamento",
       component: () => import("@/views/OrcamentoSaudeFinanceira.vue"),
+      meta: { allowedProfiles: ["super_admin", "financeiro"] },
     },
     {
       path: "/auditoria",
@@ -62,6 +66,15 @@ router.beforeEach((to, from, next) => {
   if (to.path === "/login" && authService.isAuthenticated()) {
     next("/materiais");
     return;
+  }
+
+  const allowedProfiles = to.meta.allowedProfiles as string[] | undefined;
+  if (allowedProfiles) {
+    const perfil = authService.getUser()?.perfil ?? null;
+    if (!perfil || !allowedProfiles.includes(perfil)) {
+      next("/materiais");
+      return;
+    }
   }
 
   next();
