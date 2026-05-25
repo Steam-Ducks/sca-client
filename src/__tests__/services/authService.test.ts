@@ -19,7 +19,7 @@ const mockAuthResponse: AuthResponse = {
 describe("authService", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    localStorage.clear();
+    authService.clearSession();
   });
 
   describe("login", () => {
@@ -98,8 +98,8 @@ describe("authService", () => {
   });
 
   describe("getUser", () => {
-    it("returns parsed user when stored", () => {
-      localStorage.setItem("sca_user", JSON.stringify(mockAuthResponse.user));
+    it("returns parsed user after saveSession", () => {
+      authService.saveSession(mockAuthResponse);
       expect(authService.getUser()).toEqual(mockAuthResponse.user);
     });
 
@@ -107,8 +107,9 @@ describe("authService", () => {
       expect(authService.getUser()).toBeNull();
     });
 
-    it("returns null when stored value is invalid JSON", () => {
-      localStorage.setItem("sca_user", "not-valid-json");
+    it("returns null after clearSession", () => {
+      authService.saveSession(mockAuthResponse);
+      authService.clearSession();
       expect(authService.getUser()).toBeNull();
     });
   });

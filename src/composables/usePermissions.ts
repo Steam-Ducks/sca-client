@@ -20,6 +20,22 @@ export function usePermissions() {
     () => isCompras.value || isAlmoxarifado.value || isProjetos.value,
   );
 
+  const canAccessDashboard = computed(
+    () => isSuperAdmin.value || isFinanceiro.value || isProjetos.value,
+  );
+
+  const canAccessHoras = computed(
+    () => isSuperAdmin.value || isFinanceiro.value || isProjetos.value,
+  );
+
+  const canAccessConsolidado = computed(
+    () => isSuperAdmin.value || isFinanceiro.value || isProjetos.value,
+  );
+
+  const canAccessOrcamento = computed(
+    () => isSuperAdmin.value || isFinanceiro.value,
+  );
+
   return {
     userProfile,
     isSuperAdmin,
@@ -29,5 +45,9 @@ export function usePermissions() {
     isProjetos,
     canSeeCosts,
     isMaterialsLimitedProfile,
+    canAccessDashboard,
+    canAccessHoras,
+    canAccessConsolidado,
+    canAccessOrcamento,
   };
 }

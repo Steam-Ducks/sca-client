@@ -276,6 +276,7 @@
                   Programa {{ sortIcon("programa") }}
                 </th>
                 <th
+                  v-if="!isCompras"
                   class="sort-col"
                   @click="sort('quantidade')"
                 >
@@ -301,14 +302,18 @@
                 >
                   Período {{ sortIcon("periodo") }}
                 </th>
-                <th>Fornecedor</th>
-                <th>Categoria</th>
+                <th v-if="!isAlmoxarifado && !isProjetos">
+                  Fornecedor
+                </th>
+                <th v-if="!isAlmoxarifado && !isProjetos">
+                  Categoria
+                </th>
               </tr>
             </thead>
             <tbody>
               <tr v-if="tableLoading">
                 <td
-                  colspan="9"
+                  :colspan="tableColspan"
                   class="table-feedback muted"
                 >
                   Carregando materiais...
@@ -316,7 +321,7 @@
               </tr>
               <tr v-else-if="tableError">
                 <td
-                  colspan="9"
+                  :colspan="tableColspan"
                   class="table-feedback error"
                 >
                   {{ tableError }}
@@ -324,7 +329,7 @@
               </tr>
               <tr v-else-if="pagedData.length === 0">
                 <td
-                  colspan="9"
+                  :colspan="tableColspan"
                   class="table-feedback muted"
                 >
                   Nenhum material encontrado.
@@ -343,7 +348,10 @@
                 <td class="muted">
                   {{ row.programa }}
                 </td>
-                <td class="mono right">
+                <td
+                  v-if="!isCompras"
+                  class="mono right"
+                >
                   {{ row.quantidade }}
                 </td>
                 <td
@@ -361,10 +369,13 @@
                 <td class="mono">
                   {{ row.periodo }}
                 </td>
-                <td class="muted">
+                <td
+                  v-if="!isAlmoxarifado && !isProjetos"
+                  class="muted"
+                >
                   {{ row.fornecedor }}
                 </td>
-                <td>
+                <td v-if="!isAlmoxarifado && !isProjetos">
                   <span :class="badgeClass(row.categoria)">{{ row.categoria }}</span>
                 </td>
               </tr>
@@ -793,7 +804,15 @@ function exportExcel() {
 
 // ─── Charts ──────────────────────────────────────────────────────────────
 const { buildCharts, updateCharts, destroyCharts } = useCharts();
-const { isMaterialsLimitedProfile } = usePermissions();
+const { isMaterialsLimitedProfile, isCompras, isAlmoxarifado, isProjetos } = usePermissions();
+
+const tableColspan = computed(() => {
+  let cols = 5; // Material, Projeto, Programa, Período + always 1 fixed
+  if (!isCompras.value) cols++;              // Quantidade
+  if (!isMaterialsLimitedProfile.value) cols += 2; // Valor Unitário, Valor Total
+  if (!isAlmoxarifado.value && !isProjetos.value) cols += 2; // Fornecedor, Categoria
+  return cols;
+});
 
 watch([topMaterials, tableData, costByProject], () => {
   if (!isMounted.value) return;

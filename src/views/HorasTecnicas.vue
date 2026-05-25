@@ -441,8 +441,8 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted, nextTick } from "vue";
 import { useChartsTechnical } from "@/composables/useChartsTechnical";
-import { horasTecnicasService } from '@/services/horasTecnicasService'
 import { usePermissions } from "@/composables/usePermissions";
+import { horasTecnicasService } from '@/services/horasTecnicasService'
 import * as XLSX from 'xlsx'
 
 const PER_PAGE = 8;

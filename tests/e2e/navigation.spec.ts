@@ -12,6 +12,15 @@ test.describe("Navegação com backend real", () => {
   test.beforeEach(async ({ page }) => {
     await page.addInitScript(() => {
       localStorage.setItem("sca_access_token", "fake-e2e-token");
+      localStorage.setItem(
+        "sca_user",
+        JSON.stringify({
+          id: 1,
+          username: "superadmin",
+          name: "Super Admin",
+          perfil: "super_admin",
+        }),
+      );
     });
     await page.goto("/");
     // Aguarda a página carregar dados da API antes de qualquer asserção
