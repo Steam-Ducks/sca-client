@@ -813,7 +813,6 @@ const tableColspan = computed(() => {
   if (!isAlmoxarifado.value && !isProjetos.value) cols += 2; // Fornecedor, Categoria
   return cols;
 });
-const { isMaterialsLimitedProfile } = usePermissions();
 
 watch([topMaterials, tableData, costByProject], () => {
   if (!isMounted.value) return;

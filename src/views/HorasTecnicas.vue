@@ -442,9 +442,7 @@
 import { ref, computed, watch, onMounted, onUnmounted, nextTick } from "vue";
 import { useChartsTechnical } from "@/composables/useChartsTechnical";
 import { usePermissions } from "@/composables/usePermissions";
-import { CONFIG } from "@/utils/config";
 import { horasTecnicasService } from '@/services/horasTecnicasService'
-import { usePermissions } from "@/composables/usePermissions";
 import * as XLSX from 'xlsx'
 
 const PER_PAGE = 8;
