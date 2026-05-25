@@ -398,7 +398,7 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted, nextTick } from "vue";
 import { useChartsTechnical } from "@/composables/useChartsTechnical";
-import { CONFIG } from "@/utils/config";
+import { horasTecnicasService } from '@/services/horasTecnicasService'
 
 const PER_PAGE = 8;
 
@@ -429,184 +429,184 @@ interface ApiRow {
 }
 
 // ─── Mock / fallback data (usado se API indisponível) ─────────────────────────
-const MOCK: Row[] = [
-  {
-    id: 1,
-    colaborador: "Lucas Martins",
-    projeto: "Migração AWS",
-    programa: "Cloud",
-    horas: 400,
-    custoPorHora: 420,
-    custoTotal: 168000,
-    periodo: "2024-01",
-    tarefa: "Arquitetura Cloud",
-  },
-  {
-    id: 2,
-    colaborador: "Juliana Lima",
-    projeto: "Sistema ERP",
-    programa: "Desenvolvimento",
-    horas: 410,
-    custoPorHora: 380,
-    custoTotal: 155800,
-    periodo: "2024-02",
-    tarefa: "Liderança Técnica",
-  },
-  {
-    id: 3,
-    colaborador: "Ana Oliveira",
-    projeto: "Portal Web",
-    programa: "Desenvolvimento",
-    horas: 520,
-    custoPorHora: 250,
-    custoTotal: 130000,
-    periodo: "2024-01",
-    tarefa: "Desenvolvimento",
-  },
-  {
-    id: 4,
-    colaborador: "Pedro Costa",
-    projeto: "Portal Web",
-    programa: "Desenvolvimento",
-    horas: 450,
-    custoPorHora: 280,
-    custoTotal: 126000,
-    periodo: "2024-01",
-    tarefa: "Desenvolvimento",
-  },
-  {
-    id: 5,
-    colaborador: "Carlos Ferreira",
-    projeto: "Sistema ERP",
-    programa: "Desenvolvimento",
-    horas: 380,
-    custoPorHora: 320,
-    custoTotal: 121600,
-    periodo: "2024-02",
-    tarefa: "Banco de Dados",
-  },
-  {
-    id: 6,
-    colaborador: "Roberto Alves",
-    projeto: "SOC Implementation",
-    programa: "Segurança",
-    horas: 300,
-    custoPorHora: 400,
-    custoTotal: 120000,
-    periodo: "2024-03",
-    tarefa: "Configuração",
-  },
-  {
-    id: 7,
-    colaborador: "Beatriz Rocha",
-    projeto: "Migração AWS",
-    programa: "Cloud",
-    horas: 380,
-    custoPorHora: 300,
-    custoTotal: 114000,
-    periodo: "2024-03",
-    tarefa: "Migração",
-  },
-  {
-    id: 8,
-    colaborador: "João Silva",
-    projeto: "Data Center Regional",
-    programa: "Infraestrutura",
-    horas: 320,
-    custoPorHora: 350,
-    custoTotal: 112000,
-    periodo: "2024-01",
-    tarefa: "Arquitetura",
-  },
-  {
-    id: 9,
-    colaborador: "Fernanda Torres",
-    projeto: "Sistema ERP",
-    programa: "Desenvolvimento",
-    horas: 360,
-    custoPorHora: 290,
-    custoTotal: 104400,
-    periodo: "2024-02",
-    tarefa: "Desenvolvimento",
-  },
-  {
-    id: 10,
-    colaborador: "Ricardo Souza",
-    projeto: "Data Center Regional",
-    programa: "Infraestrutura",
-    horas: 340,
-    custoPorHora: 310,
-    custoTotal: 105400,
-    periodo: "2024-01",
-    tarefa: "Configuração",
-  },
-  {
-    id: 11,
-    colaborador: "Camila Nunes",
-    projeto: "Portal Web",
-    programa: "Desenvolvimento",
-    horas: 280,
-    custoPorHora: 260,
-    custoTotal: 72800,
-    periodo: "2024-01",
-    tarefa: "Design",
-  },
-  {
-    id: 12,
-    colaborador: "Marcos Pereira",
-    projeto: "SOC Implementation",
-    programa: "Segurança",
-    horas: 260,
-    custoPorHora: 370,
-    custoTotal: 96200,
-    periodo: "2024-03",
-    tarefa: "Configuração",
-  },
-  {
-    id: 13,
-    colaborador: "Thiago Ramos",
-    projeto: "App Mobile",
-    programa: "Desenvolvimento",
-    horas: 310,
-    custoPorHora: 240,
-    custoTotal: 74400,
-    periodo: "2024-02",
-    tarefa: "Desenvolvimento",
-  },
-  {
-    id: 14,
-    colaborador: "Paula Mendes",
-    projeto: "App Mobile",
-    programa: "Desenvolvimento",
-    horas: 200,
-    custoPorHora: 290,
-    custoTotal: 58000,
-    periodo: "2024-02",
-    tarefa: "Liderança Técnica",
-  },
-  {
-    id: 15,
-    colaborador: "Diego Castillo",
-    projeto: "Modernização de Rede",
-    programa: "Infraestrutura",
-    horas: 290,
-    custoPorHora: 330,
-    custoTotal: 95700,
-    periodo: "2024-03",
-    tarefa: "Configuração",
-  },
-  {
-    id: 16,
-    colaborador: "Renata Fontes",
-    projeto: "Sistema ERP",
-    programa: "Desenvolvimento",
-    horas: 220,
-    custoPorHora: 270,
-    custoTotal: 59400,
-    periodo: "2024-03",
-    tarefa: "Desenvolvimento",
-  },
-];
+// const MOCK: Row[] = [
+//   {
+//     id: 1,
+//     colaborador: "Lucas Martins",
+//     projeto: "Migração AWS",
+//     programa: "Cloud",
+//     horas: 400,
+//     custoPorHora: 420,
+//     custoTotal: 168000,
+//     periodo: "2024-01",
+//     tarefa: "Arquitetura Cloud",
+//   },
+//   {
+//     id: 2,
+//     colaborador: "Juliana Lima",
+//     projeto: "Sistema ERP",
+//     programa: "Desenvolvimento",
+//     horas: 410,
+//     custoPorHora: 380,
+//     custoTotal: 155800,
+//     periodo: "2024-02",
+//     tarefa: "Liderança Técnica",
+//   },
+//   {
+//     id: 3,
+//     colaborador: "Ana Oliveira",
+//     projeto: "Portal Web",
+//     programa: "Desenvolvimento",
+//     horas: 520,
+//     custoPorHora: 250,
+//     custoTotal: 130000,
+//     periodo: "2024-01",
+//     tarefa: "Desenvolvimento",
+//   },
+//   {
+//     id: 4,
+//     colaborador: "Pedro Costa",
+//     projeto: "Portal Web",
+//     programa: "Desenvolvimento",
+//     horas: 450,
+//     custoPorHora: 280,
+//     custoTotal: 126000,
+//     periodo: "2024-01",
+//     tarefa: "Desenvolvimento",
+//   },
+//   {
+//     id: 5,
+//     colaborador: "Carlos Ferreira",
+//     projeto: "Sistema ERP",
+//     programa: "Desenvolvimento",
+//     horas: 380,
+//     custoPorHora: 320,
+//     custoTotal: 121600,
+//     periodo: "2024-02",
+//     tarefa: "Banco de Dados",
+//   },
+//   {
+//     id: 6,
+//     colaborador: "Roberto Alves",
+//     projeto: "SOC Implementation",
+//     programa: "Segurança",
+//     horas: 300,
+//     custoPorHora: 400,
+//     custoTotal: 120000,
+//     periodo: "2024-03",
+//     tarefa: "Configuração",
+//   },
+//   {
+//     id: 7,
+//     colaborador: "Beatriz Rocha",
+//     projeto: "Migração AWS",
+//     programa: "Cloud",
+//     horas: 380,
+//     custoPorHora: 300,
+//     custoTotal: 114000,
+//     periodo: "2024-03",
+//     tarefa: "Migração",
+//   },
+//   {
+//     id: 8,
+//     colaborador: "João Silva",
+//     projeto: "Data Center Regional",
+//     programa: "Infraestrutura",
+//     horas: 320,
+//     custoPorHora: 350,
+//     custoTotal: 112000,
+//     periodo: "2024-01",
+//     tarefa: "Arquitetura",
+//   },
+//   {
+//     id: 9,
+//     colaborador: "Fernanda Torres",
+//     projeto: "Sistema ERP",
+//     programa: "Desenvolvimento",
+//     horas: 360,
+//     custoPorHora: 290,
+//     custoTotal: 104400,
+//     periodo: "2024-02",
+//     tarefa: "Desenvolvimento",
+//   },
+//   {
+//     id: 10,
+//     colaborador: "Ricardo Souza",
+//     projeto: "Data Center Regional",
+//     programa: "Infraestrutura",
+//     horas: 340,
+//     custoPorHora: 310,
+//     custoTotal: 105400,
+//     periodo: "2024-01",
+//     tarefa: "Configuração",
+//   },
+//   {
+//     id: 11,
+//     colaborador: "Camila Nunes",
+//     projeto: "Portal Web",
+//     programa: "Desenvolvimento",
+//     horas: 280,
+//     custoPorHora: 260,
+//     custoTotal: 72800,
+//     periodo: "2024-01",
+//     tarefa: "Design",
+//   },
+//   {
+//     id: 12,
+//     colaborador: "Marcos Pereira",
+//     projeto: "SOC Implementation",
+//     programa: "Segurança",
+//     horas: 260,
+//     custoPorHora: 370,
+//     custoTotal: 96200,
+//     periodo: "2024-03",
+//     tarefa: "Configuração",
+//   },
+//   {
+//     id: 13,
+//     colaborador: "Thiago Ramos",
+//     projeto: "App Mobile",
+//     programa: "Desenvolvimento",
+//     horas: 310,
+//     custoPorHora: 240,
+//     custoTotal: 74400,
+//     periodo: "2024-02",
+//     tarefa: "Desenvolvimento",
+//   },
+//   {
+//     id: 14,
+//     colaborador: "Paula Mendes",
+//     projeto: "App Mobile",
+//     programa: "Desenvolvimento",
+//     horas: 200,
+//     custoPorHora: 290,
+//     custoTotal: 58000,
+//     periodo: "2024-02",
+//     tarefa: "Liderança Técnica",
+//   },
+//   {
+//     id: 15,
+//     colaborador: "Diego Castillo",
+//     projeto: "Modernização de Rede",
+//     programa: "Infraestrutura",
+//     horas: 290,
+//     custoPorHora: 330,
+//     custoTotal: 95700,
+//     periodo: "2024-03",
+//     tarefa: "Configuração",
+//   },
+//   {
+//     id: 16,
+//     colaborador: "Renata Fontes",
+//     projeto: "Sistema ERP",
+//     programa: "Desenvolvimento",
+//     horas: 220,
+//     custoPorHora: 270,
+//     custoTotal: 59400,
+//     periodo: "2024-03",
+//     tarefa: "Desenvolvimento",
+//   },
+// ];
 
 // ─── State ────────────────────────────────────────────────────────────────────
 const tableData = ref<Row[]>([]);
@@ -725,28 +725,22 @@ function mapApiRow(r: ApiRow): Row {
 }
 
 async function loadData() {
-  tableLoading.value = true;
-  tableError.value = "";
+  tableLoading.value = true
+  tableError.value = ''
   try {
-    const params = new URLSearchParams();
-    if (filters.value.periodo) params.set("periodo", filters.value.periodo);
-    if (filters.value.programa) params.set("programa", filters.value.programa);
-    if (filters.value.projeto) params.set("projeto", filters.value.projeto);
-    const query = params.toString() ? `?${params.toString()}` : "";
-
-    const res = await fetch(`${CONFIG.API_BASE_URL}/horas-tecnicas/${query}`);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = (await res.json()) as ApiRow[];
-    tableData.value = data.map(mapApiRow);
-  } catch {
-    // fallback para dados mock se API indisponível
-    tableData.value = MOCK;
+    const raw = await horasTecnicasService.fetchAll({
+      periodo: filters.value.periodo || undefined,
+      programa: filters.value.programa || undefined,
+      projeto: filters.value.projeto || undefined,
+    })
+    tableData.value = raw.map(mapApiRow)
+  } catch (err) {
+    console.error('Erro ao buscar horas técnicas:', err)
+    tableError.value = 'Erro ao carregar dados. Tente novamente.'
   } finally {
-    tableLoading.value = false;
+    tableLoading.value = false
   }
 }
-
-
 
 watch(
   () => [filters.value.periodo, filters.value.programa, filters.value.projeto],

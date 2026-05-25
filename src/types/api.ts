@@ -192,3 +192,15 @@ export type ConsolidatedRow = {
   custo_total: number
   status: string | null
 }
+
+export type HorasTecnicasRow = {
+  id: number
+  colaborador: string
+  projeto: string
+  programa: string
+  horas_trabalhadas: number
+  custo_por_hora: number
+  custo_total: number
+  periodo: string | null
+  tarefa: string
+}
