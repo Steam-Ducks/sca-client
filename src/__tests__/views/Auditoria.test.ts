@@ -40,12 +40,6 @@ const EXECUCOES_RESPONSE = {
 
 const EMPTY_EXECUCOES = { count: 0, results: [] };
 
-// Shorthand: two EXECUCOES_RESPONSE responses (one for loadFalhas, one for loadHistorico on mount)
-const mountMocks = () => [
-  { ok: true, json: async () => EXECUCOES_RESPONSE },
-  { ok: true, json: async () => EXECUCOES_RESPONSE },
-];
-
 // ── Helpers ───────────────────────────────────────────────────────────────────
 interface VmType {
   activeTab: string;

@@ -619,18 +619,33 @@
           </div>
 
           <!-- ── Histórico de Execuções ────────────────────────────── -->
-          <div v-show="activeTab === 'historico'" class="tab-panel">
+          <div
+            v-show="activeTab === 'historico'"
+            class="tab-panel"
+          >
             <p class="hist-subtitle">
               Histórico completo de execuções de importação e integração de dados
             </p>
 
             <!-- Filters -->
             <div class="hist-filters">
-              <select v-model="historicoFilters.status" class="hist-select" @change="loadHistorico">
-                <option value="">Todos os status</option>
-                <option value="SUCCESS">Sucesso</option>
-                <option value="PARTIAL">Parcial</option>
-                <option value="FAILED">Falha</option>
+              <select
+                v-model="historicoFilters.status"
+                class="hist-select"
+                @change="loadHistorico"
+              >
+                <option value="">
+                  Todos os status
+                </option>
+                <option value="SUCCESS">
+                  Sucesso
+                </option>
+                <option value="PARTIAL">
+                  Parcial
+                </option>
+                <option value="FAILED">
+                  Falha
+                </option>
               </select>
               <input
                 v-model="historicoFilters.tabela"
@@ -638,16 +653,26 @@
                 placeholder="Tabela..."
                 class="hist-input"
                 @input="loadHistorico"
-              />
+              >
               <input
                 v-model="historicoFilters.fonte"
                 type="text"
                 placeholder="Fonte..."
                 class="hist-input"
                 @input="loadHistorico"
-              />
-              <input v-model="historicoFilters.data_inicio" type="date" class="hist-input" @change="loadHistorico" />
-              <input v-model="historicoFilters.data_fim"    type="date" class="hist-input" @change="loadHistorico" />
+              >
+              <input
+                v-model="historicoFilters.data_inicio"
+                type="date"
+                class="hist-input"
+                @change="loadHistorico"
+              >
+              <input
+                v-model="historicoFilters.data_fim"
+                type="date"
+                class="hist-input"
+                @change="loadHistorico"
+              >
             </div>
 
             <!-- Table card -->
@@ -658,74 +683,166 @@
               </div>
 
               <!-- Loading -->
-              <div v-if="historicoLoading" class="hist-feedback">
+              <div
+                v-if="historicoLoading"
+                class="hist-feedback"
+              >
                 <span class="hist-spinner" />
                 Carregando...
               </div>
 
               <!-- Error -->
-              <div v-else-if="historicoError" class="hist-feedback hist-feedback--error">
+              <div
+                v-else-if="historicoError"
+                class="hist-feedback hist-feedback--error"
+              >
                 {{ historicoError }}
               </div>
 
               <!-- Empty -->
-              <div v-else-if="historicoRows.length === 0" class="hist-feedback hist-feedback--muted">
+              <div
+                v-else-if="historicoRows.length === 0"
+                class="hist-feedback hist-feedback--muted"
+              >
                 Nenhum registro encontrado.
               </div>
 
               <!-- Table -->
-              <div v-else class="hist-table-wrap">
+              <div
+                v-else
+                class="hist-table-wrap"
+              >
                 <table class="hist-table">
                   <thead>
                     <tr>
-                      <th class="sort-col" @click="sortHistorico('iniciado_em')">
+                      <th
+                        class="sort-col"
+                        @click="sortHistorico('iniciado_em')"
+                      >
                         Data/Hora {{ historicoSortIcon('iniciado_em') }}
                       </th>
-                      <th class="sort-col" @click="sortHistorico('tabela')">
+                      <th
+                        class="sort-col"
+                        @click="sortHistorico('tabela')"
+                      >
                         Tabela {{ historicoSortIcon('tabela') }}
                       </th>
-                      <th class="sort-col" @click="sortHistorico('tipo_processo')">
+                      <th
+                        class="sort-col"
+                        @click="sortHistorico('tipo_processo')"
+                      >
                         Tipo {{ historicoSortIcon('tipo_processo') }}
                       </th>
-                      <th class="sort-col" @click="sortHistorico('fonte')">
+                      <th
+                        class="sort-col"
+                        @click="sortHistorico('fonte')"
+                      >
                         Fonte {{ historicoSortIcon('fonte') }}
                       </th>
-                      <th class="sort-col num-col" @click="sortHistorico('duracao_segundos')">
+                      <th
+                        class="sort-col num-col"
+                        @click="sortHistorico('duracao_segundos')"
+                      >
                         Duração {{ historicoSortIcon('duracao_segundos') }}
                       </th>
-                      <th class="sort-col num-col" @click="sortHistorico('linhas_processadas')">
+                      <th
+                        class="sort-col num-col"
+                        @click="sortHistorico('linhas_processadas')"
+                      >
                         Registros {{ historicoSortIcon('linhas_processadas') }}
                       </th>
-                      <th class="sort-col" @click="sortHistorico('status')">
+                      <th
+                        class="sort-col"
+                        @click="sortHistorico('status')"
+                      >
                         Status {{ historicoSortIcon('status') }}
                       </th>
                     </tr>
                   </thead>
                   <tbody>
-                    <tr v-for="row in historicoPagedData" :key="row.id">
-                      <td class="mono">{{ formatDate(row.iniciado_em) }}</td>
+                    <tr
+                      v-for="row in historicoPagedData"
+                      :key="row.id"
+                    >
+                      <td class="mono">
+                        {{ formatDate(row.iniciado_em) }}
+                      </td>
                       <td>{{ row.tabela }}</td>
                       <td>
                         <span :class="row.tipo_processo === 'INCREMENTAL' ? 'tipo-badge tipo-badge--inc' : 'tipo-badge tipo-badge--comp'">
                           {{ row.tipo_processo === 'INCREMENTAL' ? 'Incremental' : 'Completa' }}
                         </span>
                       </td>
-                      <td class="muted-cell">{{ row.fonte }}</td>
-                      <td class="mono num-col">{{ formatDuration(row.duracao_segundos) }}</td>
-                      <td class="mono num-col">{{ row.linhas_processadas }}</td>
+                      <td class="muted-cell">
+                        {{ row.fonte }}
+                      </td>
+                      <td class="mono num-col">
+                        {{ formatDuration(row.duracao_segundos) }}
+                      </td>
+                      <td class="mono num-col">
+                        {{ row.linhas_processadas }}
+                      </td>
                       <td>
                         <span :class="falhaStatusClass(row.status)">
-                          <svg v-if="row.status === 'PARTIAL'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <svg
+                            v-if="row.status === 'PARTIAL'"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                          >
                             <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
-                            <line x1="12" y1="9" x2="12" y2="13" />
-                            <line x1="12" y1="17" x2="12.01" y2="17" />
+                            <line
+                              x1="12"
+                              y1="9"
+                              x2="12"
+                              y2="13"
+                            />
+                            <line
+                              x1="12"
+                              y1="17"
+                              x2="12.01"
+                              y2="17"
+                            />
                           </svg>
-                          <svg v-else-if="row.status === 'FAILED'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <circle cx="12" cy="12" r="10" />
-                            <line x1="15" y1="9" x2="9" y2="15" />
-                            <line x1="9" y1="9" x2="15" y2="15" />
+                          <svg
+                            v-else-if="row.status === 'FAILED'"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                          >
+                            <circle
+                              cx="12"
+                              cy="12"
+                              r="10"
+                            />
+                            <line
+                              x1="15"
+                              y1="9"
+                              x2="9"
+                              y2="15"
+                            />
+                            <line
+                              x1="9"
+                              y1="9"
+                              x2="15"
+                              y2="15"
+                            />
                           </svg>
-                          <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <svg
+                            v-else
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                          >
                             <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
                             <polyline points="22 4 12 14.01 9 11.01" />
                           </svg>
@@ -741,17 +858,43 @@
               <div class="hist-pagination">
                 <span>{{ historicoRows.length }} registros · página {{ historicoPage }} de {{ historicoTotalPages }}</span>
                 <div class="pg-btns">
-                  <button class="pg-btn" :disabled="historicoPage === 1" @click="historicoPage = 1">«</button>
-                  <button class="pg-btn" :disabled="historicoPage === 1" @click="historicoPage--">‹</button>
+                  <button
+                    class="pg-btn"
+                    :disabled="historicoPage === 1"
+                    @click="historicoPage = 1"
+                  >
+                    «
+                  </button>
+                  <button
+                    class="pg-btn"
+                    :disabled="historicoPage === 1"
+                    @click="historicoPage--"
+                  >
+                    ‹
+                  </button>
                   <button
                     v-for="p in historicoVisiblePages"
                     :key="p"
                     class="pg-btn"
                     :class="{ active: p === historicoPage }"
                     @click="historicoPage = p"
-                  >{{ p }}</button>
-                  <button class="pg-btn" :disabled="historicoPage === historicoTotalPages" @click="historicoPage++">›</button>
-                  <button class="pg-btn" :disabled="historicoPage === historicoTotalPages" @click="historicoPage = historicoTotalPages">»</button>
+                  >
+                    {{ p }}
+                  </button>
+                  <button
+                    class="pg-btn"
+                    :disabled="historicoPage === historicoTotalPages"
+                    @click="historicoPage++"
+                  >
+                    ›
+                  </button>
+                  <button
+                    class="pg-btn"
+                    :disabled="historicoPage === historicoTotalPages"
+                    @click="historicoPage = historicoTotalPages"
+                  >
+                    »
+                  </button>
                 </div>
               </div>
             </div>
