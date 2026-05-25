@@ -331,8 +331,144 @@
             </div>
           </div>
 
-          <!-- ── Histórico de Execuções ─── empty ───────────────────── -->
-          <div v-show="activeTab === 'historico'" class="tab-panel" />
+          <!-- ── Histórico de Execuções ────────────────────────────── -->
+          <div v-show="activeTab === 'historico'" class="tab-panel">
+            <p class="hist-subtitle">
+              Histórico completo de execuções de importação e integração de dados
+            </p>
+
+            <!-- Filters -->
+            <div class="hist-filters">
+              <select v-model="historicoFilters.status" class="hist-select" @change="loadHistorico">
+                <option value="">Todos os status</option>
+                <option value="SUCCESS">Sucesso</option>
+                <option value="PARTIAL">Parcial</option>
+                <option value="FAILED">Falha</option>
+              </select>
+              <input
+                v-model="historicoFilters.tabela"
+                type="text"
+                placeholder="Tabela..."
+                class="hist-input"
+                @input="loadHistorico"
+              />
+              <input
+                v-model="historicoFilters.fonte"
+                type="text"
+                placeholder="Fonte..."
+                class="hist-input"
+                @input="loadHistorico"
+              />
+              <input v-model="historicoFilters.data_inicio" type="date" class="hist-input" @change="loadHistorico" />
+              <input v-model="historicoFilters.data_fim"    type="date" class="hist-input" @change="loadHistorico" />
+            </div>
+
+            <!-- Table card -->
+            <div class="hist-card">
+              <div class="hist-card-header">
+                <span class="hist-card-title">Execuções</span>
+                <span class="hist-count">{{ historicoTotal }} registros</span>
+              </div>
+
+              <!-- Loading -->
+              <div v-if="historicoLoading" class="hist-feedback">
+                <span class="hist-spinner" />
+                Carregando...
+              </div>
+
+              <!-- Error -->
+              <div v-else-if="historicoError" class="hist-feedback hist-feedback--error">
+                {{ historicoError }}
+              </div>
+
+              <!-- Empty -->
+              <div v-else-if="historicoRows.length === 0" class="hist-feedback hist-feedback--muted">
+                Nenhum registro encontrado.
+              </div>
+
+              <!-- Table -->
+              <div v-else class="hist-table-wrap">
+                <table class="hist-table">
+                  <thead>
+                    <tr>
+                      <th class="sort-col" @click="sortHistorico('iniciado_em')">
+                        Data/Hora {{ historicoSortIcon('iniciado_em') }}
+                      </th>
+                      <th class="sort-col" @click="sortHistorico('tabela')">
+                        Tabela {{ historicoSortIcon('tabela') }}
+                      </th>
+                      <th class="sort-col" @click="sortHistorico('tipo_processo')">
+                        Tipo {{ historicoSortIcon('tipo_processo') }}
+                      </th>
+                      <th class="sort-col" @click="sortHistorico('fonte')">
+                        Fonte {{ historicoSortIcon('fonte') }}
+                      </th>
+                      <th class="sort-col num-col" @click="sortHistorico('duracao_segundos')">
+                        Duração {{ historicoSortIcon('duracao_segundos') }}
+                      </th>
+                      <th class="sort-col num-col" @click="sortHistorico('linhas_processadas')">
+                        Registros {{ historicoSortIcon('linhas_processadas') }}
+                      </th>
+                      <th class="sort-col" @click="sortHistorico('status')">
+                        Status {{ historicoSortIcon('status') }}
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="row in historicoPagedData" :key="row.id">
+                      <td class="mono">{{ formatDate(row.iniciado_em) }}</td>
+                      <td>{{ row.tabela }}</td>
+                      <td>
+                        <span :class="row.tipo_processo === 'INCREMENTAL' ? 'tipo-badge tipo-badge--inc' : 'tipo-badge tipo-badge--comp'">
+                          {{ row.tipo_processo === 'INCREMENTAL' ? 'Incremental' : 'Completa' }}
+                        </span>
+                      </td>
+                      <td class="muted-cell">{{ row.fonte }}</td>
+                      <td class="mono num-col">{{ formatDuration(row.duracao_segundos) }}</td>
+                      <td class="mono num-col">{{ row.linhas_processadas }}</td>
+                      <td>
+                        <span :class="falhaStatusClass(row.status)">
+                          <svg v-if="row.status === 'PARTIAL'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+                            <line x1="12" y1="9" x2="12" y2="13" />
+                            <line x1="12" y1="17" x2="12.01" y2="17" />
+                          </svg>
+                          <svg v-else-if="row.status === 'FAILED'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10" />
+                            <line x1="15" y1="9" x2="9" y2="15" />
+                            <line x1="9" y1="9" x2="15" y2="15" />
+                          </svg>
+                          <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                            <polyline points="22 4 12 14.01 9 11.01" />
+                          </svg>
+                          {{ falhaStatusLabel(row.status) }}
+                        </span>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- Pagination -->
+              <div class="hist-pagination">
+                <span>{{ historicoRows.length }} registros · página {{ historicoPage }} de {{ historicoTotalPages }}</span>
+                <div class="pg-btns">
+                  <button class="pg-btn" :disabled="historicoPage === 1" @click="historicoPage = 1">«</button>
+                  <button class="pg-btn" :disabled="historicoPage === 1" @click="historicoPage--">‹</button>
+                  <button
+                    v-for="p in historicoVisiblePages"
+                    :key="p"
+                    class="pg-btn"
+                    :class="{ active: p === historicoPage }"
+                    @click="historicoPage = p"
+                  >{{ p }}</button>
+                  <button class="pg-btn" :disabled="historicoPage === historicoTotalPages" @click="historicoPage++">›</button>
+                  <button class="pg-btn" :disabled="historicoPage === historicoTotalPages" @click="historicoPage = historicoTotalPages">»</button>
+                </div>
+              </div>
+            </div>
+          </div>
 
           <!-- ── Falhas e Inconsistências ──────────────────────────── -->
           <div v-show="activeTab === 'falhas'" class="tab-panel">
@@ -530,7 +666,7 @@ const kpis = computed(() => ({
 const pct = (v: number) =>
   falhasRows.value.length > 0 ? ((v / falhasRows.value.length) * 100).toFixed(1) : "0.0";
 
-onMounted(() => { void loadFalhas(); });
+onMounted(() => { void loadFalhas(); void loadHistorico(); });
 
 
 // ─── File import ──────────────────────────────────────────────────────────────
@@ -583,7 +719,7 @@ async function handleFileChange(fileKey: string, event: Event) {
         ...importStatus.value,
         [fileKey]: { status: "error", message: detail },
       };
-      void loadFalhas();
+      void loadFalhas(); void loadHistorico();
       return;
     }
 
@@ -595,13 +731,13 @@ async function handleFileChange(fileKey: string, event: Event) {
         recordsProcessed: data.linhas_recebidas ?? 0,
       },
     };
-    void loadFalhas();
+    void loadFalhas(); void loadHistorico();
   } catch {
     importStatus.value = {
       ...importStatus.value,
       [fileKey]: { status: "error", message: "Erro de conexão com o servidor" },
     };
-    void loadFalhas();
+    void loadFalhas(); void loadHistorico();
   }
 }
 
@@ -621,8 +757,10 @@ interface ExecucaoRow {
   run_id: string;
   fonte: string;
   tabela: string;
+  tipo_processo: string;
   status: "SUCCESS" | "FAILED" | "PARTIAL";
   linhas_processadas: number;
+  duracao_segundos: number | null;
   erros: number;
   avisos: number;
   detalhes_falha: string | null;
@@ -720,6 +858,91 @@ function formatDate(iso: string) {
 }
 
 watch(() => falhasFilters.value.status, () => void loadFalhas());
+
+// ─── Histórico de Execuções ───────────────────────────────────────────────────
+const HIST_PER_PAGE = 10;
+
+const historicoRows    = ref<ExecucaoRow[]>([]);
+const historicoTotal   = ref(0);
+const historicoLoading = ref(false);
+const historicoError   = ref<string | null>(null);
+const historicoPage    = ref(1);
+
+const historicoFilters = ref({ status: "", tabela: "", fonte: "", data_inicio: "", data_fim: "" });
+
+const historicoSortKey = ref<keyof ExecucaoRow>("iniciado_em");
+const historicoSortDir = ref<1 | -1>(-1);
+
+const sortedHistorico = computed(() => {
+  const key = historicoSortKey.value;
+  const dir = historicoSortDir.value;
+  return [...historicoRows.value].sort((a, b) => {
+    const av = a[key] ?? "";
+    const bv = b[key] ?? "";
+    return typeof av === "number"
+      ? ((av as number) - (bv as number)) * dir
+      : String(av).localeCompare(String(bv)) * dir;
+  });
+});
+
+const historicoTotalPages = computed(() =>
+  Math.max(1, Math.ceil(sortedHistorico.value.length / HIST_PER_PAGE)),
+);
+const historicoPagedData = computed(() =>
+  sortedHistorico.value.slice(
+    (historicoPage.value - 1) * HIST_PER_PAGE,
+    historicoPage.value * HIST_PER_PAGE,
+  ),
+);
+const historicoVisiblePages = computed(() => {
+  const p = historicoPage.value, t = historicoTotalPages.value;
+  const s = Math.max(1, p - 2), e = Math.min(t, p + 2);
+  return Array.from({ length: e - s + 1 }, (_, i) => s + i);
+});
+
+function sortHistorico(key: keyof ExecucaoRow) {
+  if (historicoSortKey.value === key) historicoSortDir.value = (historicoSortDir.value * -1) as 1 | -1;
+  else { historicoSortKey.value = key; historicoSortDir.value = -1; }
+  historicoPage.value = 1;
+}
+
+function historicoSortIcon(key: keyof ExecucaoRow) {
+  if (historicoSortKey.value !== key) return "↕";
+  return historicoSortDir.value > 0 ? "↑" : "↓";
+}
+
+async function loadHistorico() {
+  historicoPage.value = 1;
+  historicoLoading.value = true;
+  historicoError.value = null;
+  try {
+    const params = new URLSearchParams();
+    if (historicoFilters.value.status)      params.set("status",      historicoFilters.value.status);
+    if (historicoFilters.value.tabela)      params.set("tabela",      historicoFilters.value.tabela);
+    if (historicoFilters.value.fonte)       params.set("fonte",       historicoFilters.value.fonte);
+    if (historicoFilters.value.data_inicio) params.set("data_inicio", historicoFilters.value.data_inicio);
+    if (historicoFilters.value.data_fim)    params.set("data_fim",    historicoFilters.value.data_fim);
+    const query = params.toString() ? `?${params.toString()}` : "";
+    const res = await fetch(`${CONFIG.API_BASE_URL}/monitoring/execucoes/${query}`);
+    if (!res.ok) { historicoError.value = "Erro ao carregar registros."; return; }
+    const data: { count: number; results: ExecucaoRow[] } = await res.json();
+    historicoTotal.value = data.count;
+    historicoRows.value  = data.results;
+  } catch {
+    historicoError.value = "Erro de conexão com o servidor.";
+  } finally {
+    historicoLoading.value = false;
+  }
+}
+
+function formatDuration(seconds: number | null) {
+  if (seconds === null) return "—";
+  if (seconds < 60) return `${seconds}s`;
+  const m = Math.floor(seconds / 60), s = seconds % 60;
+  return `${m}m ${s}s`;
+}
+
+watch(() => historicoFilters.value.status, () => void loadHistorico());
 
 function importBadgeLabel(status: ImportStatus) {
   const map: Record<ImportStatus, string> = {
@@ -986,6 +1209,139 @@ function importBadgeLabel(status: ImportStatus) {
 .import-badge.processing { background: rgba(77,143,255,0.1);  color: var(--blue);   border-color: rgba(77,143,255,0.2); }
 .import-badge.success    { background: rgba(45,212,160,0.1);  color: var(--green);  border-color: rgba(45,212,160,0.2); }
 .import-badge.error      { background: rgba(245,90,90,0.1);   color: var(--red);    border-color: rgba(245,90,90,0.2); }
+
+/* ── Histórico de Execuções ───────────────────────────────────────────────── */
+.hist-subtitle {
+  font-size: 13px;
+  color: var(--text2);
+  margin: 0 0 16px 0;
+}
+
+.hist-filters {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.hist-select,
+.hist-input {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 13px;
+  padding: 7px 10px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.hist-select:focus,
+.hist-input:focus { border-color: var(--blue2); }
+.hist-input::placeholder { color: var(--text3); }
+
+.hist-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.hist-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
+}
+.hist-card-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text);
+}
+.hist-count { font-size: 12px; color: var(--text3); }
+
+.hist-feedback {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 28px 18px;
+  font-size: 13px;
+  color: var(--text2);
+}
+.hist-feedback--error { color: var(--red); }
+.hist-feedback--muted { color: var(--text3); }
+
+.hist-spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--border2);
+  border-top-color: var(--blue);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+
+.hist-table-wrap { overflow-x: auto; }
+
+.hist-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.hist-table thead tr { border-bottom: 1px solid var(--border); }
+.hist-table th {
+  padding: 10px 16px;
+  text-align: left;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  white-space: nowrap;
+}
+.hist-table th.sort-col { cursor: pointer; user-select: none; }
+.hist-table th.sort-col:hover { color: var(--text2); }
+.hist-table th.num-col,
+.hist-table td.num-col { text-align: right; }
+
+.hist-table tbody tr {
+  border-bottom: 1px solid var(--border);
+  transition: background 0.15s;
+}
+.hist-table tbody tr:last-child { border-bottom: none; }
+.hist-table tbody tr:hover { background: var(--bg3); }
+.hist-table td {
+  padding: 12px 16px;
+  font-size: 13px;
+  color: var(--text);
+  white-space: nowrap;
+}
+.hist-table td.mono {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 12px;
+}
+.hist-table td.muted-cell { color: var(--text2); }
+
+.tipo-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 500;
+  border: 1px solid transparent;
+}
+.tipo-badge--comp { background: rgba(77,143,255,0.1);  color: var(--blue);   border-color: rgba(77,143,255,0.2); }
+.tipo-badge--inc  { background: rgba(155,127,255,0.1); color: var(--purple); border-color: rgba(155,127,255,0.2); }
+
+.hist-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 18px;
+  border-top: 1px solid var(--border);
+  font-size: 12px;
+  color: var(--text3);
+}
 
 /* ── Falhas e Inconsistências ─────────────────────────────────────────────── */
 .falhas-subtitle {
