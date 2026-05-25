@@ -5,6 +5,8 @@ import type {
   DashboardKPIs,
   DashboardSummaryRow,
   TopProjectRow,
+  CostEvolutionRow,
+  ConsolidatedRow,
 } from '@/types/api'
 import { CONFIG } from '@/utils/config'
 import { apiFetch } from '@/utils/apiFetch'
@@ -44,6 +46,14 @@ export const dashboardService = {
 
   fetchCostEvolution(filters: DashboardFilters = {}): Promise<CostEvolutionRow[]> {
     return get<CostEvolutionRow[]>('/dashboard/cost-evolution/', filters)
+  },
+
+  async fetchConsolidated(filters: DashboardFilters = {}): Promise<ConsolidatedRow[]> {
+    const json = await get<{ data: ConsolidatedRow[]; last_updated_at: string }>(
+      '/consolidated/',
+      filters,
+    )
+    return json.data ?? []
   },
 
 }

@@ -134,6 +134,7 @@
           >
             Limpar filtros
           </button>
+          <br>
           <button
             class="export-btn"
             @click="exportCSV"
@@ -156,6 +157,29 @@
               />
             </svg>
             Exportar
+          </button>
+          <button
+            class="export-btn"
+            @click="exportExcel"
+          >
+            <svg
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                d="M12 16l-4-4h3V4h2v8h3l-4 4z"
+                stroke-width="1.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+              <path
+                d="M4 20h16"
+                stroke-width="1.5"
+                stroke-linecap="round"
+              />
+            </svg>
+            Exportar Excel
           </button>
         </div>
         <div
@@ -413,6 +437,7 @@ import { materiaisService } from "@/services/materiaisService";
 import type { MaterialsApiRow } from "@/services/materiaisService";
 import type { Filters, SortKey, SortDir, Material, Categoria, Status } from "@/types/materiais";
 import { RAW } from "@/data/materiais";
+import * as XLSX from 'xlsx'
 
 const PER_PAGE = 8;
 const isMounted = ref(false);
@@ -758,6 +783,25 @@ function exportCSV() {
   a.click();
 }
 
+function exportExcel() {
+  const rows = sortedData.value.map((r) => ({
+    Material: r.material,
+    Projeto: r.projeto,
+    Programa: r.programa,
+    Quantidade: r.quantidade,
+    'Valor Unitário': r.valorUnitario,
+    'Valor Total': r.valorTotal,
+    Período: r.periodo,
+    Fornecedor: r.fornecedor,
+    Categoria: r.categoria,
+  }))
+
+  const ws = XLSX.utils.json_to_sheet(rows)
+  const wb = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(wb, ws, 'Materiais')
+  XLSX.writeFile(wb, 'materiais.xlsx')
+}
+
 // ─── Charts ──────────────────────────────────────────────────────────────
 const { buildCharts, updateCharts, destroyCharts } = useCharts();
 const { isMaterialsLimitedProfile, isCompras, isAlmoxarifado, isProjetos } = usePermissions();
@@ -769,6 +813,7 @@ const tableColspan = computed(() => {
   if (!isAlmoxarifado.value && !isProjetos.value) cols += 2; // Fornecedor, Categoria
   return cols;
 });
+const { isMaterialsLimitedProfile } = usePermissions();
 
 watch([topMaterials, tableData, costByProject], () => {
   if (!isMounted.value) return;
