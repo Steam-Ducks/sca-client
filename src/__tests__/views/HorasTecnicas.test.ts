@@ -270,6 +270,11 @@ describe("HorasTecnicas.vue", () => {
 
       expect(fetchMock).toHaveBeenLastCalledWith(
         expect.stringContaining("/horas-tecnicas/?programa=Cloud"),
+        expect.objectContaining({
+          headers: expect.objectContaining({
+            "Content-Type": "application/json",
+          }),
+        }),
       );
     });
 

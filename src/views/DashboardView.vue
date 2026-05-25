@@ -457,7 +457,6 @@ import { useChartsDashboard } from "@/composables/useChartsDashboard";
 import { usePermissions } from "@/composables/usePermissions";
 import type { DashboardRow } from "@/composables/useChartsDashboard";
 import { dashboardService } from "@/services/dashboardService";
-import { CONFIG } from "@/utils/config";
 import type {
   CompositionData,
   DashboardKPIs,
@@ -568,40 +567,21 @@ async function fetchKPIs() {
 
 // ─── Buscar tabela consolidada da API ─────────────────────────────────────────
 async function fetchTableData() {
-  tableLoading.value = true;
+  tableLoading.value = true
   try {
-    // Build query for consolidated (uses Portuguese param names)
-    const f = filters.value;
-    const p = new URLSearchParams();
-    if (f.programa) p.append("programa", f.programa);
-    if (f.projeto)  p.append("projeto",  f.projeto);
-    if (f.periodo)  p.append("status",   f.periodo);
-    const qs = p.toString() ? `?${p.toString()}` : "";
-    const response = await fetch(`${CONFIG.API_BASE_URL}/consolidated/${qs}`);
-    if (!response.ok)
-      throw new Error(`Erro ao buscar tabela: ${response.status}`);
-    // Consolidated returns { data: [...], last_updated_at: "..." }
-    const json = await response.json();
-    const rawData: {
-      nome_projeto: string;
-      programa: string | null;
-      custo_materiais: number;
-      custo_horas: number;
-      custo_total: number;
-      status: string | null;
-    }[] = Array.isArray(json) ? json : (json.data ?? json.results ?? []);
-    tableData.value = rawData.map((row) => ({
-      projeto: row.nome_projeto ?? "",
-      programa: row.programa ?? "",
+    const raw = await dashboardService.fetchConsolidated(buildApiFilters())
+    tableData.value = raw.map((row) => ({
+      projeto: row.nome_projeto ?? '',
+      programa: row.programa ?? '',
       custoMateriais: row.custo_materiais,
       custoHoras: row.custo_horas,
       custoTotal: row.custo_total,
-      periodo: row.status ?? "",  // status used as status filter (no date period in source)
-    }));
+      periodo: row.status ?? '',
+    }))
   } catch (err) {
-    console.error("Erro ao buscar tabela:", err);
+    console.error('Erro ao buscar tabela:', err)
   } finally {
-    tableLoading.value = false;
+    tableLoading.value = false
   }
 }
 
@@ -677,8 +657,8 @@ const sortIcon = (k: keyof DashboardRow) => {
 };
 
 function exportCSV() {
-  const header =
-    "Projeto,Programa,Custo Materiais,Custo Horas,Custo Total,Período";
+  const header = "Projeto,Programa,Custo Materiais,Custo Horas,Custo Total,Período";
+
   const rows = filteredData.value.map((r) =>
     [
       r.projeto,
@@ -689,11 +669,25 @@ function exportCSV() {
       r.periodo,
     ].join(","),
   );
+
   const csv = [header, ...rows].join("\n");
-  const a = document.createElement("a");
-  a.href = "data:text/csv;charset=utf-8," + encodeURIComponent(csv);
-  a.download = "dashboard-geral.csv";
-  a.click();
+
+  const blob = new Blob([csv], {
+    type: "text/csv;charset=utf-8;",
+  });
+
+  const url = URL.createObjectURL(blob);
+
+  const link = document.createElement("a");
+  link.href = url;
+  link.setAttribute("download", "dashboard-geral.csv");
+
+  document.body.appendChild(link);
+
+  link.click();
+
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
 }
 
 
