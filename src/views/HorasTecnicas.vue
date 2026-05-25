@@ -420,7 +420,6 @@ import { ref, computed, watch, onMounted, onUnmounted, nextTick } from "vue";
 import { useChartsTechnical } from "@/composables/useChartsTechnical";
 import { horasTecnicasService } from '@/services/horasTecnicasService'
 import { usePermissions } from "@/composables/usePermissions";
-import { CONFIG } from "@/utils/config";
 
 const PER_PAGE = 8;
 
