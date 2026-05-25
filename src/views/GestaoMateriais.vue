@@ -3,7 +3,10 @@
     <main class="main">
       <!-- METRICS -->
       <div class="metrics">
-        <div class="metric-card">
+        <div
+          v-if="!isMaterialsLimitedProfile"
+          class="metric-card"
+        >
           <div class="metric-label">
             Custo Total de Materiais
           </div>
@@ -19,7 +22,10 @@
             {{ sortedData.length }}
           </div>
         </div>
-        <div class="metric-card">
+        <div
+          v-if="!isMaterialsLimitedProfile"
+          class="metric-card"
+        >
           <div class="metric-label">
             Custo Médio por Item
           </div>
@@ -128,6 +134,7 @@
           >
             Limpar filtros
           </button>
+          <br>
           <button
             class="export-btn"
             @click="exportCSV"
@@ -150,6 +157,29 @@
               />
             </svg>
             Exportar
+          </button>
+          <button
+            class="export-btn"
+            @click="exportExcel"
+          >
+            <svg
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                d="M12 16l-4-4h3V4h2v8h3l-4 4z"
+                stroke-width="1.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+              <path
+                d="M4 20h16"
+                stroke-width="1.5"
+                stroke-linecap="round"
+              />
+            </svg>
+            Exportar Excel
           </button>
         </div>
         <div
@@ -174,7 +204,10 @@
 
       <!-- TOP CHARTS -->
       <div class="charts-row">
-        <div class="chart-card">
+        <div
+          v-if="!isMaterialsLimitedProfile"
+          class="chart-card"
+        >
           <div class="chart-title">
             Top 10 Custo por Material
           </div>
@@ -193,7 +226,10 @@
       </div>
 
       <!-- BOTTOM CHARTS -->
-      <div class="charts-row">
+      <div
+        v-if="!isMaterialsLimitedProfile"
+        class="charts-row"
+      >
         <div class="chart-card">
           <div class="chart-title">
             Custo de Materiais por Projeto
@@ -240,18 +276,21 @@
                   Programa {{ sortIcon("programa") }}
                 </th>
                 <th
+                  v-if="!isCompras"
                   class="sort-col"
                   @click="sort('quantidade')"
                 >
                   Quantidade {{ sortIcon("quantidade") }}
                 </th>
                 <th
+                  v-if="!isMaterialsLimitedProfile"
                   class="sort-col"
                   @click="sort('valorUnitario')"
                 >
                   Valor Unitário {{ sortIcon("valorUnitario") }}
                 </th>
                 <th
+                  v-if="!isMaterialsLimitedProfile"
                   class="sort-col"
                   @click="sort('valorTotal')"
                 >
@@ -263,14 +302,18 @@
                 >
                   Período {{ sortIcon("periodo") }}
                 </th>
-                <th>Fornecedor</th>
-                <th>Categoria</th>
+                <th v-if="!isAlmoxarifado && !isProjetos">
+                  Fornecedor
+                </th>
+                <th v-if="!isAlmoxarifado && !isProjetos">
+                  Categoria
+                </th>
               </tr>
             </thead>
             <tbody>
               <tr v-if="tableLoading">
                 <td
-                  colspan="9"
+                  :colspan="tableColspan"
                   class="table-feedback muted"
                 >
                   Carregando materiais...
@@ -278,7 +321,7 @@
               </tr>
               <tr v-else-if="tableError">
                 <td
-                  colspan="9"
+                  :colspan="tableColspan"
                   class="table-feedback error"
                 >
                   {{ tableError }}
@@ -286,7 +329,7 @@
               </tr>
               <tr v-else-if="pagedData.length === 0">
                 <td
-                  colspan="9"
+                  :colspan="tableColspan"
                   class="table-feedback muted"
                 >
                   Nenhum material encontrado.
@@ -305,22 +348,34 @@
                 <td class="muted">
                   {{ row.programa }}
                 </td>
-                <td class="mono right">
+                <td
+                  v-if="!isCompras"
+                  class="mono right"
+                >
                   {{ row.quantidade }}
                 </td>
-                <td class="mono">
+                <td
+                  v-if="!isMaterialsLimitedProfile"
+                  class="mono"
+                >
                   {{ fmt(row.valorUnitario) }}
                 </td>
-                <td class="total">
+                <td
+                  v-if="!isMaterialsLimitedProfile"
+                  class="total"
+                >
                   {{ fmt(row.valorTotal) }}
                 </td>
                 <td class="mono">
                   {{ row.periodo }}
                 </td>
-                <td class="muted">
+                <td
+                  v-if="!isAlmoxarifado && !isProjetos"
+                  class="muted"
+                >
                   {{ row.fornecedor }}
                 </td>
-                <td>
+                <td v-if="!isAlmoxarifado && !isProjetos">
                   <span :class="badgeClass(row.categoria)">{{ row.categoria }}</span>
                 </td>
               </tr>
@@ -377,10 +432,12 @@
 <script setup lang="ts">
 import { ref, reactive, computed, watch, onMounted, onUnmounted, nextTick } from "vue";
 import { useCharts } from "@/composables/useCharts";
+import { usePermissions } from "@/composables/usePermissions";
 import { materiaisService } from "@/services/materiaisService";
 import type { MaterialsApiRow } from "@/services/materiaisService";
 import type { Filters, SortKey, SortDir, Material, Categoria, Status } from "@/types/materiais";
 import { RAW } from "@/data/materiais";
+import * as XLSX from 'xlsx'
 
 const PER_PAGE = 8;
 const isMounted = ref(false);
@@ -399,6 +456,7 @@ const filters = reactive<Filters>({
   fornecedor: "",
   status: "",
   area: "",
+  search: "",
 });
 const sortKey = ref<SortKey>("valorTotal");
 const sortDir = ref<SortDir>(-1);
@@ -725,8 +783,36 @@ function exportCSV() {
   a.click();
 }
 
+function exportExcel() {
+  const rows = sortedData.value.map((r) => ({
+    Material: r.material,
+    Projeto: r.projeto,
+    Programa: r.programa,
+    Quantidade: r.quantidade,
+    'Valor Unitário': r.valorUnitario,
+    'Valor Total': r.valorTotal,
+    Período: r.periodo,
+    Fornecedor: r.fornecedor,
+    Categoria: r.categoria,
+  }))
+
+  const ws = XLSX.utils.json_to_sheet(rows)
+  const wb = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(wb, ws, 'Materiais')
+  XLSX.writeFile(wb, 'materiais.xlsx')
+}
+
 // ─── Charts ──────────────────────────────────────────────────────────────
 const { buildCharts, updateCharts, destroyCharts } = useCharts();
+const { isMaterialsLimitedProfile, isCompras, isAlmoxarifado, isProjetos } = usePermissions();
+
+const tableColspan = computed(() => {
+  let cols = 5; // Material, Projeto, Programa, Período + always 1 fixed
+  if (!isCompras.value) cols++;              // Quantidade
+  if (!isMaterialsLimitedProfile.value) cols += 2; // Valor Unitário, Valor Total
+  if (!isAlmoxarifado.value && !isProjetos.value) cols += 2; // Fornecedor, Categoria
+  return cols;
+});
 
 watch([topMaterials, tableData, costByProject], () => {
   if (!isMounted.value) return;

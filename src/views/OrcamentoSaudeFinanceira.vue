@@ -214,6 +214,29 @@
             </svg>
             Exportar
           </button>
+          <button
+            class="export-btn"
+            @click="exportExcel"
+          >
+            <svg
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                d="M12 16l-4-4h3V4h2v8h3l-4 4z"
+                stroke-width="1.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+              <path
+                d="M4 20h16"
+                stroke-width="1.5"
+                stroke-linecap="round"
+              />
+            </svg>
+            Exportar Excel
+          </button>
         </div>
         <div
           v-if="hasActiveFilters"
@@ -576,6 +599,7 @@ import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 import { useChartsOrcamento } from "@/composables/useChartsOrcamento";
 import { budgetService } from "@/services/budgetService";
 import type { BudgetHealthStatus, BudgetIndicators, BudgetProjectRow } from "@/types/api";
+import * as XLSX from 'xlsx'
 
 const { buildChartsOrcamento, updateChartsOrcamento, destroyChartsOrcamento } =
   useChartsOrcamento();
@@ -804,6 +828,26 @@ function exportCSV() {
   a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
   a.download = "orcamento-saude-financeira.csv";
   a.click();
+}
+
+function exportExcel() {
+  const rows = sortedData.value.map((p) => ({
+    Programa: p.programa,
+    Projeto: p.projeto,
+    Budget: p.budget,
+    'Custo Materiais': p.custoMateriais,
+    'Custo Horas': p.custoHoras,
+    'Custo Real': p.custoReal,
+    'Desvio %': `${p.desvioPercent.toFixed(1)}%`,
+    Saúde: p.saude,
+    'Projeção Estouro': p.projecaoEstouro ?? '-',
+    Período: p.periodo,
+  }))
+
+  const ws = XLSX.utils.json_to_sheet(rows)
+  const wb = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(wb, ws, 'Orçamento Saúde Financeira')
+  XLSX.writeFile(wb, 'orcamento-saude-financeira.xlsx')
 }
 
 async function loadIndicators() {

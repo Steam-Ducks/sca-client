@@ -1,4 +1,23 @@
 // src/types/api.ts
+
+export interface LoginCredentials {
+  username: string
+  password: string
+}
+
+export interface AuthUser {
+  id: number
+  username: string
+  name: string
+  perfil: string | null
+}
+
+export interface AuthResponse {
+  access: string
+  refresh: string
+  user: AuthUser
+}
+
 export interface User {
   id: number;
   email: string;
@@ -163,4 +182,25 @@ export interface CostEvolutionRow {
   materials_cost: number
   hours_cost: number
   total_cost: number
+}
+
+export type ConsolidatedRow = {
+  nome_projeto: string
+  programa: string | null
+  custo_materiais: number
+  custo_horas: number
+  custo_total: number
+  status: string | null
+}
+
+export type HorasTecnicasRow = {
+  id: number
+  colaborador: string
+  projeto: string
+  programa: string
+  horas_trabalhadas: number
+  custo_por_hora: number
+  custo_total: number
+  periodo: string | null
+  tarefa: string
 }

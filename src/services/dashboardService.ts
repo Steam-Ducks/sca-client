@@ -5,8 +5,11 @@ import type {
   DashboardKPIs,
   DashboardSummaryRow,
   TopProjectRow,
+  CostEvolutionRow,
+  ConsolidatedRow,
 } from '@/types/api'
 import { CONFIG } from '@/utils/config'
+import { apiFetch } from '@/utils/apiFetch'
 
 function buildQuery(filters: DashboardFilters): string {
   const params = new URLSearchParams()
@@ -19,7 +22,7 @@ function buildQuery(filters: DashboardFilters): string {
 }
 
 async function get<T>(path: string, filters: DashboardFilters = {}): Promise<T> {
-  const response = await fetch(`${CONFIG.API_BASE_URL}${path}${buildQuery(filters)}`)
+  const response = await apiFetch(`${CONFIG.API_BASE_URL}${path}${buildQuery(filters)}`)
   if (!response.ok) throw new Error(`Error fetching ${path}: ${response.status}`)
   return response.json()
 }
@@ -43,6 +46,14 @@ export const dashboardService = {
 
   fetchCostEvolution(filters: DashboardFilters = {}): Promise<CostEvolutionRow[]> {
     return get<CostEvolutionRow[]>('/dashboard/cost-evolution/', filters)
+  },
+
+  async fetchConsolidated(filters: DashboardFilters = {}): Promise<ConsolidatedRow[]> {
+    const json = await get<{ data: ConsolidatedRow[]; last_updated_at: string }>(
+      '/consolidated/',
+      filters,
+    )
+    return json.data ?? []
   },
 
 }

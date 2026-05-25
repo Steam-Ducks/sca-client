@@ -153,7 +153,10 @@ describe("Auditoria.vue", () => {
       mount(Auditoria);
       await flushPromises();
 
-      expect(fetch).toHaveBeenCalledWith(expect.stringContaining("/monitoring/execucoes/"));
+      expect(fetch).toHaveBeenCalledWith(
+        expect.stringContaining("/monitoring/execucoes/"),
+        expect.objectContaining({ headers: expect.objectContaining({ "Content-Type": "application/json" }) }),
+      );
     });
 
     it("computa concluídas a partir dos registros SUCCESS", async () => {

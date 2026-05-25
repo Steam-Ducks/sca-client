@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from "vue-router";
+import { authService } from "@/services/authService";
 import { logger } from "@/utils/logger";
 import { trackMetric } from "@/utils/metrics";
 
@@ -9,7 +10,13 @@ const router = createRouter({
   routes: [
     {
       path: "/",
-      redirect: "/materiais",
+      redirect: "/login",
+    },
+    {
+      path: "/login",
+      name: "login",
+      component: () => import("@/views/LoginView.vue"),
+      meta: { public: true },
     },
     {
       path: "/materiais",
@@ -20,21 +27,25 @@ const router = createRouter({
       path: "/dashboard",
       name: "dashboard",
       component: () => import("@/views/DashboardView.vue"),
+      meta: { allowedProfiles: ["super_admin", "financeiro", "projetos"] },
     },
     {
       path: "/horas",
       name: "horas",
       component: () => import("@/views/HorasTecnicas.vue"),
+      meta: { allowedProfiles: ["super_admin", "financeiro", "projetos"] },
     },
     {
       path: "/consolidado",
       name: "consolidado",
       component: () => import("@/views/Consolidado.vue"),
+      meta: { allowedProfiles: ["super_admin", "financeiro", "projetos"] },
     },
     {
       path: "/orcamento",
       name: "orcamento",
       component: () => import("@/views/OrcamentoSaudeFinanceira.vue"),
+      meta: { allowedProfiles: ["super_admin", "financeiro"] },
     },
     {
       path: "/auditoria",
@@ -46,6 +57,26 @@ const router = createRouter({
 
 router.beforeEach((to, from, next) => {
   startTime = performance.now();
+
+  if (!to.meta.public && !authService.isAuthenticated()) {
+    next("/login");
+    return;
+  }
+
+  if (to.path === "/login" && authService.isAuthenticated()) {
+    next("/materiais");
+    return;
+  }
+
+  const allowedProfiles = to.meta.allowedProfiles as string[] | undefined;
+  if (allowedProfiles) {
+    const perfil = authService.getUser()?.perfil ?? null;
+    if (!perfil || !allowedProfiles.includes(perfil)) {
+      next("/materiais");
+      return;
+    }
+  }
+
   next();
 });
 
