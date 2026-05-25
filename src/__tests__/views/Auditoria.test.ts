@@ -1042,6 +1042,37 @@ describe("Auditoria.vue", () => {
       expect(wrapper.find(".hist-count").text()).toContain("4 registros");
     });
 
+    it("exibe paginação mesmo quando há apenas 1 página", async () => {
+      const wrapper = mount(Auditoria);
+      await flushPromises();
+      await wrapper.findAll(".tab-btn")[1].trigger("click");
+      await nextTick();
+
+      expect(wrapper.find(".hist-pagination").exists()).toBe(true);
+    });
+
+    it("exibe info de página na paginação", async () => {
+      const wrapper = mount(Auditoria);
+      await flushPromises();
+      await wrapper.findAll(".tab-btn")[1].trigger("click");
+      await nextTick();
+
+      expect(wrapper.find(".hist-pagination").text()).toContain("página 1 de 1");
+    });
+
+    it("desativa botões de navegação quando há apenas 1 página", async () => {
+      const wrapper = mount(Auditoria);
+      await flushPromises();
+      await wrapper.findAll(".tab-btn")[1].trigger("click");
+      await nextTick();
+
+      const btns = wrapper.find(".hist-pagination").findAll(".pg-btn");
+      // First («), prev (‹), next (›), last (») are disabled; numbered page btn has .active
+      const navBtns = [btns[0], btns[1], btns[btns.length - 2], btns[btns.length - 1]];
+      navBtns.forEach((btn) => expect(btn.attributes("disabled")).toBeDefined());
+      expect(btns.find((b) => b.text() === "1")?.classes()).toContain("active");
+    });
+
     it("não mostra mais de 10 linhas por página", async () => {
       const manyResults = Array.from({ length: 15 }, (_, i) => ({
         id: i + 1, run_id: `uuid-${i}`, fonte: "csv_upload", tabela: "materiais",
