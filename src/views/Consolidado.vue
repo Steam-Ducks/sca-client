@@ -206,7 +206,10 @@
             <canvas id="chartDistribuicao" />
           </div>
         </div>
-        <div class="chart-card">
+        <div
+          v-if="!isProjetos"
+          class="chart-card"
+        >
           <div class="chart-title">
             Custo Total por Programa
           </div>
@@ -218,7 +221,10 @@
 
       <!-- BOTTOM CHARTS -->
       <div class="charts-row">
-        <div class="chart-card">
+        <div
+          v-if="!isProjetos"
+          class="chart-card"
+        >
           <div class="chart-title">
             Top 10 – Maior Custo Total
           </div>
@@ -393,6 +399,7 @@ import { ref, computed, watch, onMounted, onUnmounted, nextTick } from "vue";
 import { useTheme } from "@/composables/useTheme";
 import { useChartsConsolidado } from "@/composables/useChartsConsolidado";
 import type { ConsolidadoRow } from "@/composables/useChartsConsolidado";
+import { usePermissions } from "@/composables/usePermissions";
 import { apiService } from "@/services/apiService";
 import { dashboardService } from "@/services/dashboardService";
 import type { CostEvolutionRow } from "@/types/api";
@@ -715,6 +722,7 @@ function clearFilters() {
 // ─── Charts ──────────────────────────────────────────────────────────────────
 const { buildCharts, updateCharts, destroyCharts } = useChartsConsolidado();
 const { theme } = useTheme();
+const { isProjetos } = usePermissions();
 
 watch(theme, () => {
   nextTick(() => buildCharts(tableData.value, costEvolutionData.value));

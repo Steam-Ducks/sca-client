@@ -264,6 +264,7 @@
                   Custo Total {{ sortIcon("custoTotal") }}
                 </th>
                 <th
+                  v-if="!isFinanceiro"
                   class="sort-col"
                   @click="sortBy('periodo')"
                 >
@@ -274,7 +275,7 @@
             <tbody>
               <tr v-if="pagedData.length === 0">
                 <td
-                  colspan="6"
+                  :colspan="isFinanceiro ? 5 : 6"
                   class="table-feedback muted"
                 >
                   Nenhum registro encontrado.
@@ -299,7 +300,10 @@
                 <td class="total">
                   {{ fmt(row.custoTotal) }}
                 </td>
-                <td class="mono">
+                <td
+                  v-if="!isFinanceiro"
+                  class="mono"
+                >
                   {{ row.periodo }}
                 </td>
               </tr>
@@ -761,7 +765,7 @@ const summarySortIcon = (k: keyof SummaryRow) => {
 // ─── Charts ──────────────────────────────────────────────────────────────────
 const { buildCharts, updateCharts, destroyCharts } = useChartsDashboard();
 const { theme } = useTheme();
-const { isProjetos } = usePermissions();
+const { isProjetos, isFinanceiro } = usePermissions();
 
 watch(theme, () => {
   nextTick(() => buildCharts(tableData.value, compositionData.value ?? undefined, topProjectsData.value, summaryData.value, costEvolutionData.value));
