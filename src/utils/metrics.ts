@@ -1,4 +1,4 @@
-import axios from "axios";
+import { apiFetch } from "./apiFetch";
 import { CONFIG } from "./config";
 
 type MetricLabels = Record<string, string | number>;
@@ -27,10 +27,9 @@ export const trackMetric = async (
   };
 
   try {
-    await axios.post(`${CONFIG.API_BASE_URL}/metrics/`, payload, {
-      headers: {
-        "Content-Type": "application/json",
-      },
+    await apiFetch(`${CONFIG.API_BASE_URL}/metrics/`, {
+      method: "POST",
+      body: JSON.stringify(payload),
     });
   } catch (error) {
     console.error("Error while sending metric", error);
