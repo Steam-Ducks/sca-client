@@ -6,20 +6,35 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
-  reporter: "html",
+
+  // CI: HTML + anotações inline no GitHub + lista no terminal
+  // Local: HTML abre só se houver falha
+  reporter: process.env.CI
+    ? [["html", { open: "never" }], ["github"], ["list"]]
+    : [["html", { open: "on-failure" }]],
+
   use: {
-    baseURL: "http://localhost:5173",
+    baseURL: process.env.BASE_URL || "http://localhost:4173",
     trace: "on-first-retry",
+    screenshot: "only-on-failure",
+    video: "retain-on-failure",
   },
+
   projects: [
     {
       name: "chromium",
       use: { ...devices["Desktop Chrome"] },
     },
   ],
-  webServer: {
-    command: "npm run dev",
-    url: "http://localhost:5173",
-    reuseExistingServer: !process.env.CI,
-  },
+
+  // Local: sobe o preview automaticamente
+  // CI: o workflow já faz build + serve antes de rodar playwright
+  webServer: process.env.CI
+    ? undefined
+    : {
+        command: "npm run preview -- --port 4173",
+        url: "http://localhost:4173",
+        reuseExistingServer: true,
+        timeout: 120_000,
+      },
 });

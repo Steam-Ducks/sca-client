@@ -175,6 +175,29 @@
             </svg>
             Exportar
           </button>
+          <button
+            class="export-btn"
+            @click="exportExcel"
+          >
+            <svg
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                d="M12 16l-4-4h3V4h2v8h3l-4 4z"
+                stroke-width="1.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+              <path
+                d="M4 20h16"
+                stroke-width="1.5"
+                stroke-linecap="round"
+              />
+            </svg>
+            Exportar Excel
+          </button>
         </div>
         <div
           v-if="hasActiveFilters"
@@ -187,6 +210,11 @@
             class="filter-chip"
           >
             {{ filter.label }}: {{ filter.value }}
+            <button
+              class="chip-remove"
+              :aria-label="`Remover filtro ${filter.label}`"
+              @click="removeFilter(filter.key)"
+            >×</button>
           </span>
         </div>
       </div>
@@ -201,7 +229,10 @@
             <canvas id="chartDistribuicao" />
           </div>
         </div>
-        <div class="chart-card">
+        <div
+          v-if="!isProjetos"
+          class="chart-card"
+        >
           <div class="chart-title">
             Custo Total por Programa
           </div>
@@ -213,7 +244,10 @@
 
       <!-- BOTTOM CHARTS -->
       <div class="charts-row">
-        <div class="chart-card">
+        <div
+          v-if="!isProjetos"
+          class="chart-card"
+        >
           <div class="chart-title">
             Top 10 – Maior Custo Total
           </div>
@@ -388,9 +422,11 @@ import { ref, computed, watch, onMounted, onUnmounted, nextTick } from "vue";
 import { useTheme } from "@/composables/useTheme";
 import { useChartsConsolidado } from "@/composables/useChartsConsolidado";
 import type { ConsolidadoRow } from "@/composables/useChartsConsolidado";
+import { usePermissions } from "@/composables/usePermissions";
 import { apiService } from "@/services/apiService";
 import { dashboardService } from "@/services/dashboardService";
 import type { CostEvolutionRow } from "@/types/api";
+import * as XLSX from 'xlsx'
 
 const PER_PAGE = 8;
 
@@ -636,17 +672,7 @@ watch(filteredData, (val) => {
   nextTick(() => updateCharts(val, costEvolutionData.value));
 });
 
-watch(
-  () => filters.value.programa,
-  () => {
-    if (
-      filters.value.projeto &&
-      !availableProjects.value.includes(filters.value.projeto)
-    ) {
-      filters.value.projeto = "";
-    }
-  },
-);
+
 
 watch(
   () => [
@@ -709,6 +735,28 @@ function exportCSV() {
   a.click();
 }
 
+function exportExcel() {
+  const rows = filteredData.value.map((r) => ({
+    Projeto: r.projeto,
+    Programa: r.programa,
+    'Custo Materiais': r.custoMateriais,
+    'Custo Horas': r.custoHoras,
+    'Custo Total': r.custoTotal,
+    'Qtd Materiais': r.qtdMateriais,
+    'Total Horas': r.totalHoras,
+    Período: r.periodo,
+    Status: r.status,
+  }))
+
+  const ws = XLSX.utils.json_to_sheet(rows)
+  const wb = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(wb, ws, 'Consolidado')
+  XLSX.writeFile(wb, 'consolidado.xlsx')
+}
+
+function removeFilter(key: string) {
+  (filters.value as Record<string, string>)[key] = "";
+}
 function clearFilters() {
   filters.value = { periodo: "", programa: "", projeto: "", status: "" };
 }
@@ -716,6 +764,7 @@ function clearFilters() {
 // ─── Charts ──────────────────────────────────────────────────────────────────
 const { buildCharts, updateCharts, destroyCharts } = useChartsConsolidado();
 const { theme } = useTheme();
+const { isProjetos } = usePermissions();
 
 watch(theme, () => {
   nextTick(() => buildCharts(tableData.value, costEvolutionData.value));
@@ -967,6 +1016,9 @@ onUnmounted(destroyCharts);
   letter-spacing: 0.08em;
 }
 .filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
   background: var(--bg3);
   border: 1px solid var(--border2);
   color: var(--text);
@@ -1183,5 +1235,24 @@ td.total {
     opacity: 1;
     transform: none;
   }
+}
+
+.chip-remove {
+  background: none;
+  border: none;
+  color: var(--text3);
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1;
+  padding: 0 1px;
+  display: flex;
+  align-items: center;
+  opacity: 0.5;
+  transition: opacity 0.15s, color 0.15s;
+}
+.chip-remove:hover {
+  opacity: 1;
+  color: #e05252;
 }
 </style>
