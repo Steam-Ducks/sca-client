@@ -10,6 +10,8 @@ services:
     ports:
       - "5173:5173"
     command: sh -c "npm install && npm run dev"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
 
 volumes:
   frontend_node_modules:

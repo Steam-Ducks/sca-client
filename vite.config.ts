@@ -11,6 +11,15 @@ export default defineConfig({
     },
   },
 
+  server: {
+    proxy: {
+      "/api": {
+        target: "http://143.198.2.189:8000",
+        changeOrigin: true,
+      },
+    },
+  },
+
   test: {
     environment: "jsdom",
 

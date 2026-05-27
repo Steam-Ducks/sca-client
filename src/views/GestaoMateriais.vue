@@ -3,7 +3,10 @@
     <main class="main">
       <!-- METRICS -->
       <div class="metrics">
-        <div class="metric-card">
+        <div
+          v-if="!isMaterialsLimitedProfile"
+          class="metric-card"
+        >
           <div class="metric-label">
             Custo Total de Materiais
           </div>
@@ -19,7 +22,10 @@
             {{ sortedData.length }}
           </div>
         </div>
-        <div class="metric-card">
+        <div
+          v-if="!isMaterialsLimitedProfile"
+          class="metric-card"
+        >
           <div class="metric-label">
             Custo Médio por Item
           </div>
@@ -121,57 +127,14 @@
               {{ f }}
             </option>
           </select>
-        </div>
-        <div
-          v-if="hasActiveFilters"
-          class="active-filters"
-        >
-          <div class="active-filters-title">
-            Filtros ativos
-          </div>
-          <div class="active-filters-list">
-            <span v-if="filters.periodo">Período: {{ filters.periodo }}</span>
-            <span v-if="filters.programa">Programa: {{ filters.programa }}</span>
-            <span v-if="filters.projeto">Projeto: {{ filters.projeto }}</span>
-            <span v-if="filters.categoria">Categoria: {{ filters.categoria }}</span>
-            <span v-if="filters.fornecedor">Fornecedor: {{ filters.fornecedor }}</span>
-            <span v-if="filters.search">Busca: {{ filters.search }}</span>
-          </div>
           <button
+            v-if="hasActiveFilters"
             class="clear-btn"
             @click="clearFilters"
           >
-            Limpar Filtros
+            Limpar filtros
           </button>
-        </div>
-        <div
-          class="filters-row"
-          style="margin-top: 10px"
-        >
-          <div class="search-wrap">
-            <svg
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <circle
-                cx="11"
-                cy="11"
-                r="8"
-                stroke-width="1.5"
-              />
-              <path
-                d="M21 21l-4.35-4.35"
-                stroke-width="1.5"
-                stroke-linecap="round"
-              />
-            </svg>
-            <input
-              v-model="filters.search"
-              class="search-input"
-              placeholder="Buscar material..."
-            >
-          </div>
+          <br>
           <button
             class="export-btn"
             @click="exportCSV"
@@ -195,12 +158,56 @@
             </svg>
             Exportar
           </button>
+          <button
+            class="export-btn"
+            @click="exportExcel"
+          >
+            <svg
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                d="M12 16l-4-4h3V4h2v8h3l-4 4z"
+                stroke-width="1.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+              <path
+                d="M4 20h16"
+                stroke-width="1.5"
+                stroke-linecap="round"
+              />
+            </svg>
+            Exportar Excel
+          </button>
+        </div>
+        <div
+          v-if="hasActiveFilters"
+          class="active-filters"
+        >
+          <span class="active-filters-label">Filtros ativos</span>
+          <span
+            v-for="filter in activeFilterEntries"
+            :key="filter.key"
+            class="filter-chip"
+          >
+            {{ filter.label }}: {{ filter.value }}
+            <button
+              class="chip-remove"
+              :aria-label="`Remover filtro ${filter.label}`"
+              @click="removeFilter(filter.key)"
+            >×</button>
+          </span>
         </div>
       </div>
 
       <!-- TOP CHARTS -->
       <div class="charts-row">
-        <div class="chart-card">
+        <div
+          v-if="!isMaterialsLimitedProfile"
+          class="chart-card"
+        >
           <div class="chart-title">
             Top 10 Custo por Material
           </div>
@@ -219,7 +226,10 @@
       </div>
 
       <!-- BOTTOM CHARTS -->
-      <div class="charts-row">
+      <div
+        v-if="!isMaterialsLimitedProfile"
+        class="charts-row"
+      >
         <div class="chart-card">
           <div class="chart-title">
             Custo de Materiais por Projeto
@@ -266,18 +276,21 @@
                   Programa {{ sortIcon("programa") }}
                 </th>
                 <th
+                  v-if="!isCompras"
                   class="sort-col"
                   @click="sort('quantidade')"
                 >
                   Quantidade {{ sortIcon("quantidade") }}
                 </th>
                 <th
+                  v-if="!isMaterialsLimitedProfile"
                   class="sort-col"
                   @click="sort('valorUnitario')"
                 >
                   Valor Unitário {{ sortIcon("valorUnitario") }}
                 </th>
                 <th
+                  v-if="!isMaterialsLimitedProfile"
                   class="sort-col"
                   @click="sort('valorTotal')"
                 >
@@ -289,14 +302,18 @@
                 >
                   Período {{ sortIcon("periodo") }}
                 </th>
-                <th>Fornecedor</th>
-                <th>Categoria</th>
+                <th v-if="!isAlmoxarifado && !isProjetos">
+                  Fornecedor
+                </th>
+                <th v-if="!isAlmoxarifado && !isProjetos">
+                  Categoria
+                </th>
               </tr>
             </thead>
             <tbody>
               <tr v-if="tableLoading">
                 <td
-                  colspan="9"
+                  :colspan="tableColspan"
                   class="table-feedback muted"
                 >
                   Carregando materiais...
@@ -304,7 +321,7 @@
               </tr>
               <tr v-else-if="tableError">
                 <td
-                  colspan="9"
+                  :colspan="tableColspan"
                   class="table-feedback error"
                 >
                   {{ tableError }}
@@ -312,7 +329,7 @@
               </tr>
               <tr v-else-if="pagedData.length === 0">
                 <td
-                  colspan="9"
+                  :colspan="tableColspan"
                   class="table-feedback muted"
                 >
                   Nenhum material encontrado.
@@ -331,22 +348,34 @@
                 <td class="muted">
                   {{ row.programa }}
                 </td>
-                <td class="mono right">
+                <td
+                  v-if="!isCompras"
+                  class="mono right"
+                >
                   {{ row.quantidade }}
                 </td>
-                <td class="mono">
+                <td
+                  v-if="!isMaterialsLimitedProfile"
+                  class="mono"
+                >
                   {{ fmt(row.valorUnitario) }}
                 </td>
-                <td class="total">
+                <td
+                  v-if="!isMaterialsLimitedProfile"
+                  class="total"
+                >
                   {{ fmt(row.valorTotal) }}
                 </td>
                 <td class="mono">
                   {{ row.periodo }}
                 </td>
-                <td class="muted">
+                <td
+                  v-if="!isAlmoxarifado && !isProjetos"
+                  class="muted"
+                >
                   {{ row.fornecedor }}
                 </td>
-                <td>
+                <td v-if="!isAlmoxarifado && !isProjetos">
                   <span :class="badgeClass(row.categoria)">{{ row.categoria }}</span>
                 </td>
               </tr>
@@ -401,22 +430,25 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onUnmounted, nextTick } from "vue";
+import { ref, reactive, computed, watch, onMounted, onUnmounted, nextTick } from "vue";
 import { useCharts } from "@/composables/useCharts";
+import { usePermissions } from "@/composables/usePermissions";
 import { materiaisService } from "@/services/materiaisService";
 import type { MaterialsApiRow } from "@/services/materiaisService";
 import type { Filters, SortKey, SortDir, Material, Categoria, Status } from "@/types/materiais";
+import { RAW } from "@/data/materiais";
+import * as XLSX from 'xlsx'
 
 const PER_PAGE = 8;
 const isMounted = ref(false);
 
 // ─── State ────────────────────────────────────────────────────────────────────
-const tableData = ref<Material[]>([]);
+const tableData = ref<Material[]>(RAW);
 const tableLoading = ref(false);
 const tableError = ref("");
 const topMaterials = ref<Material[]>([]);
 const costByProject = ref<Material[]>([]);
-const filters = ref<Filters>({
+const filters = reactive<Filters>({
   periodo: "",
   programa: "",
   projeto: "",
@@ -480,12 +512,11 @@ async function loadTableData() {
   tableError.value = "";
 
   try {
-    const data = await materiaisService.fetchMateriais(filters.value);
+    const data = await materiaisService.fetchMateriais(filters);
     tableData.value = data.map(mapApiRow);
   } catch (error) {
     console.error(error);
     tableError.value = "Não foi possível carregar a tabela de materiais.";
-    tableData.value = [];
   } finally {
     tableLoading.value = false;
   }
@@ -515,7 +546,7 @@ function mapTopMaterial(row: TopMaterialApi): Material {
 
 async function loadTopMaterials() {
   try {
-    const data = await materiaisService.fetchTopMaterials(filters.value);
+    const data = await materiaisService.fetchTopMaterials(filters);
     console.log("TOP MATERIALS API:", data);
     topMaterials.value = data.map(mapTopMaterial);
   } catch (error) {
@@ -526,7 +557,7 @@ async function loadTopMaterials() {
 
 async function loadCostByProject() {
   try {
-    const data = await materiaisService.fetchCostByProject(filters.value);
+    const data = await materiaisService.fetchCostByProject(filters);
 
     console.log("COST BY PROJECT:", data);
 
@@ -578,25 +609,49 @@ const debouncedLoad = createDebouncedFn(() => {
 
 // ─── Computed ─────────────────────────────────────────────────────────────────
 const projetosFiltered = computed(() => {
-  if (!filters.value.programa) {
-    return projetos.value.map((p) => p.nome);
+  const list = projetos.value ?? [];
+  if (!filters.programa) {
+    return list.map((p) => p.nome);
   }
-  return projetos.value
-    .filter((p) => p.programa === filters.value.programa)
+  return list
+    .filter((p) => p.programa === filters.programa)
     .map((p) => p.nome)
     .sort();
 });
 
 const hasActiveFilters = computed(() => {
   return (
-    filters.value.periodo !== "" ||
-    filters.value.programa !== "" ||
-    filters.value.projeto !== "" ||
-    filters.value.categoria !== "" ||
-    filters.value.fornecedor !== "" ||
-    filters.value.search !== ""
+    filters.periodo !== "" ||
+    filters.programa !== "" ||
+    filters.projeto !== "" ||
+    filters.categoria !== "" ||
+    filters.fornecedor !== "" ||
+    filters.search !== ""
   );
 });
+
+type FilterEntry = { key: keyof Filters; label: string; value: string };
+
+const FILTER_LABELS: Partial<Record<keyof Filters, string>> = {
+  periodo: "Período",
+  programa: "Programa",
+  projeto: "Projeto",
+  categoria: "Categoria",
+  fornecedor: "Fornecedor",
+  search: "Busca",
+};
+
+const activeFilterEntries = computed<FilterEntry[]>(() => {
+  const keys: (keyof Filters)[] = ["periodo", "programa", "projeto", "categoria", "fornecedor", "search"];
+  return keys
+    .filter((k) => filters[k] !== "")
+    .map((k) => ({ key: k, label: FILTER_LABELS[k]!, value: filters[k] }));
+});
+
+function removeFilter(key: keyof Filters) {
+  filters[key] = "";
+  page.value = 1;
+}
 
 const sortedData = computed(() =>
   [...tableData.value].sort((a, b) => {
@@ -631,11 +686,11 @@ const visiblePages = computed(() => {
 // ─── Watchers ─────────────────────────────────────────────────────────────────
 watch(
   () => [
-    filters.value.periodo,
-    filters.value.programa,
-    filters.value.projeto,
-    filters.value.categoria,
-    filters.value.fornecedor,
+    filters.periodo,
+    filters.programa,
+    filters.projeto,
+    filters.categoria,
+    filters.fornecedor,
   ],
   () => {
     page.value = 1;
@@ -646,7 +701,7 @@ watch(
 );
 
 watch(
-  () => filters.value.search,
+  () => filters.search,
   () => {
     page.value = 1;
     debouncedLoad();
@@ -659,11 +714,8 @@ onMounted(async () => {
   await loadCostByProject();
   isMounted.value = true;
 
-  console.log("costByProject após load:", costByProject.value);  // ← add
-  console.log("topMaterials após load:", topMaterials.value);    // ← add
-
-  nextTick(() => { // ← add
-    buildCharts(topMaterials.value);
+  nextTick(() => {
+    buildCharts(topMaterials.value, tableData.value, costByProject.value);
     updateCharts(costByProject.value);
   });
 });
@@ -697,7 +749,7 @@ function badgeClass(c: string) {
 }
 
 function clearFilters() {
-  filters.value = {
+  Object.assign(filters, {
     periodo: "",
     programa: "",
     projeto: "",
@@ -706,7 +758,7 @@ function clearFilters() {
     status: "",
     area: "",
     search: "",
-  };
+  });
   page.value = 1;
 }
 
@@ -733,18 +785,48 @@ function exportCSV() {
   a.click();
 }
 
+function exportExcel() {
+  const rows = sortedData.value.map((r) => ({
+    Material: r.material,
+    Projeto: r.projeto,
+    Programa: r.programa,
+    Quantidade: r.quantidade,
+    'Valor Unitário': r.valorUnitario,
+    'Valor Total': r.valorTotal,
+    Período: r.periodo,
+    Fornecedor: r.fornecedor,
+    Categoria: r.categoria,
+  }))
+
+  const ws = XLSX.utils.json_to_sheet(rows)
+  const wb = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(wb, ws, 'Materiais')
+  XLSX.writeFile(wb, 'materiais.xlsx')
+}
+
 // ─── Charts ──────────────────────────────────────────────────────────────
 const { buildCharts, updateCharts, destroyCharts } = useCharts();
+const { isMaterialsLimitedProfile, isCompras, isAlmoxarifado, isProjetos } = usePermissions();
 
-watch(topMaterials, () => {
+const tableColspan = computed(() => {
+  let cols = 5; // Material, Projeto, Programa, Período + always 1 fixed
+  if (!isCompras.value) cols++;              // Quantidade
+  if (!isMaterialsLimitedProfile.value) cols += 2; // Valor Unitário, Valor Total
+  if (!isAlmoxarifado.value && !isProjetos.value) cols += 2; // Fornecedor, Categoria
+  return cols;
+});
+
+watch([topMaterials, tableData, costByProject], () => {
   if (!isMounted.value) return;
-  nextTick(() => updateCharts(costByProject.value));
+  nextTick(() => updateCharts(topMaterials.value, tableData.value, costByProject.value));
 });
 
 onUnmounted(() => {
   debouncedLoad.cancel();
   destroyCharts();
 });
+
+defineExpose({ filters, sortKey, page, costByProject, topMaterials, isMounted });
 </script>
 
 <style scoped>
@@ -872,41 +954,11 @@ onUnmounted(() => {
   outline: none;
   border-color: var(--blue2);
 }
-.search-wrap {
-  flex: 1;
-  position: relative;
-  min-width: 200px;
-}
-.search-wrap svg {
-  position: absolute;
-  left: 10px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 14px;
-  height: 14px;
-  color: var(--text3);
-}
-.search-input {
-  width: 100%;
-  background: var(--bg3);
-  border: 1px solid var(--border);
-  color: var(--text);
-  border-radius: 7px;
-  padding: 7px 10px 7px 32px;
-  font-size: 12px;
-  font-family: inherit;
-  transition: border-color 0.2s;
-}
-.search-input:focus {
-  outline: none;
-  border-color: var(--blue2);
-}
-.search-input::placeholder {
-  color: var(--text3);
-}
+
 .export-btn {
   display: flex;
   align-items: center;
+  margin-left: auto;
   gap: 6px;
   background: var(--blue2);
   color: #fff;
@@ -1175,5 +1227,38 @@ td.total {
     opacity: 1;
     transform: none;
   }
+}
+
+
+
+
+.filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  color: var(--text);
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 11px;
+}
+.chip-remove {
+  background: none;
+  border: none;
+  color: var(--text3);
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1;
+  padding: 0 1px;
+  display: flex;
+  align-items: center;
+  opacity: 0.5;
+  transition: opacity 0.15s, color 0.15s;
+}
+.chip-remove:hover {
+  opacity: 1;
+  color: #e05252;
 }
 </style>

@@ -7,7 +7,10 @@
       </h1>
       <!-- METRICS -->
       <div class="metrics">
-        <div class="metric-card">
+        <div
+          v-if="!isProjetos"
+          class="metric-card"
+        >
           <div class="metric-label">
             Custo Total Consolidado
           </div>
@@ -15,7 +18,10 @@
             {{ kpisLoading ? "..." : fmt(kpis.total_consolidated_cost) }}
           </div>
         </div>
-        <div class="metric-card">
+        <div
+          v-if="!isProjetos"
+          class="metric-card"
+        >
           <div class="metric-label">
             Custo Total de Materiais
           </div>
@@ -23,7 +29,10 @@
             {{ kpisLoading ? "..." : fmt(kpis.total_materials_cost) }}
           </div>
         </div>
-        <div class="metric-card">
+        <div
+          v-if="!isProjetos"
+          class="metric-card"
+        >
           <div class="metric-label">
             Custo Total de Horas Técnicas
           </div>
@@ -141,6 +150,29 @@
             </svg>
             Exportar
           </button>
+          <button
+            class="export-btn"
+            @click="exportExcel"
+          >
+            <svg
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                d="M12 16l-4-4h3V4h2v8h3l-4 4z"
+                stroke-width="1.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+              <path
+                d="M4 20h16"
+                stroke-width="1.5"
+                stroke-linecap="round"
+              />
+            </svg>
+            Exportar Excel
+          </button>
         </div>
         <div
           v-if="hasActiveFilters"
@@ -153,11 +185,19 @@
             class="filter-chip"
           >
             {{ filter.label }}: {{ filter.value }}
+            <button
+              class="chip-remove"
+              :aria-label="`Remover filtro ${filter.label}`"
+              @click="removeFilter(filter.key)"
+            >×</button>
           </span>
         </div>
       </div>
       <!-- TOP CHARTS -->
-      <div class="charts-row">
+      <div
+        v-if="!isProjetos"
+        class="charts-row"
+      >
         <div class="chart-card">
           <div class="chart-title">
             Custo Total por Programa
@@ -177,7 +217,10 @@
       </div>
       <!-- BOTTOM CHARTS -->
       <div class="charts-row">
-        <div class="chart-card">
+        <div
+          v-if="!isProjetos"
+          class="chart-card"
+        >
           <div class="chart-title">
             Top 10 – Projetos por Custo Total
           </div>
@@ -244,6 +287,7 @@
                   Custo Total {{ sortIcon("custoTotal") }}
                 </th>
                 <th
+                  v-if="!isFinanceiro"
                   class="sort-col"
                   @click="sortBy('periodo')"
                 >
@@ -254,7 +298,7 @@
             <tbody>
               <tr v-if="pagedData.length === 0">
                 <td
-                  colspan="6"
+                  :colspan="isFinanceiro ? 5 : 6"
                   class="table-feedback muted"
                 >
                   Nenhum registro encontrado.
@@ -279,7 +323,10 @@
                 <td class="total">
                   {{ fmt(row.custoTotal) }}
                 </td>
-                <td class="mono">
+                <td
+                  v-if="!isFinanceiro"
+                  class="mono"
+                >
                   {{ row.periodo }}
                 </td>
               </tr>
@@ -330,8 +377,11 @@
           </div>
         </div>
       </div>
-      <!-- SUMMARY TABLE -->
-      <div class="table-card">
+      <!-- SUMMARY TABLE: hidden for projetos (program-level aggregation) -->
+      <div
+        v-if="!isProjetos"
+        class="table-card"
+      >
         <div class="table-header">
           <h2>Resumo Agregado por Programa</h2>
         </div>
@@ -431,9 +481,9 @@
 import { ref, computed, watch, onMounted, onUnmounted, nextTick } from "vue";
 import { useTheme } from "@/composables/useTheme";
 import { useChartsDashboard } from "@/composables/useChartsDashboard";
+import { usePermissions } from "@/composables/usePermissions";
 import type { DashboardRow } from "@/composables/useChartsDashboard";
 import { dashboardService } from "@/services/dashboardService";
-import { CONFIG } from "@/utils/config";
 import type {
   CompositionData,
   DashboardKPIs,
@@ -442,6 +492,7 @@ import type {
   TopProjectRow,
   CostEvolutionRow,
 } from "@/types/api";
+import * as XLSX from 'xlsx'
 
 const PER_PAGE = 8;
 
@@ -544,40 +595,21 @@ async function fetchKPIs() {
 
 // ─── Buscar tabela consolidada da API ─────────────────────────────────────────
 async function fetchTableData() {
-  tableLoading.value = true;
+  tableLoading.value = true
   try {
-    // Build query for consolidated (uses Portuguese param names)
-    const f = filters.value;
-    const p = new URLSearchParams();
-    if (f.programa) p.append("programa", f.programa);
-    if (f.projeto)  p.append("projeto",  f.projeto);
-    if (f.periodo)  p.append("status",   f.periodo);
-    const qs = p.toString() ? `?${p.toString()}` : "";
-    const response = await fetch(`${CONFIG.API_BASE_URL}/consolidated/${qs}`);
-    if (!response.ok)
-      throw new Error(`Erro ao buscar tabela: ${response.status}`);
-    // Consolidated returns { data: [...], last_updated_at: "..." }
-    const json = await response.json();
-    const rawData: {
-      nome_projeto: string;
-      programa: string | null;
-      custo_materiais: number;
-      custo_horas: number;
-      custo_total: number;
-      status: string | null;
-    }[] = Array.isArray(json) ? json : (json.data ?? json.results ?? []);
-    tableData.value = rawData.map((row) => ({
-      projeto: row.nome_projeto ?? "",
-      programa: row.programa ?? "",
+    const raw = await dashboardService.fetchConsolidated(buildApiFilters())
+    tableData.value = raw.map((row) => ({
+      projeto: row.nome_projeto ?? '',
+      programa: row.programa ?? '',
       custoMateriais: row.custo_materiais,
       custoHoras: row.custo_horas,
       custoTotal: row.custo_total,
-      periodo: row.status ?? "",  // status used as status filter (no date period in source)
-    }));
+      periodo: row.status ?? '',
+    }))
   } catch (err) {
-    console.error("Erro ao buscar tabela:", err);
+    console.error('Erro ao buscar tabela:', err)
   } finally {
-    tableLoading.value = false;
+    tableLoading.value = false
   }
 }
 
@@ -634,17 +666,7 @@ watch(
   },
   { deep: true },
 );
-watch(
-  () => filters.value.programa,
-  () => {
-    if (
-      filters.value.projeto &&
-      !availableProjects.value.includes(filters.value.projeto)
-    ) {
-      filters.value.projeto = "";
-    }
-  },
-);
+
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 const fmt = (v: number) =>
@@ -663,8 +685,8 @@ const sortIcon = (k: keyof DashboardRow) => {
 };
 
 function exportCSV() {
-  const header =
-    "Projeto,Programa,Custo Materiais,Custo Horas,Custo Total,Período";
+  const header = "Projeto,Programa,Custo Materiais,Custo Horas,Custo Total,Período";
+
   const rows = filteredData.value.map((r) =>
     [
       r.projeto,
@@ -675,13 +697,46 @@ function exportCSV() {
       r.periodo,
     ].join(","),
   );
+
   const csv = [header, ...rows].join("\n");
-  const a = document.createElement("a");
-  a.href = "data:text/csv;charset=utf-8," + encodeURIComponent(csv);
-  a.download = "dashboard-geral.csv";
-  a.click();
+
+  const blob = new Blob([csv], {
+    type: "text/csv;charset=utf-8;",
+  });
+
+  const url = URL.createObjectURL(blob);
+
+  const link = document.createElement("a");
+  link.href = url;
+  link.setAttribute("download", "dashboard-geral.csv");
+
+  document.body.appendChild(link);
+
+  link.click();
+
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
 }
 
+function exportExcel() {
+  const rows = filteredData.value.map((r) => ({
+    Projeto: r.projeto,
+    Programa: r.programa,
+    'Custo Materiais': r.custoMateriais,
+    'Custo Horas': r.custoHoras,
+    'Custo Total': r.custoTotal,
+    Período: r.periodo,
+  }))
+
+  const ws = XLSX.utils.json_to_sheet(rows)
+  const wb = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(wb, ws, 'Dashboard Geral')
+  XLSX.writeFile(wb, 'dashboard-geral.xlsx')
+}
+
+function removeFilter(key: string) {
+  (filters.value as Record<string, string>)[key] = "";
+}
 function clearFilters() {
   filters.value = { periodo: "", programa: "", projeto: "" };
 }
@@ -743,6 +798,7 @@ const summarySortIcon = (k: keyof SummaryRow) => {
 // ─── Charts ──────────────────────────────────────────────────────────────────
 const { buildCharts, updateCharts, destroyCharts } = useChartsDashboard();
 const { theme } = useTheme();
+const { isProjetos, isFinanceiro } = usePermissions();
 
 watch(theme, () => {
   nextTick(() => buildCharts(tableData.value, compositionData.value ?? undefined, topProjectsData.value, summaryData.value, costEvolutionData.value));
@@ -932,6 +988,9 @@ onUnmounted(destroyCharts);
   letter-spacing: 0.08em;
 }
 .filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
   background: var(--bg3);
   border: 1px solid var(--border2);
   color: var(--text);
@@ -1136,5 +1195,24 @@ tfoot td.total.totals-value {
     opacity: 1;
     transform: none;
   }
+}
+
+.chip-remove {
+  background: none;
+  border: none;
+  color: var(--text3);
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1;
+  padding: 0 1px;
+  display: flex;
+  align-items: center;
+  opacity: 0.5;
+  transition: opacity 0.15s, color 0.15s;
+}
+.chip-remove:hover {
+  opacity: 1;
+  color: #e05252;
 }
 </style>

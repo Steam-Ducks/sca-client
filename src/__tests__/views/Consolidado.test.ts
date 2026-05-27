@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { mount } from "@vue/test-utils";
-import { nextTick } from "vue";
+import { nextTick, ref } from "vue";
 import Consolidado from "@/views/Consolidado.vue";
 import { apiService } from "@/services/apiService";
 
@@ -11,6 +11,26 @@ vi.mock("@/composables/useChartsConsolidado", () => ({
     updateCharts: vi.fn(),
     destroyCharts: vi.fn(),
   })),
+}));
+
+// ── usePermissions mock ───────────────────────────────────────────────────────
+const isProjetosMock = ref(false)
+
+vi.mock("@/composables/usePermissions", () => ({
+  usePermissions: () => ({
+    userProfile: ref(null),
+    isSuperAdmin: ref(false),
+    isFinanceiro: ref(false),
+    isCompras: ref(false),
+    isAlmoxarifado: ref(false),
+    isProjetos: isProjetosMock,
+    canSeeCosts: ref(true),
+    isMaterialsLimitedProfile: ref(false),
+    canAccessDashboard: ref(true),
+    canAccessHoras: ref(true),
+    canAccessConsolidado: ref(true),
+    canAccessOrcamento: ref(true),
+  }),
 }));
 
 // Mock Chart.js to prevent canvas errors
@@ -299,5 +319,58 @@ describe("Consolidado.vue", () => {
     await nextTick();
 
     expect(getVm(wrapper).filters.programa).toBe("");
+  });
+});
+
+// ── Visibilidade de gráficos por perfil ──────────────────────────────────────
+describe("Consolidado.vue — restrição de gráficos por perfil", () => {
+  beforeEach(() => {
+    isProjetosMock.value = false;
+    vi.mocked(apiService.consolidated.fetchConsolidatedSnapshot).mockResolvedValue({
+      rows: [],
+      lastUpdatedAt: null,
+    });
+  });
+
+  it("super_admin vê chartPorPrograma", async () => {
+    isProjetosMock.value = false;
+    const wrapper = mount(Consolidado);
+    await nextTick();
+    expect(wrapper.find("#chartPorPrograma").exists()).toBe(true);
+  });
+
+  it("super_admin vê chartTopCustos", async () => {
+    isProjetosMock.value = false;
+    const wrapper = mount(Consolidado);
+    await nextTick();
+    expect(wrapper.find("#chartTopCustos").exists()).toBe(true);
+  });
+
+  it("projetos não vê chartPorPrograma", async () => {
+    isProjetosMock.value = true;
+    const wrapper = mount(Consolidado);
+    await nextTick();
+    expect(wrapper.find("#chartPorPrograma").exists()).toBe(false);
+  });
+
+  it("projetos não vê chartTopCustos", async () => {
+    isProjetosMock.value = true;
+    const wrapper = mount(Consolidado);
+    await nextTick();
+    expect(wrapper.find("#chartTopCustos").exists()).toBe(false);
+  });
+
+  it("projetos ainda vê chartDistribuicao", async () => {
+    isProjetosMock.value = true;
+    const wrapper = mount(Consolidado);
+    await nextTick();
+    expect(wrapper.find("#chartDistribuicao").exists()).toBe(true);
+  });
+
+  it("projetos ainda vê chartTemporalCons", async () => {
+    isProjetosMock.value = true;
+    const wrapper = mount(Consolidado);
+    await nextTick();
+    expect(wrapper.find("#chartTemporalCons").exists()).toBe(true);
   });
 });

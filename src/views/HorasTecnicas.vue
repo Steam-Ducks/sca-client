@@ -7,7 +7,10 @@
 
       <!-- METRICS -->
       <div class="metrics">
-        <div class="metric-card">
+        <div
+          v-if="!isProjetos"
+          class="metric-card"
+        >
           <div class="metric-label">
             Custo Total - Horas
           </div>
@@ -23,7 +26,10 @@
             {{ fmtH(kpis.totalHoras) }}h
           </div>
         </div>
-        <div class="metric-card">
+        <div
+          v-if="!isProjetos"
+          class="metric-card"
+        >
           <div class="metric-label">
             Custo Médio/Hora
           </div>
@@ -171,6 +177,29 @@
             </svg>
             Exportar
           </button>
+          <button
+            class="export-btn"
+            @click="exportExcel"
+          >
+            <svg
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                d="M12 16l-4-4h3V4h2v8h3l-4 4z"
+                stroke-width="1.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+              <path
+                d="M4 20h16"
+                stroke-width="1.5"
+                stroke-linecap="round"
+              />
+            </svg>
+            Exportar Excel
+          </button>
         </div>
         <div
           v-if="hasActiveFilters"
@@ -183,6 +212,11 @@
             class="filter-chip"
           >
             {{ filter.label }}: {{ filter.value }}
+            <button
+              class="chip-remove"
+              :aria-label="`Remover filtro ${filter.label}`"
+              @click="removeFilter(filter.key)"
+            >×</button>
           </span>
         </div>
       </div>
@@ -197,7 +231,10 @@
             <canvas id="chartHorasProjeto" />
           </div>
         </div>
-        <div class="chart-card">
+        <div
+          v-if="!isProjetos"
+          class="chart-card"
+        >
           <div class="chart-title">
             Custo de Horas por Projeto
           </div>
@@ -209,7 +246,10 @@
 
       <!-- BOTTOM CHARTS: Custo por Colaborador + Temporal -->
       <div class="charts-row">
-        <div class="chart-card">
+        <div
+          v-if="!isProjetos"
+          class="chart-card"
+        >
           <div class="chart-title">
             Top 10 - Custo por Colaborador
           </div>
@@ -222,7 +262,10 @@
             Evolução Temporal das Horas
           </div>
           <div class="chart-wrap tall">
-            <canvas id="chartTemporal" />
+            <canvas
+              id="chartTemporal"
+              data-testid="chart-temporal"
+            />
           </div>
         </div>
       </div>
@@ -261,12 +304,14 @@
                   Horas {{ sortIcon("horas") }}
                 </th>
                 <th
+                  v-if="!isProjetos"
                   class="sort-col"
                   @click="sortBy('custoPorHora')"
                 >
                   Custo/Hora {{ sortIcon("custoPorHora") }}
                 </th>
                 <th
+                  v-if="!isProjetos"
                   class="sort-col"
                   @click="sortBy('custoTotal')"
                 >
@@ -323,10 +368,16 @@
                 <td class="mono right">
                   {{ fmtH(row.horas) }}h
                 </td>
-                <td class="mono">
+                <td
+                  v-if="!isProjetos"
+                  class="mono"
+                >
                   {{ fmt(row.custoPorHora) }}
                 </td>
-                <td class="total">
+                <td
+                  v-if="!isProjetos"
+                  class="total"
+                >
                   {{ fmt(row.custoTotal) }}
                 </td>
                 <td class="mono">
@@ -390,7 +441,9 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted, nextTick } from "vue";
 import { useChartsTechnical } from "@/composables/useChartsTechnical";
-import { CONFIG } from "@/utils/config";
+import { usePermissions } from "@/composables/usePermissions";
+import { horasTecnicasService } from '@/services/horasTecnicasService'
+import * as XLSX from 'xlsx'
 
 const PER_PAGE = 8;
 
@@ -420,186 +473,6 @@ interface ApiRow {
   tarefa: string;
 }
 
-// ─── Mock / fallback data (usado se API indisponível) ─────────────────────────
-const MOCK: Row[] = [
-  {
-    id: 1,
-    colaborador: "Lucas Martins",
-    projeto: "Migração AWS",
-    programa: "Cloud",
-    horas: 400,
-    custoPorHora: 420,
-    custoTotal: 168000,
-    periodo: "2024-01",
-    tarefa: "Arquitetura Cloud",
-  },
-  {
-    id: 2,
-    colaborador: "Juliana Lima",
-    projeto: "Sistema ERP",
-    programa: "Desenvolvimento",
-    horas: 410,
-    custoPorHora: 380,
-    custoTotal: 155800,
-    periodo: "2024-02",
-    tarefa: "Liderança Técnica",
-  },
-  {
-    id: 3,
-    colaborador: "Ana Oliveira",
-    projeto: "Portal Web",
-    programa: "Desenvolvimento",
-    horas: 520,
-    custoPorHora: 250,
-    custoTotal: 130000,
-    periodo: "2024-01",
-    tarefa: "Desenvolvimento",
-  },
-  {
-    id: 4,
-    colaborador: "Pedro Costa",
-    projeto: "Portal Web",
-    programa: "Desenvolvimento",
-    horas: 450,
-    custoPorHora: 280,
-    custoTotal: 126000,
-    periodo: "2024-01",
-    tarefa: "Desenvolvimento",
-  },
-  {
-    id: 5,
-    colaborador: "Carlos Ferreira",
-    projeto: "Sistema ERP",
-    programa: "Desenvolvimento",
-    horas: 380,
-    custoPorHora: 320,
-    custoTotal: 121600,
-    periodo: "2024-02",
-    tarefa: "Banco de Dados",
-  },
-  {
-    id: 6,
-    colaborador: "Roberto Alves",
-    projeto: "SOC Implementation",
-    programa: "Segurança",
-    horas: 300,
-    custoPorHora: 400,
-    custoTotal: 120000,
-    periodo: "2024-03",
-    tarefa: "Configuração",
-  },
-  {
-    id: 7,
-    colaborador: "Beatriz Rocha",
-    projeto: "Migração AWS",
-    programa: "Cloud",
-    horas: 380,
-    custoPorHora: 300,
-    custoTotal: 114000,
-    periodo: "2024-03",
-    tarefa: "Migração",
-  },
-  {
-    id: 8,
-    colaborador: "João Silva",
-    projeto: "Data Center Regional",
-    programa: "Infraestrutura",
-    horas: 320,
-    custoPorHora: 350,
-    custoTotal: 112000,
-    periodo: "2024-01",
-    tarefa: "Arquitetura",
-  },
-  {
-    id: 9,
-    colaborador: "Fernanda Torres",
-    projeto: "Sistema ERP",
-    programa: "Desenvolvimento",
-    horas: 360,
-    custoPorHora: 290,
-    custoTotal: 104400,
-    periodo: "2024-02",
-    tarefa: "Desenvolvimento",
-  },
-  {
-    id: 10,
-    colaborador: "Ricardo Souza",
-    projeto: "Data Center Regional",
-    programa: "Infraestrutura",
-    horas: 340,
-    custoPorHora: 310,
-    custoTotal: 105400,
-    periodo: "2024-01",
-    tarefa: "Configuração",
-  },
-  {
-    id: 11,
-    colaborador: "Camila Nunes",
-    projeto: "Portal Web",
-    programa: "Desenvolvimento",
-    horas: 280,
-    custoPorHora: 260,
-    custoTotal: 72800,
-    periodo: "2024-01",
-    tarefa: "Design",
-  },
-  {
-    id: 12,
-    colaborador: "Marcos Pereira",
-    projeto: "SOC Implementation",
-    programa: "Segurança",
-    horas: 260,
-    custoPorHora: 370,
-    custoTotal: 96200,
-    periodo: "2024-03",
-    tarefa: "Configuração",
-  },
-  {
-    id: 13,
-    colaborador: "Thiago Ramos",
-    projeto: "App Mobile",
-    programa: "Desenvolvimento",
-    horas: 310,
-    custoPorHora: 240,
-    custoTotal: 74400,
-    periodo: "2024-02",
-    tarefa: "Desenvolvimento",
-  },
-  {
-    id: 14,
-    colaborador: "Paula Mendes",
-    projeto: "App Mobile",
-    programa: "Desenvolvimento",
-    horas: 200,
-    custoPorHora: 290,
-    custoTotal: 58000,
-    periodo: "2024-02",
-    tarefa: "Liderança Técnica",
-  },
-  {
-    id: 15,
-    colaborador: "Diego Castillo",
-    projeto: "Modernização de Rede",
-    programa: "Infraestrutura",
-    horas: 290,
-    custoPorHora: 330,
-    custoTotal: 95700,
-    periodo: "2024-03",
-    tarefa: "Configuração",
-  },
-  {
-    id: 16,
-    colaborador: "Renata Fontes",
-    projeto: "Sistema ERP",
-    programa: "Desenvolvimento",
-    horas: 220,
-    custoPorHora: 270,
-    custoTotal: 59400,
-    periodo: "2024-03",
-    tarefa: "Desenvolvimento",
-  },
-];
-
 // ─── State ────────────────────────────────────────────────────────────────────
 const tableData = ref<Row[]>([]);
 const tableLoading = ref(false);
@@ -622,6 +495,9 @@ const uniq = (key: keyof Row) =>
     [...new Set(tableData.value.map((r) => String(r[key])))].sort(),
   );
 
+const allPeriodos = computed(() =>
+  [...new Set(tableData.value.map((r) => r.periodo))].filter(Boolean).sort(),
+);
 const uniquePeriodos = uniq("periodo");
 const uniqueProgramas = uniq("programa");
 const uniqueColaboradores = uniq("colaborador");
@@ -695,7 +571,7 @@ const visiblePages = computed(() => {
 // ─── Watchers ─────────────────────────────────────────────────────────────────
 watch(filteredData, (data) => {
   page.value = 1;
-  updateCharts(data);
+  updateCharts(data, allPeriodos.value);
 });
 
 // ─── API load ─────────────────────────────────────────────────────────────────
@@ -714,38 +590,22 @@ function mapApiRow(r: ApiRow): Row {
 }
 
 async function loadData() {
-  tableLoading.value = true;
-  tableError.value = "";
+  tableLoading.value = true
+  tableError.value = ''
   try {
-    const params = new URLSearchParams();
-    if (filters.value.periodo) params.set("periodo", filters.value.periodo);
-    if (filters.value.programa) params.set("programa", filters.value.programa);
-    if (filters.value.projeto) params.set("projeto", filters.value.projeto);
-    const query = params.toString() ? `?${params.toString()}` : "";
-
-    const res = await fetch(`${CONFIG.API_BASE_URL}/horas-tecnicas/${query}`);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = (await res.json()) as ApiRow[];
-    tableData.value = data.map(mapApiRow);
-  } catch {
-    // fallback para dados mock se API indisponível
-    tableData.value = MOCK;
+    const raw = await horasTecnicasService.fetchAll({
+      periodo: filters.value.periodo || undefined,
+      programa: filters.value.programa || undefined,
+      projeto: filters.value.projeto || undefined,
+    })
+    tableData.value = raw.map(mapApiRow)
+  } catch (err) {
+    console.error('Erro ao buscar horas técnicas:', err)
+    tableError.value = 'Erro ao carregar dados. Tente novamente.'
   } finally {
-    tableLoading.value = false;
+    tableLoading.value = false
   }
 }
-
-watch(
-  () => filters.value.programa,
-  () => {
-    if (
-      filters.value.projeto &&
-      !availableProjects.value.includes(filters.value.projeto)
-    ) {
-      filters.value.projeto = "";
-    }
-  },
-);
 
 watch(
   () => [filters.value.periodo, filters.value.programa, filters.value.projeto],
@@ -808,6 +668,27 @@ function exportCSV() {
   a.click();
 }
 
+function exportExcel() {
+  const rows = filteredData.value.map((r) => ({
+    Colaborador: r.colaborador,
+    Projeto: r.projeto,
+    Programa: r.programa,
+    Horas: r.horas,
+    'Custo/Hora': r.custoPorHora,
+    'Custo Total': r.custoTotal,
+    Período: r.periodo,
+    Tarefa: r.tarefa,
+  }))
+
+  const ws = XLSX.utils.json_to_sheet(rows)
+  const wb = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(wb, ws, 'Horas Técnicas')
+  XLSX.writeFile(wb, 'horas-tecnicas.xlsx')
+}
+
+function removeFilter(key: string) {
+  (filters.value as Record<string, string>)[key] = "";
+}
 function clearFilters() {
   filters.value = {
     periodo: "",
@@ -820,10 +701,11 @@ function clearFilters() {
 
 // ─── Charts ───────────────────────────────────────────────────────────────────
 const { buildCharts, updateCharts, destroyCharts } = useChartsTechnical();
+const { isProjetos } = usePermissions();
 
 onMounted(async () => {
   await loadData();
-  nextTick(() => buildCharts(filteredData.value));
+  nextTick(() => buildCharts(filteredData.value, allPeriodos.value));
 });
 onUnmounted(destroyCharts);
 </script>
@@ -1009,6 +891,9 @@ onUnmounted(destroyCharts);
   letter-spacing: 0.08em;
 }
 .filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
   background: var(--bg3);
   border: 1px solid var(--border2);
   color: var(--text);
@@ -1230,5 +1115,24 @@ td.total {
     opacity: 1;
     transform: none;
   }
+}
+
+.chip-remove {
+  background: none;
+  border: none;
+  color: var(--text3);
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1;
+  padding: 0 1px;
+  display: flex;
+  align-items: center;
+  opacity: 0.5;
+  transition: opacity 0.15s, color 0.15s;
+}
+.chip-remove:hover {
+  opacity: 1;
+  color: #e05252;
 }
 </style>
