@@ -80,7 +80,7 @@ export const budgetService = {
     if (filters.saude) params.set("saude", filters.saude);
 
     const query = params.toString() ? `?${params.toString()}` : "";
-    const response = await fetch(`${CONFIG.API_BASE_URL}/budget/indicators/${query}`);
+    const response = await apiFetch(`${CONFIG.API_BASE_URL}/budget/indicators/${query}`);
     if (!response.ok) throw new Error("Erro ao buscar indicadores de orçamento");
 
     const payload = await response.json() as { data: BudgetIndicators; last_updated_at: string | null };

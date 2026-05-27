@@ -1,4 +1,4 @@
-import axios from "axios";
+import { apiFetch } from "./apiFetch";
 import { CONFIG } from "./config";
 
 type LogLevel = "INFO" | "ERROR" | "WARN";
@@ -16,10 +16,9 @@ const sendLog = async (payload: LogPayload) => {
   if (!CONFIG.ENABLE_LOGS) return;
 
   try {
-    await axios.post(`${CONFIG.API_BASE_URL}/logs/`, payload, {
-      headers: {
-        "Content-Type": "application/json",
-      },
+    await apiFetch(`${CONFIG.API_BASE_URL}/logs/`, {
+      method: "POST",
+      body: JSON.stringify(payload),
     });
   } catch (error) {
     console.error("Error while sending log", error);
