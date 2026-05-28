@@ -89,7 +89,7 @@ export const materiaisService = {
   },
 
   async fetchFilterOptions(): Promise<FilterOptions> {
-    const response = await fetch(`${CONFIG.API_BASE_URL}/materials/filter-options/`);
+    const response = await apiFetch(`${CONFIG.API_BASE_URL}/materials/filter-options/`);
 
     if (!response.ok) {
       throw new Error("Não foi possível carregar as opções de filtro.");

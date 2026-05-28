@@ -3,15 +3,11 @@ import { useApi } from "@/composables/useApi";
 import { apiService } from "@/services/apiService";
 import type { User } from "@/types/api";
 
-// Mock apiService before importing useApi
 vi.mock("@/services/apiService", () => ({
   apiService: {
     user: {
       fetchUsers: vi.fn(),
       createUser: vi.fn(),
-    },
-    health: {
-      check: vi.fn(),
     },
   },
 }));
@@ -114,43 +110,6 @@ describe("useApi", () => {
       expect(apiService.user.createUser).toHaveBeenCalledWith(userData);
       expect(apiService.user.createUser).toHaveBeenCalledTimes(1);
       expect(result).toBeNull();
-      expect(consoleSpy).toHaveBeenCalled();
-
-      consoleSpy.mockRestore();
-    });
-  });
-
-  describe("healthCheck", () => {
-    it("should return true when health check passes", async () => {
-      vi.mocked(apiService.health.check).mockResolvedValue(true);
-
-      const result = await useApiInstance.healthCheck();
-
-      expect(apiService.health.check).toHaveBeenCalledTimes(1);
-      expect(result).toBe(true);
-    });
-
-    it("should return false when health check fails", async () => {
-      vi.mocked(apiService.health.check).mockResolvedValue(false);
-
-      const result = await useApiInstance.healthCheck();
-
-      expect(apiService.health.check).toHaveBeenCalledTimes(1);
-      expect(result).toBe(false);
-    });
-
-    it("should return false when health check throws error", async () => {
-      const consoleSpy = vi
-        .spyOn(console, "error")
-        .mockImplementation(() => {});
-      vi.mocked(apiService.health.check).mockRejectedValue(
-        new Error("Connection failed"),
-      );
-
-      const result = await useApiInstance.healthCheck();
-
-      expect(apiService.health.check).toHaveBeenCalledTimes(1);
-      expect(result).toBe(false);
       expect(consoleSpy).toHaveBeenCalled();
 
       consoleSpy.mockRestore();
