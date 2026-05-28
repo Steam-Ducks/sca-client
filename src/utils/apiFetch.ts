@@ -5,16 +5,18 @@ export async function apiFetch(
   options: RequestInit = {},
 ): Promise<Response> {
   const token = authService.getToken();
+  const isFormData = options.body instanceof FormData;
+
   const response = await fetch(url, {
     ...options,
     headers: {
-      "Content-Type": "application/json",
+      // Skip Content-Type for FormData — browser sets it with the correct boundary
+      ...(isFormData ? {} : { "Content-Type": "application/json" }),
       ...(options.headers as Record<string, string>),
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
   });
 
-  // Token expirado: limpa sessão e redireciona para login
   if (response.status === 401 && token) {
     authService.clearSession();
     window.location.href = "/login";

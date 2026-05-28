@@ -1,14 +1,12 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { trackMetric } from "@/utils/metrics";
-import axios from "axios";
 
-// Mock axios
-vi.mock("axios", () => ({
-  default: {
-    post: vi.fn(),
-  },
+// Mock apiFetch
+vi.mock("@/utils/apiFetch", () => ({
+  apiFetch: vi.fn(),
 }));
-const mockedAxios = vi.mocked(axios);
+import { apiFetch } from "@/utils/apiFetch";
+const mockedApiFetch = vi.mocked(apiFetch);
 
 // Mock CONFIG
 vi.mock("@/utils/config", () => ({
@@ -37,74 +35,68 @@ describe("trackMetric", () => {
   });
 
   it("should send metric with default value", async () => {
-    mockedAxios.post.mockResolvedValue({});
+    mockedApiFetch.mockResolvedValue(new Response(null, { status: 200 }));
 
     await trackMetric("page_view", undefined, { page: "/home" });
 
-    expect(mockedAxios.post).toHaveBeenCalledWith(
+    expect(mockedApiFetch).toHaveBeenCalledWith(
       "http://localhost:3000/api/metrics/",
       {
-        name: "page_view",
-        value: 1,
-        labels: { page: "/home" },
-        timestamp: "2024-01-01T12:00:00.000Z",
-        correlation_id: "metric-uuid-456",
-      },
-      {
-        headers: {
-          "Content-Type": "application/json",
-        },
+        method: "POST",
+        body: JSON.stringify({
+          name: "page_view",
+          value: 1,
+          labels: { page: "/home" },
+          timestamp: "2024-01-01T12:00:00.000Z",
+          correlation_id: "metric-uuid-456",
+        }),
       },
     );
   });
 
   it("should send metric with custom value", async () => {
-    mockedAxios.post.mockResolvedValue({});
+    mockedApiFetch.mockResolvedValue(new Response(null, { status: 200 }));
 
     await trackMetric("response_time", 150.5, { endpoint: "/api/users" });
 
-    expect(mockedAxios.post).toHaveBeenCalledWith(
+    expect(mockedApiFetch).toHaveBeenCalledWith(
       "http://localhost:3000/api/metrics/",
       {
-        name: "response_time",
-        value: 150.5,
-        labels: { endpoint: "/api/users" },
-        timestamp: "2024-01-01T12:00:00.000Z",
-        correlation_id: "metric-uuid-456",
-      },
-      {
-        headers: {
-          "Content-Type": "application/json",
-        },
+        method: "POST",
+        body: JSON.stringify({
+          name: "response_time",
+          value: 150.5,
+          labels: { endpoint: "/api/users" },
+          timestamp: "2024-01-01T12:00:00.000Z",
+          correlation_id: "metric-uuid-456",
+        }),
       },
     );
   });
 
   it("should send metric without labels", async () => {
-    mockedAxios.post.mockResolvedValue({});
+    mockedApiFetch.mockResolvedValue(new Response(null, { status: 200 }));
 
     await trackMetric("button_click", 1);
 
-    expect(mockedAxios.post).toHaveBeenCalledWith(
+    expect(mockedApiFetch).toHaveBeenCalledWith(
       "http://localhost:3000/api/metrics/",
       {
-        name: "button_click",
-        value: 1,
-        labels: {},
-        timestamp: "2024-01-01T12:00:00.000Z",
-        correlation_id: "metric-uuid-456",
-      },
-      {
-        headers: {
-          "Content-Type": "application/json",
-        },
+        method: "POST",
+        body: JSON.stringify({
+          name: "button_click",
+          value: 1,
+          labels: {},
+          timestamp: "2024-01-01T12:00:00.000Z",
+          correlation_id: "metric-uuid-456",
+        }),
       },
     );
   });
 
-  it("should handle axios error gracefully", async () => {
+  it("should handle apiFetch error gracefully", async () => {
     const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
-    mockedAxios.post.mockRejectedValue(new Error("Network error"));
+    mockedApiFetch.mockRejectedValue(new Error("Network error"));
 
     await expect(trackMetric("error_metric", 1)).resolves.toBeUndefined();
 
@@ -128,21 +120,19 @@ describe("trackMetric", () => {
     });
 
     it("should not send metrics when ENABLE_METRICS is false", async () => {
-      // Clear mocks before test
       vi.clearAllMocks();
 
-      // Re-import to get the updated config
       const { trackMetric: disabledTrackMetric } =
         await import("@/utils/metrics");
 
       await disabledTrackMetric("disabled_metric", 1);
 
-      expect(mockedAxios.post).not.toHaveBeenCalled();
+      expect(mockedApiFetch).not.toHaveBeenCalled();
     });
   });
 
   it("should handle labels with different types", async () => {
-    mockedAxios.post.mockResolvedValue({});
+    mockedApiFetch.mockResolvedValue(new Response(null, { status: 200 }));
 
     await trackMetric("mixed_labels", 42, {
       string: "text",
@@ -151,24 +141,22 @@ describe("trackMetric", () => {
       user_id: 789,
     });
 
-    expect(mockedAxios.post).toHaveBeenCalledWith(
+    expect(mockedApiFetch).toHaveBeenCalledWith(
       "http://localhost:3000/api/metrics/",
       {
-        name: "mixed_labels",
-        value: 42,
-        labels: {
-          string: "text",
-          number: 123,
-          page: "/dashboard",
-          user_id: 789,
-        },
-        timestamp: "2024-01-01T12:00:00.000Z",
-        correlation_id: "metric-uuid-456",
-      },
-      {
-        headers: {
-          "Content-Type": "application/json",
-        },
+        method: "POST",
+        body: JSON.stringify({
+          name: "mixed_labels",
+          value: 42,
+          labels: {
+            string: "text",
+            number: 123,
+            page: "/dashboard",
+            user_id: 789,
+          },
+          timestamp: "2024-01-01T12:00:00.000Z",
+          correlation_id: "metric-uuid-456",
+        }),
       },
     );
   });
