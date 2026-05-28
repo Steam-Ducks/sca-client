@@ -1,8 +1,10 @@
 name: Branch & Commit Policy
 
+# PRs para develop validam branch/commit dentro do ci.yml (lá os jobs
+# bloqueiam o auto-merge via `needs`). Aqui cobrimos só PRs para main.
 on:
   pull_request:
-    branches: [develop, main]
+    branches: [main]
 
 jobs:
   branch-name:
