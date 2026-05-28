@@ -24,6 +24,23 @@ const MOCK_COST_BY_PROJECT = [
   { projeto: "SOC Implementation", total_cost: 520000 },
 ];
 
+const MOCK_FILTER_OPTIONS = {
+  periodos: ["2024-01", "2024-02", "2024-03", "2024-04", "2024-05"],
+  programas: ["Infraestrutura", "Cloud", "Segurança"],
+  projetos: [
+    { nome: "Data Center Regional", programa: "Infraestrutura" },
+    { nome: "Storage Upgrade", programa: "Infraestrutura" },
+    { nome: "Migração AWS", programa: "Cloud" },
+    { nome: "SOC Implementation", programa: "Segurança" },
+    { nome: "Modernização de Rede", programa: "Infraestrutura" },
+    { nome: "Modernização de Sistemas", programa: "Infraestrutura" },
+    { nome: "Container Platform", programa: "Cloud" },
+    { nome: "DevOps Pipeline", programa: "Cloud" },
+  ],
+  categorias: ["Hardware", "Storage", "Cloud", "Segurança", "Software", "Rede"],
+  fornecedores: ["Dell Brasil", "NetApp", "AWS", "Fortinet", "Cisco", "Microsoft", "Samsung", "GitHub"],
+};
+
 test.describe("Gestão de Materiais", () => {
   test.beforeEach(async ({ page }) => {
     await page.addInitScript(() => {
@@ -38,15 +55,20 @@ test.describe("Gestão de Materiais", () => {
     await page.route("**/cost-by-project/**", (route) =>
       route.fulfill({ contentType: "application/json", body: JSON.stringify(MOCK_COST_BY_PROJECT) }),
     );
+    await page.route("**/filter-options/**", (route) =>
+      route.fulfill({ contentType: "application/json", body: JSON.stringify(MOCK_FILTER_OPTIONS) }),
+    );
     await page.goto("/materiais");
   });
 
   test("CT02: should filter by period", async ({ page }) => {
-    const periodoSelect = page.locator("select").first();
-    await periodoSelect.selectOption("2024-01");
+    const periodoSelect = page.locator('[data-testid="select-periodo"]');
+    await periodoSelect.waitFor({ state: "visible", timeout: 10000 });
+    await expect(periodoSelect).toBeEnabled();
+    await periodoSelect.selectOption("2024-01", { timeout: 15000 });
 
     // Wait for data rows to load (td.material-name only exists in data rows, not loading/error rows)
-    await expect(page.locator("tbody td.material-name").first()).toBeVisible();
+    await expect(page.locator("tbody td.material-name").first()).toBeVisible({ timeout: 10000 });
 
     // Verificar se a tabela foi filtrada
     await expect(page.locator("tbody tr")).toHaveCount(
@@ -55,11 +77,13 @@ test.describe("Gestão de Materiais", () => {
   });
 
   test("CT03: should filter by program", async ({ page }) => {
-    const programaSelect = page.locator("select").nth(1);
-    await programaSelect.selectOption("Infraestrutura");
+    const programaSelect = page.locator('[data-testid="select-programa"]');
+    await programaSelect.waitFor({ state: "visible", timeout: 10000 });
+    await expect(programaSelect).toBeEnabled();
+    await programaSelect.selectOption("Infraestrutura", { timeout: 15000 });
 
     // Wait for data rows to load
-    await expect(page.locator("tbody td.material-name").first()).toBeVisible();
+    await expect(page.locator("tbody td.material-name").first()).toBeVisible({ timeout: 10000 });
 
     // Verificar se a tabela foi filtrada
     await expect(page.locator("tbody tr")).toHaveCount(
