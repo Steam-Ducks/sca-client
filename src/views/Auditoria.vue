@@ -1277,10 +1277,8 @@ async function handleFileChange(fileKey: string, event: Event) {
     const formData = new FormData();
     formData.append("file", file);
 
-    const token = authService.getToken();
-    const res = await fetch(`${CONFIG.API_BASE_URL}${IMPORT_ENDPOINTS[fileKey]}`, {
+    const res = await apiFetch(`${CONFIG.API_BASE_URL}${IMPORT_ENDPOINTS[fileKey]}`, {
       method: "POST",
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
       body: formData,
     });
 
@@ -1506,7 +1504,7 @@ async function loadHistorico() {
     if (historicoFilters.value.data_inicio) params.set("data_inicio", historicoFilters.value.data_inicio);
     if (historicoFilters.value.data_fim)    params.set("data_fim",    historicoFilters.value.data_fim);
     const query = params.toString() ? `?${params.toString()}` : "";
-    const res = await fetch(`${CONFIG.API_BASE_URL}/monitoring/execucoes/${query}`);
+    const res = await apiFetch(`${CONFIG.API_BASE_URL}/monitoring/execucoes/${query}`);
     if (!res.ok) { historicoError.value = "Erro ao carregar registros."; return; }
     const data: { count: number; results: ExecucaoRow[] } = await res.json();
     historicoTotal.value = data.count;
