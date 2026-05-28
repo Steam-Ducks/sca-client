@@ -42,12 +42,13 @@ test.describe("Gestão de Materiais", () => {
   });
 
   test("CT02: should filter by period", async ({ page }) => {
-    const periodoSelect = page.locator("select").first();
-    await periodoSelect.waitFor({ state: "visible" });
-    await periodoSelect.selectOption("2024-01");
+    const periodoSelect = page.locator('[data-testid="select-periodo"]');
+    await periodoSelect.waitFor({ state: "visible", timeout: 10000 });
+    await expect(periodoSelect).toBeEnabled();
+    await periodoSelect.selectOption("2024-01", { timeout: 15000 });
 
     // Wait for data rows to load (td.material-name only exists in data rows, not loading/error rows)
-    await expect(page.locator("tbody td.material-name").first()).toBeVisible();
+    await expect(page.locator("tbody td.material-name").first()).toBeVisible({ timeout: 10000 });
 
     // Verificar se a tabela foi filtrada
     await expect(page.locator("tbody tr")).toHaveCount(
@@ -56,12 +57,13 @@ test.describe("Gestão de Materiais", () => {
   });
 
   test("CT03: should filter by program", async ({ page }) => {
-    const programaSelect = page.locator("select").nth(1);
-    await programaSelect.waitFor({ state: "visible" });
-    await programaSelect.selectOption("Infraestrutura");
+    const programaSelect = page.locator('[data-testid="select-programa"]');
+    await programaSelect.waitFor({ state: "visible", timeout: 10000 });
+    await expect(programaSelect).toBeEnabled();
+    await programaSelect.selectOption("Infraestrutura", { timeout: 15000 });
 
     // Wait for data rows to load
-    await expect(page.locator("tbody td.material-name").first()).toBeVisible();
+    await expect(page.locator("tbody td.material-name").first()).toBeVisible({ timeout: 10000 });
 
     // Verificar se a tabela foi filtrada
     await expect(page.locator("tbody tr")).toHaveCount(

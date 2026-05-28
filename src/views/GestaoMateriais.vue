@@ -55,6 +55,7 @@
           <select
             v-model="filters.periodo"
             class="filter-select"
+            data-testid="select-periodo"
           >
             <option value="">
               Todos os Períodos
@@ -70,6 +71,7 @@
           <select
             v-model="filters.programa"
             class="filter-select"
+            data-testid="select-programa"
           >
             <option value="">
               Todos os Programas
