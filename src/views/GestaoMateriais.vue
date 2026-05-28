@@ -55,6 +55,7 @@
           <select
             v-model="filters.periodo"
             class="filter-select"
+            data-testid="select-periodo"
           >
             <option value="">
               Todos os Períodos
@@ -70,6 +71,7 @@
           <select
             v-model="filters.programa"
             class="filter-select"
+            data-testid="select-programa"
           >
             <option value="">
               Todos os Programas
@@ -462,23 +464,25 @@ const sortKey = ref<SortKey>("valorTotal");
 const sortDir = ref<SortDir>(-1);
 const page = ref(1);
 
-// ─── Filter option lists (derivados reativamente dos dados da tabela) ────────
-const periodos = computed(() =>
-  [...new Set(tableData.value.map((r) => r.periodo).filter(Boolean))].sort(),
-);
-const programas = computed(() =>
-  [...new Set(tableData.value.map((r) => r.programa).filter(Boolean))].sort(),
-);
-const projetos = computed(() => {
-  const map = new Map(tableData.value.map((r) => [r.projeto, { nome: r.projeto, programa: r.programa }]));
-  return [...map.values()];
-});
-const categorias = computed(() =>
-  [...new Set(tableData.value.map((r) => r.categoria).filter(Boolean))].sort(),
-);
-const fornecedores = computed(() =>
-  [...new Set(tableData.value.map((r) => r.fornecedor).filter(Boolean))].sort(),
-);
+// ─── Filter option lists (populados via API com dados reais do banco) ─────────
+const periodos = ref<string[]>([]);
+const programas = ref<string[]>([]);
+const projetos = ref<{ nome: string; programa: string | null }[]>([]);
+const categorias = ref<string[]>([]);
+const fornecedores = ref<string[]>([]);
+
+async function loadFilterOptions() {
+  try {
+    const opts = await materiaisService.fetchFilterOptions();
+    periodos.value = opts.periodos;
+    programas.value = opts.programas;
+    projetos.value = opts.projetos;
+    categorias.value = opts.categorias;
+    fornecedores.value = opts.fornecedores;
+  } catch (error) {
+    console.error("Erro ao carregar opções de filtro", error);
+  }
+}
 
 // ─── Data mapping ─────────────────────────────────────────────────────────────
 function normalizeCategoria(value: string): Categoria {
@@ -707,7 +711,7 @@ watch(
 );
 
 onMounted(async () => {
-  await loadTableData();
+  await Promise.all([loadTableData(), loadFilterOptions()]);
   try { await loadTopMaterials(); } catch { /* ignore */ }
   await loadCostByProject();
   isMounted.value = true;

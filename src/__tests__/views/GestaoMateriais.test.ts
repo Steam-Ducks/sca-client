@@ -52,6 +52,18 @@ const mockTopMaterialsResponse = [
   { material: "Switch Cisco Catalyst", total: 45000 },
 ];
 
+const mockFilterOptions = {
+  periodos: [...new Set(RAW.map((r) => r.periodo).filter(Boolean))].sort(),
+  programas: [...new Set(RAW.map((r) => r.programa).filter(Boolean))].sort(),
+  projetos: [
+    ...new Map(
+      RAW.map((r) => [r.projeto, { nome: r.projeto, programa: r.programa }]),
+    ).values(),
+  ],
+  categorias: [...new Set(RAW.map((r) => r.categoria).filter(Boolean))].sort(),
+  fornecedores: [...new Set(RAW.map((r) => r.fornecedor).filter(Boolean))].sort(),
+};
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const getVm = (wrapper: ReturnType<typeof mount>) =>
@@ -90,6 +102,12 @@ describe("GestaoMateriais.vue", () => {
           return Promise.resolve({
             ok: true,
             json: async () => mockTopMaterialsResponse,
+          });
+        }
+        if (url.includes("filter-options")) {
+          return Promise.resolve({
+            ok: true,
+            json: async () => mockFilterOptions,
           });
         }
         return Promise.resolve({
@@ -136,7 +154,7 @@ describe("GestaoMateriais.vue", () => {
 
   it("CT01: filters data by period", async () => {
     const wrapper = mount(GestaoMateriais);
-    await nextTick();
+    await flushAll();
 
     const selects = wrapper.findAll("select");
     if (selects.length > 0) {
@@ -147,7 +165,7 @@ describe("GestaoMateriais.vue", () => {
 
   it("CT02: filters data by program", async () => {
     const wrapper = mount(GestaoMateriais);
-    await nextTick();
+    await flushAll();
 
     const selects = wrapper.findAll("select");
     if (selects.length > 1) {
@@ -194,8 +212,7 @@ describe("GestaoMateriais.vue", () => {
 
   it("CT06: restricts project options when a program is selected", async () => {
     const wrapper = mount(GestaoMateriais);
-    await nextTick();
-    await nextTick();
+    await flushAll();
 
     const selects = wrapper.findAll("select");
 
