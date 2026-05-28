@@ -43,6 +43,7 @@ test.describe("Gestão de Materiais", () => {
 
   test("CT02: should filter by period", async ({ page }) => {
     const periodoSelect = page.locator("select").first();
+    await periodoSelect.waitFor({ state: "visible" });
     await periodoSelect.selectOption("2024-01");
 
     // Wait for data rows to load (td.material-name only exists in data rows, not loading/error rows)
@@ -56,6 +57,7 @@ test.describe("Gestão de Materiais", () => {
 
   test("CT03: should filter by program", async ({ page }) => {
     const programaSelect = page.locator("select").nth(1);
+    await programaSelect.waitFor({ state: "visible" });
     await programaSelect.selectOption("Infraestrutura");
 
     // Wait for data rows to load
