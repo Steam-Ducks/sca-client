@@ -1,14 +1,21 @@
 name: post-deploy-smoke
 
+# Roda DEPOIS do automatic-deploy concluir, não em paralelo com ele.
+# Disparar direto no push testava a versão antiga, pois o build+deploy
+# na VPS ainda não havia terminado.
 on:
-  push:
-    branches: [main]
+  workflow_run:
+    workflows: ["automatic-deploy"]
+    types:
+      - completed
   workflow_dispatch:
 
 jobs:
   smoke-frontend:
     name: Frontend (Playwright)
     runs-on: ubuntu-latest
+    # Só roda se o deploy passou (ou em disparo manual).
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
 
     steps:
       - uses: actions/checkout@v4
