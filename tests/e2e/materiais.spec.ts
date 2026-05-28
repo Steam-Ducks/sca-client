@@ -24,6 +24,23 @@ const MOCK_COST_BY_PROJECT = [
   { projeto: "SOC Implementation", total_cost: 520000 },
 ];
 
+const MOCK_FILTER_OPTIONS = {
+  periodos: ["2024-01", "2024-02", "2024-03", "2024-04", "2024-05"],
+  programas: ["Infraestrutura", "Cloud", "Segurança"],
+  projetos: [
+    { nome: "Data Center Regional", programa: "Infraestrutura" },
+    { nome: "Storage Upgrade", programa: "Infraestrutura" },
+    { nome: "Migração AWS", programa: "Cloud" },
+    { nome: "SOC Implementation", programa: "Segurança" },
+    { nome: "Modernização de Rede", programa: "Infraestrutura" },
+    { nome: "Modernização de Sistemas", programa: "Infraestrutura" },
+    { nome: "Container Platform", programa: "Cloud" },
+    { nome: "DevOps Pipeline", programa: "Cloud" },
+  ],
+  categorias: ["Hardware", "Storage", "Cloud", "Segurança", "Software", "Rede"],
+  fornecedores: ["Dell Brasil", "NetApp", "AWS", "Fortinet", "Cisco", "Microsoft", "Samsung", "GitHub"],
+};
+
 test.describe("Gestão de Materiais", () => {
   test.beforeEach(async ({ page }) => {
     await page.addInitScript(() => {
@@ -37,6 +54,9 @@ test.describe("Gestão de Materiais", () => {
     );
     await page.route("**/cost-by-project/**", (route) =>
       route.fulfill({ contentType: "application/json", body: JSON.stringify(MOCK_COST_BY_PROJECT) }),
+    );
+    await page.route("**/filter-options/**", (route) =>
+      route.fulfill({ contentType: "application/json", body: JSON.stringify(MOCK_FILTER_OPTIONS) }),
     );
     await page.goto("/materiais");
   });
