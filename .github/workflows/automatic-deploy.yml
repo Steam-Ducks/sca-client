@@ -5,6 +5,12 @@ on:
     branches:
       - main
 
+# Evita dois deploys concorrentes em pushes próximos. Não cancela o que
+# já está rodando para não interromper um build/deploy em andamento.
+concurrency:
+  group: deploy-prod
+  cancel-in-progress: false
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -20,10 +26,13 @@ jobs:
           port: ${{ secrets.SERVER_PORT }}
 
           script: |
-            cd /home/deploy/app/sca-client
+            set -e
+            cd /root/sca-client
 
+            # Sincroniza com origin/main de forma determinística (descarta
+            # qualquer estado local do diretório de deploy).
+            git fetch origin main
             git checkout main
-
-            git pull origin main
+            git reset --hard origin/main
 
             docker compose -f docker-compose.prod.yml up -d --build
