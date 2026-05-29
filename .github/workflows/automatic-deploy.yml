@@ -27,7 +27,7 @@ jobs:
 
           script: |
             set -e
-            cd /root/sca-client
+            cd /home/deploy/sca-client
 
             # Sincroniza com origin/main de forma determinística (descarta
             # qualquer estado local do diretório de deploy).
