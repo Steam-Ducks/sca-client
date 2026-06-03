@@ -165,7 +165,7 @@ describe('useChartsOrcamento', () => {
 
     useChartsOrcamento().buildChartsOrcamento(SAMPLE_DATA, SAMPLE_DATA)
 
-    const [_el, config] = vi.mocked(Chart).mock.calls[0]
+    const config = vi.mocked(Chart).mock.calls[0][1]
     expect(config.type).toBe('bar')
     expect(config.data.datasets).toHaveLength(2)
   })
