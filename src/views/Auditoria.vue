@@ -862,7 +862,8 @@ async function loadFalhas() {
     falhasTotal.value = data.count;
     falhasRows.value  = data.results;
   } catch (err) {
-    falhasError.value = err instanceof Error ? err.message : "Erro de conexão com o servidor.";
+    console.error(err);
+    falhasError.value = "Erro de conexão com o servidor.";
   } finally {
     falhasLoading.value = false;
   }
@@ -921,7 +922,8 @@ async function loadHistorico() {
     historicoTotal.value = data.count;
     historicoRows.value  = data.results;
   } catch (err) {
-    historicoError.value = err instanceof Error ? err.message : "Erro de conexão com o servidor.";
+    console.error(err);
+    historicoError.value = "Erro de conexão com o servidor.";
   } finally {
     historicoLoading.value = false;
   }
