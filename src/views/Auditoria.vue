@@ -809,36 +809,6 @@ function formatDuration(seconds: number | null) {
   return `${m}m ${s}s`;
 }
 
-// ─── Generic sort helper ──────────────────────────────────────────────────────
-function makeSorter<T>(rows: T[]) {
-  const sortKey = ref<keyof T>(("iniciado_em" as unknown) as keyof T);
-  const sortDir = ref<1 | -1>(-1);
-
-  const sorted = computed(() => {
-    const key = sortKey.value;
-    const dir = sortDir.value;
-    return [...rows].sort((a, b) => {
-      const av = a[key] ?? "";
-      const bv = b[key] ?? "";
-      return typeof av === "number"
-        ? ((av as number) - (bv as number)) * dir
-        : String(av).localeCompare(String(bv)) * dir;
-    });
-  });
-
-  function sort(key: keyof T) {
-    if (sortKey.value === key) sortDir.value = (sortDir.value * -1) as 1 | -1;
-    else { sortKey.value = key; sortDir.value = -1; }
-  }
-
-  function icon(key: keyof T) {
-    if (sortKey.value !== key) return "↕";
-    return sortDir.value > 0 ? "↑" : "↓";
-  }
-
-  return { sorted, sort, icon, sortKey, sortDir };
-}
-
 // ─── Falhas e Inconsistências ─────────────────────────────────────────────────
 const FALHAS_PER_PAGE = 10;
 
