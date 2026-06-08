@@ -2,18 +2,42 @@
   <div class="upload-card">
     <div class="upload-card-header">
       <div class="file-name-row">
-        <svg class="file-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <svg
+          class="file-icon"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.5"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
           <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
           <polyline points="14 2 14 8 20 8" />
-          <line x1="16" y1="13" x2="8" y2="13" />
-          <line x1="16" y1="17" x2="8" y2="17" />
+          <line
+            x1="16"
+            y1="13"
+            x2="8"
+            y2="13"
+          />
+          <line
+            x1="16"
+            y1="17"
+            x2="8"
+            y2="17"
+          />
         </svg>
         <span class="file-name">{{ file.name }}</span>
       </div>
-      <span v-if="status" :class="badgeClass">{{ badgeLabel }}</span>
+      <span
+        v-if="status"
+        :class="badgeClass"
+      >{{ badgeLabel }}</span>
     </div>
 
-    <p v-if="status?.message" :class="['upload-message', { error: status.status === 'error' }]">
+    <p
+      v-if="status?.message"
+      :class="['upload-message', { error: status.status === 'error' }]"
+    >
       {{ status.message }}
       <span v-if="status.recordsProcessed"> — {{ status.recordsProcessed }} registros</span>
     </p>
@@ -24,17 +48,29 @@
       accept=".csv"
       class="sr-only"
       @change="$emit('change', $event)"
-    />
+    >
 
     <button
       :disabled="status?.status === 'processing'"
       class="upload-btn"
       @click="$emit('trigger')"
     >
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.5"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
         <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
         <polyline points="17 8 12 3 7 8" />
-        <line x1="12" y1="3" x2="12" y2="15" />
+        <line
+          x1="12"
+          y1="3"
+          x2="12"
+          y2="15"
+        />
       </svg>
       {{ status?.status === 'processing' ? 'Processando...' : 'Selecionar Arquivo' }}
     </button>

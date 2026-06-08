@@ -38,13 +38,22 @@
               stroke-linecap="round"
               stroke-linejoin="round"
             >
-              <ellipse cx="12" cy="5" rx="9" ry="3" />
+              <ellipse
+                cx="12"
+                cy="5"
+                rx="9"
+                ry="3"
+              />
               <path d="M3 5v5c0 1.7 4 3 9 3s9-1.3 9-3V5" />
               <path d="M3 10v5c0 1.7 4 3 9 3s9-1.3 9-3v-5" />
             </svg>
           </div>
-          <p class="metric-label">Total de Cargas</p>
-          <p class="metric-value">{{ falhasTotal }}</p>
+          <p class="metric-label">
+            Total de Cargas
+          </p>
+          <p class="metric-value">
+            {{ falhasTotal }}
+          </p>
         </div>
 
         <div class="metric-card">
@@ -61,9 +70,15 @@
               <polyline points="22 4 12 14.01 9 11.01" />
             </svg>
           </div>
-          <p class="metric-label">Concluídas</p>
-          <p class="metric-value">{{ kpis.concluidas }}</p>
-          <p class="metric-sub">{{ pct(kpis.concluidas) }}% do total</p>
+          <p class="metric-label">
+            Concluídas
+          </p>
+          <p class="metric-value">
+            {{ kpis.concluidas }}
+          </p>
+          <p class="metric-sub">
+            {{ pct(kpis.concluidas) }}% do total
+          </p>
         </div>
 
         <div class="metric-card">
@@ -77,13 +92,30 @@
               stroke-linejoin="round"
             >
               <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
-              <line x1="12" y1="9" x2="12" y2="13" />
-              <line x1="12" y1="17" x2="12.01" y2="17" stroke-width="2" />
+              <line
+                x1="12"
+                y1="9"
+                x2="12"
+                y2="13"
+              />
+              <line
+                x1="12"
+                y1="17"
+                x2="12.01"
+                y2="17"
+                stroke-width="2"
+              />
             </svg>
           </div>
-          <p class="metric-label">Parciais</p>
-          <p class="metric-value">{{ kpis.parciais }}</p>
-          <p class="metric-sub">{{ pct(kpis.parciais) }}% do total</p>
+          <p class="metric-label">
+            Parciais
+          </p>
+          <p class="metric-value">
+            {{ kpis.parciais }}
+          </p>
+          <p class="metric-sub">
+            {{ pct(kpis.parciais) }}% do total
+          </p>
         </div>
 
         <div class="metric-card">
@@ -96,14 +128,34 @@
               stroke-linecap="round"
               stroke-linejoin="round"
             >
-              <circle cx="12" cy="12" r="10" />
-              <line x1="15" y1="9" x2="9" y2="15" />
-              <line x1="9" y1="9" x2="15" y2="15" />
+              <circle
+                cx="12"
+                cy="12"
+                r="10"
+              />
+              <line
+                x1="15"
+                y1="9"
+                x2="9"
+                y2="15"
+              />
+              <line
+                x1="9"
+                y1="9"
+                x2="15"
+                y2="15"
+              />
             </svg>
           </div>
-          <p class="metric-label">Falhas</p>
-          <p class="metric-value">{{ kpis.falhas }}</p>
-          <p class="metric-sub">{{ pct(kpis.falhas) }}% do total</p>
+          <p class="metric-label">
+            Falhas
+          </p>
+          <p class="metric-value">
+            {{ kpis.falhas }}
+          </p>
+          <p class="metric-sub">
+            {{ pct(kpis.falhas) }}% do total
+          </p>
         </div>
       </div>
 
@@ -115,10 +167,22 @@
             :class="['tab-btn', { active: activeTab === 'importacao' }]"
             @click="activeTab = 'importacao'"
           >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
               <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
               <polyline points="17 8 12 3 7 8" />
-              <line x1="12" y1="3" x2="12" y2="15" />
+              <line
+                x1="12"
+                y1="3"
+                x2="12"
+                y2="15"
+              />
             </svg>
             Importação de Dados
           </button>
@@ -126,8 +190,19 @@
             :class="['tab-btn', { active: activeTab === 'historico' }]"
             @click="activeTab = 'historico'"
           >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="12" cy="12" r="10" />
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <circle
+                cx="12"
+                cy="12"
+                r="10"
+              />
               <polyline points="12 6 12 12 16 14" />
             </svg>
             Histórico de Execuções
@@ -136,10 +211,28 @@
             :class="['tab-btn', { active: activeTab === 'falhas' }]"
             @click="activeTab = 'falhas'"
           >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
               <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
-              <line x1="12" y1="9" x2="12" y2="13" />
-              <line x1="12" y1="17" x2="12.01" y2="17" stroke-width="2" />
+              <line
+                x1="12"
+                y1="9"
+                x2="12"
+                y2="13"
+              />
+              <line
+                x1="12"
+                y1="17"
+                x2="12.01"
+                y2="17"
+                stroke-width="2"
+              />
             </svg>
             Falhas e Inconsistências
           </button>
@@ -148,23 +241,58 @@
         <!-- Tab Content -->
         <div class="tabs-content">
           <!-- ── Importação de Dados ──────────────────────────────────── -->
-          <div v-show="activeTab === 'importacao'" class="tab-panel">
+          <div
+            v-show="activeTab === 'importacao'"
+            class="tab-panel"
+          >
             <div class="import-sections">
               <!-- Importação Organizacional -->
-              <div v-if="visibleOrgFiles.length > 0" class="import-section">
+              <div
+                v-if="visibleOrgFiles.length > 0"
+                class="import-section"
+              >
                 <div class="section-header">
                   <div class="section-icon blue">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.5"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
                       <path d="M6 22V4a2 2 0 012-2h8a2 2 0 012 2v18z" />
                       <path d="M6 12H4a2 2 0 00-2 2v6a2 2 0 002 2h2" />
                       <path d="M18 9h2a2 2 0 012 2v9a2 2 0 01-2 2h-2" />
-                      <line x1="10" y1="6" x2="14" y2="6" />
-                      <line x1="10" y1="10" x2="14" y2="10" />
-                      <line x1="10" y1="14" x2="14" y2="14" />
-                      <line x1="10" y1="18" x2="14" y2="18" />
+                      <line
+                        x1="10"
+                        y1="6"
+                        x2="14"
+                        y2="6"
+                      />
+                      <line
+                        x1="10"
+                        y1="10"
+                        x2="14"
+                        y2="10"
+                      />
+                      <line
+                        x1="10"
+                        y1="14"
+                        x2="14"
+                        y2="14"
+                      />
+                      <line
+                        x1="10"
+                        y1="18"
+                        x2="14"
+                        y2="18"
+                      />
                     </svg>
                   </div>
-                  <h3 class="section-title">Importação Organizacional</h3>
+                  <h3 class="section-title">
+                    Importação Organizacional
+                  </h3>
                 </div>
                 <p class="section-desc">
                   Atualização das estruturas organizacionais utilizadas no ambiente analítico
@@ -184,17 +312,39 @@
               </div>
 
               <!-- Importação de Materiais -->
-              <div v-if="visibleMateriaisFiles.length > 0" class="import-section">
+              <div
+                v-if="visibleMateriaisFiles.length > 0"
+                class="import-section"
+              >
                 <div class="section-header">
                   <div class="section-icon green">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                      <line x1="16.5" y1="9.4" x2="7.5" y2="4.21" />
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.5"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <line
+                        x1="16.5"
+                        y1="9.4"
+                        x2="7.5"
+                        y2="4.21"
+                      />
                       <path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 002 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z" />
                       <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
-                      <line x1="12" y1="22.08" x2="12" y2="12" />
+                      <line
+                        x1="12"
+                        y1="22.08"
+                        x2="12"
+                        y2="12"
+                      />
                     </svg>
                   </div>
-                  <h3 class="section-title">Importação de Materiais</h3>
+                  <h3 class="section-title">
+                    Importação de Materiais
+                  </h3>
                 </div>
                 <p class="section-desc">
                   Atualização dos dados relacionados a materiais, compras, estoque e fornecedores
@@ -214,17 +364,33 @@
               </div>
 
               <!-- Importação de Horas Técnicas -->
-              <div v-if="visibleHorasFiles.length > 0" class="import-section">
+              <div
+                v-if="visibleHorasFiles.length > 0"
+                class="import-section"
+              >
                 <div class="section-header">
                   <div class="section-icon purple">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.5"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
                       <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
-                      <circle cx="9" cy="7" r="4" />
+                      <circle
+                        cx="9"
+                        cy="7"
+                        r="4"
+                      />
                       <path d="M23 21v-2a4 4 0 00-3-3.87" />
                       <path d="M16 3.13a4 4 0 010 7.75" />
                     </svg>
                   </div>
-                  <h3 class="section-title">Importação de Horas Técnicas</h3>
+                  <h3 class="section-title">
+                    Importação de Horas Técnicas
+                  </h3>
                 </div>
                 <p class="section-desc">
                   Atualização dos dados relacionados às tarefas executadas e horas técnicas registradas
@@ -246,22 +412,59 @@
           </div>
 
           <!-- ── Histórico de Execuções ────────────────────────────── -->
-          <div v-show="activeTab === 'historico'" class="tab-panel">
+          <div
+            v-show="activeTab === 'historico'"
+            class="tab-panel"
+          >
             <p class="hist-subtitle">
               Histórico completo de execuções de importação e integração de dados
             </p>
 
             <div class="hist-filters">
-              <select v-model="historicoFilters.status" class="hist-select" @change="loadHistorico">
-                <option value="">Todos os status</option>
-                <option value="SUCCESS">Sucesso</option>
-                <option value="PARTIAL">Parcial</option>
-                <option value="FAILED">Falha</option>
+              <select
+                v-model="historicoFilters.status"
+                class="hist-select"
+                @change="loadHistorico"
+              >
+                <option value="">
+                  Todos os status
+                </option>
+                <option value="SUCCESS">
+                  Sucesso
+                </option>
+                <option value="PARTIAL">
+                  Parcial
+                </option>
+                <option value="FAILED">
+                  Falha
+                </option>
               </select>
-              <input v-model="historicoFilters.tabela" type="text" placeholder="Tabela..." class="hist-input" @input="loadHistorico" />
-              <input v-model="historicoFilters.fonte"  type="text" placeholder="Fonte..."  class="hist-input" @input="loadHistorico" />
-              <input v-model="historicoFilters.data_inicio" type="date" class="hist-input" @change="loadHistorico" />
-              <input v-model="historicoFilters.data_fim"    type="date" class="hist-input" @change="loadHistorico" />
+              <input
+                v-model="historicoFilters.tabela"
+                type="text"
+                placeholder="Tabela..."
+                class="hist-input"
+                @input="loadHistorico"
+              >
+              <input
+                v-model="historicoFilters.fonte"
+                type="text"
+                placeholder="Fonte..."
+                class="hist-input"
+                @input="loadHistorico"
+              >
+              <input
+                v-model="historicoFilters.data_inicio"
+                type="date"
+                class="hist-input"
+                @change="loadHistorico"
+              >
+              <input
+                v-model="historicoFilters.data_fim"
+                type="date"
+                class="hist-input"
+                @change="loadHistorico"
+              >
             </div>
 
             <div class="hist-card">
@@ -270,42 +473,100 @@
                 <span class="hist-count">{{ historicoTotal }} registros</span>
               </div>
 
-              <div v-if="historicoLoading" class="hist-feedback">
+              <div
+                v-if="historicoLoading"
+                class="hist-feedback"
+              >
                 <span class="hist-spinner" />
                 Carregando...
               </div>
-              <div v-else-if="historicoError" class="hist-feedback hist-feedback--error">
+              <div
+                v-else-if="historicoError"
+                class="hist-feedback hist-feedback--error"
+              >
                 {{ historicoError }}
               </div>
-              <div v-else-if="historicoRows.length === 0" class="hist-feedback hist-feedback--muted">
+              <div
+                v-else-if="historicoRows.length === 0"
+                class="hist-feedback hist-feedback--muted"
+              >
                 Nenhum registro encontrado.
               </div>
 
-              <div v-else class="hist-table-wrap">
+              <div
+                v-else
+                class="hist-table-wrap"
+              >
                 <table class="hist-table">
                   <thead>
                     <tr>
-                      <th class="sort-col" @click="sortHistorico('iniciado_em')">Data/Hora {{ historicoSortIcon('iniciado_em') }}</th>
-                      <th class="sort-col" @click="sortHistorico('tabela')">Tabela {{ historicoSortIcon('tabela') }}</th>
-                      <th class="sort-col" @click="sortHistorico('tipo_processo')">Tipo {{ historicoSortIcon('tipo_processo') }}</th>
-                      <th class="sort-col" @click="sortHistorico('fonte')">Fonte {{ historicoSortIcon('fonte') }}</th>
-                      <th class="sort-col num-col" @click="sortHistorico('duracao_segundos')">Duração {{ historicoSortIcon('duracao_segundos') }}</th>
-                      <th class="sort-col num-col" @click="sortHistorico('linhas_processadas')">Registros {{ historicoSortIcon('linhas_processadas') }}</th>
-                      <th class="sort-col" @click="sortHistorico('status')">Status {{ historicoSortIcon('status') }}</th>
+                      <th
+                        class="sort-col"
+                        @click="sortHistorico('iniciado_em')"
+                      >
+                        Data/Hora {{ historicoSortIcon('iniciado_em') }}
+                      </th>
+                      <th
+                        class="sort-col"
+                        @click="sortHistorico('tabela')"
+                      >
+                        Tabela {{ historicoSortIcon('tabela') }}
+                      </th>
+                      <th
+                        class="sort-col"
+                        @click="sortHistorico('tipo_processo')"
+                      >
+                        Tipo {{ historicoSortIcon('tipo_processo') }}
+                      </th>
+                      <th
+                        class="sort-col"
+                        @click="sortHistorico('fonte')"
+                      >
+                        Fonte {{ historicoSortIcon('fonte') }}
+                      </th>
+                      <th
+                        class="sort-col num-col"
+                        @click="sortHistorico('duracao_segundos')"
+                      >
+                        Duração {{ historicoSortIcon('duracao_segundos') }}
+                      </th>
+                      <th
+                        class="sort-col num-col"
+                        @click="sortHistorico('linhas_processadas')"
+                      >
+                        Registros {{ historicoSortIcon('linhas_processadas') }}
+                      </th>
+                      <th
+                        class="sort-col"
+                        @click="sortHistorico('status')"
+                      >
+                        Status {{ historicoSortIcon('status') }}
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
-                    <tr v-for="row in historicoPagedData" :key="row.id">
-                      <td class="mono">{{ formatDate(row.iniciado_em) }}</td>
+                    <tr
+                      v-for="row in historicoPagedData"
+                      :key="row.id"
+                    >
+                      <td class="mono">
+                        {{ formatDate(row.iniciado_em) }}
+                      </td>
                       <td>{{ row.tabela }}</td>
                       <td>
                         <span :class="row.tipo_processo === 'INCREMENTAL' ? 'tipo-badge tipo-badge--inc' : 'tipo-badge tipo-badge--comp'">
                           {{ row.tipo_processo === 'INCREMENTAL' ? 'Incremental' : 'Completa' }}
                         </span>
                       </td>
-                      <td class="muted-cell">{{ row.fonte }}</td>
-                      <td class="mono num-col">{{ formatDuration(row.duracao_segundos) }}</td>
-                      <td class="mono num-col">{{ row.linhas_processadas }}</td>
+                      <td class="muted-cell">
+                        {{ row.fonte }}
+                      </td>
+                      <td class="mono num-col">
+                        {{ formatDuration(row.duracao_segundos) }}
+                      </td>
+                      <td class="mono num-col">
+                        {{ row.linhas_processadas }}
+                      </td>
                       <td>
                         <ExecStatusBadge :status="row.status" />
                       </td>
@@ -327,20 +588,45 @@
           </div>
 
           <!-- ── Falhas e Inconsistências ──────────────────────────── -->
-          <div v-show="activeTab === 'falhas'" class="tab-panel">
+          <div
+            v-show="activeTab === 'falhas'"
+            class="tab-panel"
+          >
             <p class="falhas-subtitle">
               Identificação de falhas ocorridas durante processos de importação e integração de dados
             </p>
 
             <div class="falhas-filters">
-              <select v-model="falhasFilters.status" class="falhas-select" @change="loadFalhas">
-                <option value="">Todos os status</option>
-                <option value="SUCCESS">Sucesso</option>
-                <option value="PARTIAL">Parcial</option>
-                <option value="FAILED">Falha</option>
+              <select
+                v-model="falhasFilters.status"
+                class="falhas-select"
+                @change="loadFalhas"
+              >
+                <option value="">
+                  Todos os status
+                </option>
+                <option value="SUCCESS">
+                  Sucesso
+                </option>
+                <option value="PARTIAL">
+                  Parcial
+                </option>
+                <option value="FAILED">
+                  Falha
+                </option>
               </select>
-              <input v-model="falhasFilters.data_inicio" type="date" class="falhas-input" @change="loadFalhas" />
-              <input v-model="falhasFilters.data_fim"    type="date" class="falhas-input" @change="loadFalhas" />
+              <input
+                v-model="falhasFilters.data_inicio"
+                type="date"
+                class="falhas-input"
+                @change="loadFalhas"
+              >
+              <input
+                v-model="falhasFilters.data_fim"
+                type="date"
+                class="falhas-input"
+                @change="loadFalhas"
+              >
             </div>
 
             <div class="falhas-card">
@@ -349,40 +635,88 @@
                 <span class="falhas-count">{{ falhasTotal }} registros</span>
               </div>
 
-              <div v-if="falhasLoading" class="falhas-feedback">
+              <div
+                v-if="falhasLoading"
+                class="falhas-feedback"
+              >
                 <span class="falhas-spinner" />
                 Carregando...
               </div>
-              <div v-else-if="falhasError" class="falhas-feedback falhas-feedback--error">
+              <div
+                v-else-if="falhasError"
+                class="falhas-feedback falhas-feedback--error"
+              >
                 {{ falhasError }}
               </div>
-              <div v-else-if="falhasRows.length === 0" class="falhas-feedback falhas-feedback--muted">
+              <div
+                v-else-if="falhasRows.length === 0"
+                class="falhas-feedback falhas-feedback--muted"
+              >
                 Nenhum registro encontrado.
               </div>
 
-              <div v-else class="falhas-table-wrap">
+              <div
+                v-else
+                class="falhas-table-wrap"
+              >
                 <table class="falhas-table">
                   <thead>
                     <tr>
-                      <th class="sort-col" @click="sortFalhas('iniciado_em')">Data/Hora {{ sortIcon('iniciado_em') }}</th>
+                      <th
+                        class="sort-col"
+                        @click="sortFalhas('iniciado_em')"
+                      >
+                        Data/Hora {{ sortIcon('iniciado_em') }}
+                      </th>
                       <th>Tabela</th>
                       <th>Mensagem de Falha</th>
-                      <th class="sort-col num-col" @click="sortFalhas('erros')">Erros {{ sortIcon('erros') }}</th>
-                      <th class="sort-col num-col" @click="sortFalhas('avisos')">Avisos {{ sortIcon('avisos') }}</th>
-                      <th class="sort-col num-col" @click="sortFalhas('linhas_processadas')">Registros {{ sortIcon('linhas_processadas') }}</th>
-                      <th class="sort-col" @click="sortFalhas('status')">Status {{ sortIcon('status') }}</th>
+                      <th
+                        class="sort-col num-col"
+                        @click="sortFalhas('erros')"
+                      >
+                        Erros {{ sortIcon('erros') }}
+                      </th>
+                      <th
+                        class="sort-col num-col"
+                        @click="sortFalhas('avisos')"
+                      >
+                        Avisos {{ sortIcon('avisos') }}
+                      </th>
+                      <th
+                        class="sort-col num-col"
+                        @click="sortFalhas('linhas_processadas')"
+                      >
+                        Registros {{ sortIcon('linhas_processadas') }}
+                      </th>
+                      <th
+                        class="sort-col"
+                        @click="sortFalhas('status')"
+                      >
+                        Status {{ sortIcon('status') }}
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
-                    <tr v-for="row in falhasPagedData" :key="row.id">
-                      <td class="mono">{{ formatDate(row.iniciado_em) }}</td>
+                    <tr
+                      v-for="row in falhasPagedData"
+                      :key="row.id"
+                    >
+                      <td class="mono">
+                        {{ formatDate(row.iniciado_em) }}
+                      </td>
                       <td>{{ row.tabela }}</td>
                       <td :class="['falha-msg', { 'falha-msg--red': row.status === 'FAILED', 'falha-msg--amber': row.status === 'PARTIAL' }]">
                         {{ row.detalhes_falha || '—' }}
                       </td>
-                      <td class="mono num-col erros-col">{{ row.erros }}</td>
-                      <td class="mono num-col avisos-col">{{ row.avisos }}</td>
-                      <td class="mono num-col">{{ row.linhas_processadas }}</td>
+                      <td class="mono num-col erros-col">
+                        {{ row.erros }}
+                      </td>
+                      <td class="mono num-col avisos-col">
+                        {{ row.avisos }}
+                      </td>
+                      <td class="mono num-col">
+                        {{ row.linhas_processadas }}
+                      </td>
                       <td>
                         <ExecStatusBadge :status="row.status" />
                       </td>

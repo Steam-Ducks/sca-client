@@ -1,16 +1,42 @@
 <template>
   <div class="pg-btns">
-    <button class="pg-btn" :disabled="currentPage === 1"          @click="$emit('update:page', 1)">«</button>
-    <button class="pg-btn" :disabled="currentPage === 1"          @click="$emit('update:page', currentPage - 1)">‹</button>
+    <button
+      class="pg-btn"
+      :disabled="currentPage === 1"
+      @click="$emit('update:page', 1)"
+    >
+      «
+    </button>
+    <button
+      class="pg-btn"
+      :disabled="currentPage === 1"
+      @click="$emit('update:page', currentPage - 1)"
+    >
+      ‹
+    </button>
     <button
       v-for="p in visiblePages"
       :key="p"
       class="pg-btn"
       :class="{ active: p === currentPage }"
       @click="$emit('update:page', p)"
-    >{{ p }}</button>
-    <button class="pg-btn" :disabled="currentPage === totalPages" @click="$emit('update:page', currentPage + 1)">›</button>
-    <button class="pg-btn" :disabled="currentPage === totalPages" @click="$emit('update:page', totalPages)">»</button>
+    >
+      {{ p }}
+    </button>
+    <button
+      class="pg-btn"
+      :disabled="currentPage === totalPages"
+      @click="$emit('update:page', currentPage + 1)"
+    >
+      ›
+    </button>
+    <button
+      class="pg-btn"
+      :disabled="currentPage === totalPages"
+      @click="$emit('update:page', totalPages)"
+    >
+      »
+    </button>
   </div>
 </template>
 
