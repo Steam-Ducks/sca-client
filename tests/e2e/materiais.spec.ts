@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { injectSession } from "./e2e_helpers";
 
 const MOCK_COMPRAS = [
   { id: 1, material: "Servidor Dell PowerEdge R750", projeto: "Data Center Regional", programa: "Infraestrutura", quantidade: 5, valor_unitario: 178000, valor_total: 890000, periodo: "2024-01", fornecedor: "Dell Brasil", categoria: "Hardware" },
@@ -43,9 +44,7 @@ const MOCK_FILTER_OPTIONS = {
 
 test.describe("Gestão de Materiais", () => {
   test.beforeEach(async ({ page }) => {
-    await page.addInitScript(() => {
-      localStorage.setItem("sca_access_token", "fake-e2e-token");
-    });
+    await injectSession(page, "superadmin");
     await page.route("**/compras/**", (route) =>
       route.fulfill({ contentType: "application/json", body: JSON.stringify(MOCK_COMPRAS) }),
     );

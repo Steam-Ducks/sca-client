@@ -1,0 +1,53 @@
+# .github/workflows/e2e-report.yml
+#
+# Publica o relatório HTML do Playwright no GitHub Pages após cada run do CI.
+# Acesso: https://<org>.github.io/sca-client/
+#
+# Pré-requisitos:
+#   1. Em Settings → Pages → Source: GitHub Actions
+#   2. O job e2e-tests deve usar: --reporter=html,json
+#   3. Adicionar permissões de escrita no workflow pai (ci.yml):
+#      permissions: { pages: write, id-token: write }
+
+name: E2E Report → GitHub Pages
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+
+permissions:
+  pages: write
+  id-token: write
+
+jobs:
+  publish-report:
+    name: Publish Playwright Report
+    runs-on: ubuntu-latest
+    # Roda mesmo quando o CI falhou (para publicar relatório de falhas)
+    if: ${{ github.event.workflow_run.conclusion != 'cancelled' }}
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Download HTML report artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: playwright-report
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: playwright-report
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Upload to Pages
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: playwright-report
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
