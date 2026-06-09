@@ -11,6 +11,7 @@ import {
   Filler,
 } from "chart.js";
 import type { Material } from "@/types/materiais";
+import { FONT, css, shortName, fmtCurrency, tooltipBase } from "./useChartsBase";
 
 Chart.register(
   BarController,
@@ -24,36 +25,15 @@ Chart.register(
   Filler,
 );
 
-const FONT = "'IBM Plex Sans', sans-serif";
-const MONO = "'IBM Plex Mono', monospace";
-
-const shortName = (name: string) => name.split(" ").slice(0, 2).join(" ");
-const fmtK = (v: number) => "R$" + Math.round(v / 1000) + "K";
-
-const css = (v: string) =>
-  getComputedStyle(document.documentElement).getPropertyValue(v).trim();
-
-const BASE_OPTS = () => ({
-  plugins: {
-    legend: { display: false },
-    tooltip: {
-      enabled: true,
-      backgroundColor: css("--bg3"),
-      titleColor: css("--text2"),
-      bodyColor: css("--text"),
-      borderColor: css("--border"),
-      borderWidth: 1,
-      padding: 10,
-      titleFont: { family: FONT, size: 12 },
-      bodyFont: { family: MONO, size: 12 },
-    },
-  },
-});
-
 let chartCusto: Chart | null = null;
 let chartQtd: Chart | null = null;
 let chartProjeto: Chart | null = null;
 let chartTemporal: Chart | null = null;
+
+const plugins = () => ({
+  legend: { display: false },
+  tooltip: tooltipBase(),
+});
 
 function tempEntries(data: Material[]) {
   const map: Record<string, number> = {};
@@ -90,14 +70,14 @@ function buildCharts(topData: Material[], tableData: Material[], projectData: Ma
         ],
       },
       options: {
-        ...BASE_OPTS(),
         responsive: true,
         maintainAspectRatio: false,
+        plugins: plugins(),
         scales: {
           x: { grid: { color: gridColor }, ticks: tickStyle },
           y: {
             grid: { color: gridColor },
-            ticks: { ...tickStyle, callback: (v) => fmtK(Number(v)) },
+            ticks: { ...tickStyle, callback: (v) => fmtCurrency(Number(v)) },
           },
         },
       },
@@ -125,9 +105,9 @@ function buildCharts(topData: Material[], tableData: Material[], projectData: Ma
         ],
       },
       options: {
-        ...BASE_OPTS(),
         responsive: true,
         maintainAspectRatio: false,
+        plugins: plugins(),
         scales: {
           x: { grid: { color: gridColor }, ticks: tickStyle },
           y: { grid: { color: gridColor }, ticks: tickStyle },
@@ -160,14 +140,14 @@ function buildCharts(topData: Material[], tableData: Material[], projectData: Ma
         ],
       },
       options: {
-        ...BASE_OPTS(),
         indexAxis: "y" as const,
         responsive: true,
         maintainAspectRatio: false,
+        plugins: plugins(),
         scales: {
           x: {
             grid: { color: gridColor },
-            ticks: { ...tickStyle, callback: (v) => fmtK(Number(v)) },
+            ticks: { ...tickStyle, callback: (v) => fmtCurrency(Number(v)) },
           },
           y: {
             grid: { color: gridColor },
@@ -201,14 +181,14 @@ function buildCharts(topData: Material[], tableData: Material[], projectData: Ma
         ],
       },
       options: {
-        ...BASE_OPTS(),
         responsive: true,
         maintainAspectRatio: false,
+        plugins: plugins(),
         scales: {
           x: { grid: { color: gridColor }, ticks: tickStyle },
           y: {
             grid: { color: gridColor },
-            ticks: { ...tickStyle, callback: (v) => fmtK(Number(v)) },
+            ticks: { ...tickStyle, callback: (v) => fmtCurrency(Number(v)) },
           },
         },
       },
