@@ -1,11 +1,5 @@
 :root {
-  font-family:
-    Inter,
-    system-ui,
-    -apple-system,
-    BlinkMacSystemFont,
-    "Segoe UI",
-    sans-serif;
+  font-family: "Nunito", sans-serif;
   line-height: 1.5;
   font-weight: 400;
   color: #e8edf2;

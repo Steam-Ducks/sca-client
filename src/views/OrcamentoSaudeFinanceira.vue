@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="app">
     <main class="main">
       <h1 class="sr-only">
@@ -1027,7 +1027,7 @@ onUnmounted(() => {
 .metric-value {
   font-size: 22px;
   font-weight: 600;
-  font-family: "IBM Plex Mono", monospace;
+  font-family: inherit;
   letter-spacing: -0.5px;
   color: var(--text);
 }
@@ -1230,7 +1230,7 @@ onUnmounted(() => {
 .stat-value,
 .mono,
 .total {
-  font-family: "IBM Plex Mono", monospace;
+  font-family: inherit;
 }
 
 .progress-bar-wrap {

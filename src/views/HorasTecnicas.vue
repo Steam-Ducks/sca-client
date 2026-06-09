@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="app">
     <main class="main">
       <h1 class="sr-only">
@@ -717,7 +717,7 @@ onUnmounted(destroyCharts);
   min-height: 100vh;
   background: var(--bg);
   color: var(--text);
-  font-family: "IBM Plex Sans", sans-serif;
+  font-family: inherit;
   font-size: 14px;
 }
 
@@ -779,7 +779,7 @@ onUnmounted(destroyCharts);
 .metric-value {
   font-size: 26px;
   font-weight: 600;
-  font-family: "IBM Plex Mono", monospace;
+  font-family: inherit;
   letter-spacing: -0.5px;
   color: var(--text);
 }
@@ -998,14 +998,14 @@ td.muted {
   color: var(--text2);
 }
 td.mono {
-  font-family: "IBM Plex Mono", monospace;
+  font-family: inherit;
   font-size: 12px;
 }
 td.right {
   text-align: right;
 }
 td.total {
-  font-family: "IBM Plex Mono", monospace;
+  font-family: inherit;
   font-size: 12px;
   font-weight: 600;
   color: var(--green);
