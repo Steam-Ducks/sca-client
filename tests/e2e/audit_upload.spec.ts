@@ -15,7 +15,7 @@
  */
 
 import { test, expect } from "@playwright/test";
-import { loginAs, VALID_PROGRAMAS_CSV, INVALID_CSV } from "./e2e_helpers";
+import { loginAs, INVALID_CSV } from "./e2e_helpers";
 
 const PROGRAMAS_COLS = [
   "id", "codigo_programa", "nome_programa", "gerente_programa",

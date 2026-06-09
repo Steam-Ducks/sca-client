@@ -25,7 +25,7 @@
 import { test, expect } from "@playwright/test";
 import { loginAs, API_BASE } from "./e2e_helpers";
 
-// ── Helper para testar acesso a uma rota ──────────────────────────────────────
+/* ── Helper para testar acesso a uma rota ──────────────────────────────────────
 async function canAccess(page: Parameters<typeof loginAs>[0], user: Parameters<typeof loginAs>[1], route: string): Promise<boolean> {
   await loginAs(page, user);
   await page.goto(route);
@@ -33,6 +33,7 @@ async function canAccess(page: Parameters<typeof loginAs>[0], user: Parameters<t
   const url = page.url();
   return url.includes(route);
 }
+  */
 
 // ── super_admin ───────────────────────────────────────────────────────────────
 test.describe("Role access — super_admin", () => {

@@ -13,12 +13,12 @@
  * depender de estado específico do banco ou do backend real.
  */
 
-import { test, expect } from "@playwright/test";
+import { test, expect, Page, Route } from "@playwright/test";
 import { injectSession } from "./e2e_helpers";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
-function mockApiError(page: Parameters<typeof page.route>[0], pattern: string, status: number, message: string) {
-  return (page as any).route(pattern, (route: any) =>
+function mockApiError(page: Page, pattern: string, status: number, message: string) {
+  return page.route(pattern, (route: Route) =>
     route.fulfill({
       status,
       contentType: "application/json",
