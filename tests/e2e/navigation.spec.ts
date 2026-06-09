@@ -45,7 +45,7 @@ test.describe("Navegação com backend real", () => {
   test("CT-E2E-03: navegação para Dashboard carrega métricas reais", async ({
     page,
   }) => {
-    await page.getByRole("link", { name: "Dashboard" }).click();
+    await page.getByRole("link", { name: "Dashboard", exact: true }).click();
     await page.waitForLoadState("networkidle");
 
     await expect(page).toHaveURL(/\/dashboard$/);
