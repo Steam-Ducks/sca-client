@@ -191,52 +191,54 @@
           >
             Limpar filtros
           </button>
-          <button
-            class="export-btn"
-            @click="exportCSV"
-          >
-            <svg
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
+          <div class="export-group">
+            <button
+              class="export-btn"
+              @click="exportCSV"
             >
-              <path
-                d="M12 16l-4-4h3V4h2v8h3l-4 4z"
-                stroke-width="1.5"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-              <path
-                d="M4 20h16"
-                stroke-width="1.5"
-                stroke-linecap="round"
-              />
-            </svg>
-            Exportar
-          </button>
-          <button
-            class="export-btn"
-            @click="exportExcel"
-          >
-            <svg
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
+              <svg
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  d="M12 16l-4-4h3V4h2v8h3l-4 4z"
+                  stroke-width="1.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+                <path
+                  d="M4 20h16"
+                  stroke-width="1.5"
+                  stroke-linecap="round"
+                />
+              </svg>
+              Exportar CSV
+            </button>
+            <button
+              class="export-btn"
+              @click="exportExcel"
             >
-              <path
-                d="M12 16l-4-4h3V4h2v8h3l-4 4z"
-                stroke-width="1.5"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-              <path
-                d="M4 20h16"
-                stroke-width="1.5"
-                stroke-linecap="round"
-              />
-            </svg>
-            Exportar Excel
-          </button>
+              <svg
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  d="M12 16l-4-4h3V4h2v8h3l-4 4z"
+                  stroke-width="1.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+                <path
+                  d="M4 20h16"
+                  stroke-width="1.5"
+                  stroke-linecap="round"
+                />
+              </svg>
+              Exportar Excel
+            </button>
+          </div>
         </div>
         <div
           v-if="hasActiveFilters"
@@ -443,7 +445,7 @@
             data-testid="btn-export"
             @click="exportCSV"
           >
-            Exportar
+            Exportar CSV
           </button>
         </div>
         <div class="table-wrap">
@@ -1465,6 +1467,11 @@ td {
   outline: none;
   border-color: var(--blue2);
 }
+.export-group {
+  display: flex;
+  gap: 8px;
+  margin-left: auto;
+}
 .export-btn {
   display: flex;
   align-items: center;
@@ -1480,7 +1487,6 @@ td {
   cursor: pointer;
   transition: background 0.2s;
   white-space: nowrap;
-  margin-left: auto;
 }
 .export-btn:hover {
   background: var(--blue);
