@@ -71,6 +71,14 @@ body {
   font-family: "Nunito", sans-serif;
   font-size: 14px;
 }
+
+/* Prevents Chart.js canvas from overflowing its wrapper on browser zoom/scroll */
+.chart-wrap {
+  overflow: hidden;
+}
+.chart-wrap > canvas {
+  max-width: 100%;
+}
 </style>
 
 <style scoped>

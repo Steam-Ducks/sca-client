@@ -39,6 +39,7 @@ test.describe("Navegação com backend real", () => {
     await expect(page.locator(".filters-title, .filters-card")).toBeVisible({ timeout: 8_000 });
   });
 
+<<<<<<< HEAD
   test("CT-E2E-03: Dashboard carrega métricas", async ({ page }) => {
     await page.goto("/dashboard");
     await page.waitForLoadState("networkidle");

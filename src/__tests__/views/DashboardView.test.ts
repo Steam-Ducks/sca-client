@@ -140,13 +140,17 @@ describe("DashboardView.vue", () => {
     expect(wrapper.findAll(".chart-card").length).toBe(5);
   });
 
-  it("export button is present", async () => {
+  it("has grouped export buttons for CSV and Excel", async () => {
     const wrapper = mount(DashboardView);
     await nextTick();
 
-    const exportBtn = wrapper.find(".export-btn");
-    expect(exportBtn.exists()).toBe(true);
-    expect(exportBtn.text()).toContain("Exportar");
+    const exportGroup = wrapper.find(".export-group");
+    expect(exportGroup.exists()).toBe(true);
+
+    const exportBtns = wrapper.findAll(".export-btn");
+    expect(exportBtns.length).toBeGreaterThanOrEqual(2);
+    expect(exportBtns[0].text()).toContain("Exportar CSV");
+    expect(exportBtns[1].text()).toContain("Exportar Excel");
   });
 
   // ── CT01: Custo Total Consolidado ────────────────────────────────────────

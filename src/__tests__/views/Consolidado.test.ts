@@ -277,13 +277,17 @@ describe("Consolidado.vue", () => {
     }
   });
 
-  it("CT05: has export button", async () => {
+  it("CT05: has grouped export buttons for CSV and Excel", async () => {
     const wrapper = mount(Consolidado);
     await nextTick();
 
-    const exportBtn = wrapper.find(".export-btn");
-    expect(exportBtn.exists()).toBe(true);
-    expect(exportBtn.text()).toContain("Exportar");
+    const exportGroup = wrapper.find(".export-group");
+    expect(exportGroup.exists()).toBe(true);
+
+    const exportBtns = wrapper.findAll(".export-btn");
+    expect(exportBtns).toHaveLength(2);
+    expect(exportBtns[0].text()).toContain("Exportar CSV");
+    expect(exportBtns[1].text()).toContain("Exportar Excel");
   });
 
   it("CT06: restricts project options when a program is selected", async () => {

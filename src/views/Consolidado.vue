@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="app">
     <main class="main">
       <h1 class="sr-only">
@@ -152,52 +152,54 @@
           >
             Limpar filtros
           </button>
-          <button
-            class="export-btn"
-            @click="exportCSV"
-          >
-            <svg
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
+          <div class="export-group">
+            <button
+              class="export-btn"
+              @click="exportCSV"
             >
-              <path
-                d="M12 16l-4-4h3V4h2v8h3l-4 4z"
-                stroke-width="1.5"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-              <path
-                d="M4 20h16"
-                stroke-width="1.5"
-                stroke-linecap="round"
-              />
-            </svg>
-            Exportar
-          </button>
-          <button
-            class="export-btn"
-            @click="exportExcel"
-          >
-            <svg
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
+              <svg
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  d="M12 16l-4-4h3V4h2v8h3l-4 4z"
+                  stroke-width="1.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+                <path
+                  d="M4 20h16"
+                  stroke-width="1.5"
+                  stroke-linecap="round"
+                />
+              </svg>
+              Exportar CSV
+            </button>
+            <button
+              class="export-btn"
+              @click="exportExcel"
             >
-              <path
-                d="M12 16l-4-4h3V4h2v8h3l-4 4z"
-                stroke-width="1.5"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-              <path
-                d="M4 20h16"
-                stroke-width="1.5"
-                stroke-linecap="round"
-              />
-            </svg>
-            Exportar Excel
-          </button>
+              <svg
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  d="M12 16l-4-4h3V4h2v8h3l-4 4z"
+                  stroke-width="1.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+                <path
+                  d="M4 20h16"
+                  stroke-width="1.5"
+                  stroke-linecap="round"
+                />
+              </svg>
+              Exportar Excel
+            </button>
+          </div>
         </div>
         <div
           v-if="hasActiveFilters"
@@ -813,7 +815,7 @@ onUnmounted(destroyCharts);
   min-height: 100vh;
   background: var(--bg);
   color: var(--text);
-  font-family: "IBM Plex Sans", sans-serif;
+  font-family: inherit;
   font-size: 14px;
 }
 
@@ -863,7 +865,7 @@ onUnmounted(destroyCharts);
 }
 
 .update-value {
-  font-family: "IBM Plex Mono", monospace;
+  font-family: inherit;
   font-size: 13px;
   color: var(--blue);
 }
@@ -904,7 +906,7 @@ onUnmounted(destroyCharts);
 .metric-value {
   font-size: 26px;
   font-weight: 600;
-  font-family: "IBM Plex Mono", monospace;
+  font-family: inherit;
   letter-spacing: -0.5px;
   color: var(--text);
 }
@@ -965,6 +967,11 @@ onUnmounted(destroyCharts);
   border-color: var(--blue2);
 }
 
+.export-group {
+  display: flex;
+  gap: 8px;
+  margin-left: auto;
+}
 .export-btn {
   display: flex;
   align-items: center;
@@ -980,7 +987,6 @@ onUnmounted(destroyCharts);
   cursor: pointer;
   transition: background 0.2s;
   white-space: nowrap;
-  margin-left: auto;
 }
 .export-btn:hover {
   background: var(--blue);
@@ -1123,14 +1129,14 @@ td.muted {
   color: var(--text2);
 }
 td.mono {
-  font-family: "IBM Plex Mono", monospace;
+  font-family: inherit;
   font-size: 12px;
 }
 td.right {
   text-align: right;
 }
 td.total {
-  font-family: "IBM Plex Mono", monospace;
+  font-family: inherit;
   font-size: 12px;
   font-weight: 600;
   color: var(--green);
