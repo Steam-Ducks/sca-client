@@ -42,6 +42,7 @@ const fetchSummaryMock = vi.hoisted(() => vi.fn());
 const fetchCompositionMock = vi.hoisted(() => vi.fn());
 const fetchTopProjectsMock = vi.hoisted(() => vi.fn());
 const fetchCostEvolutionMock = vi.hoisted(() => vi.fn());
+const fetchConsolidatedMock = vi.hoisted(() => vi.fn());
 const flushPromises = () => new Promise((resolve) => setTimeout(resolve, 0));
 
 vi.mock("@/services/dashboardService", () => ({
@@ -51,6 +52,7 @@ vi.mock("@/services/dashboardService", () => ({
     fetchComposition: fetchCompositionMock,
     fetchTopProjects: fetchTopProjectsMock,
     fetchCostEvolution: fetchCostEvolutionMock,
+    fetchConsolidated: fetchConsolidatedMock,
   },
 }));
 
@@ -62,6 +64,7 @@ describe("DashboardView.vue", () => {
     fetchCompositionMock.mockResolvedValue(COMPOSITION_MOCK);
     fetchTopProjectsMock.mockResolvedValue([]);
     fetchCostEvolutionMock.mockResolvedValue([]);
+    fetchConsolidatedMock.mockResolvedValue([]);
     vi.stubGlobal(
       "fetch",
       vi.fn().mockImplementation((url: string) => {
