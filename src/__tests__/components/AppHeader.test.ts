@@ -11,18 +11,18 @@ import HorasTecnicas from "@/views/HorasTecnicas.vue";
 import Consolidado from "@/views/Consolidado.vue";
 import OrcamentoSaudeFinanceira from "@/views/OrcamentoSaudeFinanceira.vue";
 
-const mockToggle = vi.fn()
-const mockTheme = ref<'light' | 'dark'>('light')
-
 vi.mock('@/composables/useTheme', () => ({
-  useTheme: () => ({ theme: mockTheme, toggle: mockToggle }),
+  useTheme: () => ({ theme: ref<'light' | 'dark'>('light'), toggle: vi.fn() }),
 }))
 
-// ── usePermissions mock ───────────────────────────────────────────────────────
 const mockUsePermissions = vi.fn()
 
 vi.mock('@/composables/usePermissions', () => ({
   usePermissions: (...args: unknown[]) => mockUsePermissions(...args),
+}))
+
+vi.mock('@/services/authService', () => ({
+  authService: { clearSession: vi.fn(), getToken: vi.fn(), getUser: vi.fn() },
 }))
 
 function buildPerms(perfil: string) {
@@ -42,10 +42,6 @@ function buildPerms(perfil: string) {
   }
 }
 
-function setPermProfile(perfil: string) {
-  mockUsePermissions.mockReturnValue(buildPerms(perfil))
-}
-
 const router = createRouter({
   history: createWebHistory(),
   routes: [
@@ -55,20 +51,22 @@ const router = createRouter({
     { path: '/horas', name: 'horas', component: HorasTecnicas },
     { path: '/consolidado', name: 'consolidado', component: Consolidado },
     { path: '/orcamento', name: 'orcamento', component: OrcamentoSaudeFinanceira },
+    { path: '/login', component: { template: '<div />' } },
   ],
-});
+})
 
-describe("App.vue", () => {
-  it("renders the app shell with header and router view", async () => {
-    mockUsePermissions.mockReturnValue(buildPerms('super_admin'))
-    router.push("/");
-    await router.isReady();
+beforeEach(() => {
+  mockUsePermissions.mockReturnValue(buildPerms('super_admin'))
+})
 
-    const wrapper = mount(App, {
-      global: {
-        plugins: [router],
-      },
-    });
+// ── App.vue ───────────────────────────────────────────────────────────────────
+
+describe('App.vue', () => {
+  it('renderiza o shell da aplicação com header e router view', async () => {
+    router.push('/')
+    await router.isReady()
+
+    const wrapper = mount(App, { global: { plugins: [router] } })
 
     expect(wrapper.find('.app-shell').exists()).toBe(true)
     expect(wrapper.findComponent({ name: 'AppHeader' }).exists()).toBe(true)
@@ -76,107 +74,30 @@ describe("App.vue", () => {
   })
 })
 
-describe('AppHeader - theme toggle button', () => {
-  beforeEach(() => {
-    mockToggle.mockClear()
-    mockTheme.value = 'light'
-    mockUsePermissions.mockReturnValue(buildPerms('super_admin'))
-  })
+// ── AppHeader — integração dos sub-componentes ────────────────────────────────
 
+describe('AppHeader — composição', () => {
   function mountHeader() {
     return mount(AppHeader, { global: { plugins: [router] } })
   }
 
-  it('renders the theme toggle button', () => {
+  it('renderiza o logo com link para /dashboard', () => {
     const wrapper = mountHeader()
-    expect(wrapper.find('.nav-theme').exists()).toBe(true)
+    expect(wrapper.find('a.nav-logo[href="/dashboard"]').exists()).toBe(true)
   })
 
-  it('shows moon icon (title "Tema escuro") when theme is light', () => {
+  it('renderiza o NavMenu', () => {
     const wrapper = mountHeader()
-    const btn = wrapper.find('.nav-theme')
-    expect(btn.attributes('title')).toBe('Tema escuro')
+    expect(wrapper.findComponent({ name: 'NavMenu' }).exists()).toBe(true)
   })
 
-  it('shows sun icon (title "Tema claro") when theme is dark', async () => {
-    mockTheme.value = 'dark'
+  it('renderiza o ThemeToggle', () => {
     const wrapper = mountHeader()
-    await wrapper.vm.$nextTick()
-    const btn = wrapper.find('.nav-theme')
-    expect(btn.attributes('title')).toBe('Tema claro')
+    expect(wrapper.findComponent({ name: 'ThemeToggle' }).exists()).toBe(true)
   })
 
-  it('calls toggle when the theme button is clicked', async () => {
+  it('renderiza o UserMenu', () => {
     const wrapper = mountHeader()
-    await wrapper.find('.nav-theme').trigger('click')
-    expect(mockToggle).toHaveBeenCalledTimes(1)
-  })
-})
-
-// ── Menu visibility per profile ───────────────────────────────────────────────
-describe('AppHeader - visibilidade do menu por perfil', () => {
-  function mountHeader() {
-    return mount(AppHeader, { global: { plugins: [router] } })
-  }
-
-  beforeEach(() => {
-    setPermProfile('super_admin')
-  })
-
-  it('super_admin vê todos os 6 itens de navegação', async () => {
-    setPermProfile('super_admin')
-    const wrapper = mountHeader()
-    await wrapper.vm.$nextTick()
-    expect(wrapper.find('.nav-tab[href="/dashboard"]').exists()).toBe(true)
-    expect(wrapper.find('.nav-tab[href="/materiais"]').exists()).toBe(true)
-    expect(wrapper.find('.nav-tab[href="/horas"]').exists()).toBe(true)
-    expect(wrapper.find('.nav-tab[href="/consolidado"]').exists()).toBe(true)
-    expect(wrapper.find('.nav-tab[href="/orcamento"]').exists()).toBe(true)
-    expect(wrapper.find('.nav-tab[href="/auditoria"]').exists()).toBe(true)
-  })
-
-  it('financeiro vê todos os 6 itens de navegação', async () => {
-    setPermProfile('financeiro')
-    const wrapper = mountHeader()
-    await wrapper.vm.$nextTick()
-    expect(wrapper.find('.nav-tab[href="/dashboard"]').exists()).toBe(true)
-    expect(wrapper.find('.nav-tab[href="/horas"]').exists()).toBe(true)
-    expect(wrapper.find('.nav-tab[href="/consolidado"]').exists()).toBe(true)
-    expect(wrapper.find('.nav-tab[href="/orcamento"]').exists()).toBe(true)
-  })
-
-  it('projetos não vê Orçamento', async () => {
-    setPermProfile('projetos')
-    const wrapper = mountHeader()
-    await wrapper.vm.$nextTick()
-    expect(wrapper.find('.nav-tab[href="/dashboard"]').exists()).toBe(true)
-    expect(wrapper.find('.nav-tab[href="/horas"]').exists()).toBe(true)
-    expect(wrapper.find('.nav-tab[href="/consolidado"]').exists()).toBe(true)
-    expect(wrapper.find('.nav-tab[href="/orcamento"]').exists()).toBe(false)
-    expect(wrapper.find('.nav-tab[href="/auditoria"]').exists()).toBe(true)
-  })
-
-  it('compras não vê Dashboard, Horas, Consolidado nem Orçamento', async () => {
-    setPermProfile('compras')
-    const wrapper = mountHeader()
-    await wrapper.vm.$nextTick()
-    expect(wrapper.find('.nav-tab[href="/dashboard"]').exists()).toBe(false)
-    expect(wrapper.find('.nav-tab[href="/horas"]').exists()).toBe(false)
-    expect(wrapper.find('.nav-tab[href="/consolidado"]').exists()).toBe(false)
-    expect(wrapper.find('.nav-tab[href="/orcamento"]').exists()).toBe(false)
-    expect(wrapper.find('.nav-tab[href="/materiais"]').exists()).toBe(true)
-    expect(wrapper.find('.nav-tab[href="/auditoria"]').exists()).toBe(true)
-  })
-
-  it('almoxarifado não vê Dashboard, Horas, Consolidado nem Orçamento', async () => {
-    setPermProfile('almoxarifado')
-    const wrapper = mountHeader()
-    await wrapper.vm.$nextTick()
-    expect(wrapper.find('.nav-tab[href="/dashboard"]').exists()).toBe(false)
-    expect(wrapper.find('.nav-tab[href="/horas"]').exists()).toBe(false)
-    expect(wrapper.find('.nav-tab[href="/consolidado"]').exists()).toBe(false)
-    expect(wrapper.find('.nav-tab[href="/orcamento"]').exists()).toBe(false)
-    expect(wrapper.find('.nav-tab[href="/materiais"]').exists()).toBe(true)
-    expect(wrapper.find('.nav-tab[href="/auditoria"]').exists()).toBe(true)
+    expect(wrapper.findComponent({ name: 'UserMenu' }).exists()).toBe(true)
   })
 })
