@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="app">
     <main class="main">
       <h1 class="sr-only">
@@ -944,7 +944,7 @@ onMounted(() => { void loadFalhas(); void loadHistorico(); });
   min-height: 100vh;
   background: var(--bg);
   color: var(--text);
-  font-family: "IBM Plex Sans", sans-serif;
+  font-family: inherit;
   font-size: 14px;
 }
 
@@ -987,7 +987,7 @@ onMounted(() => { void loadFalhas(); void loadHistorico(); });
 .metric-icon-wrap.amber { background: rgba(245,166,35,0.12); color: var(--amber); }
 .metric-icon-wrap.red   { background: rgba(245,90,90,0.12);  color: var(--red); }
 .metric-label  { font-size: 12px; color: var(--text2); margin-bottom: 6px; }
-.metric-value  { font-size: 30px; font-weight: 400; font-family: "IBM Plex Mono", monospace; color: var(--text); line-height: 1; margin-bottom: 4px; }
+.metric-value  { font-size: 30px; font-weight: 400; font-family: inherit; color: var(--text); line-height: 1; margin-bottom: 4px; }
 .metric-sub    { font-size: 11px; color: var(--text3); margin: 0; }
 
 .tabs-container {
@@ -1061,7 +1061,7 @@ onMounted(() => { void loadFalhas(); void loadHistorico(); });
 .hist-table tbody tr:last-child { border-bottom: none; }
 .hist-table tbody tr:hover { background: var(--bg3); }
 .hist-table td { padding: 12px 16px; font-size: 13px; color: var(--text); white-space: nowrap; }
-.hist-table td.mono { font-family: "IBM Plex Mono", monospace; font-size: 12px; }
+.hist-table td.mono { font-family: inherit; font-size: 12px; }
 .hist-table td.muted-cell { color: var(--text2); }
 .tipo-badge { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 500; border: 1px solid transparent; }
 .tipo-badge--comp { background: rgba(77,143,255,0.1);  color: var(--blue);   border-color: rgba(77,143,255,0.2); }
@@ -1109,7 +1109,7 @@ onMounted(() => { void loadFalhas(); void loadHistorico(); });
 .falhas-table tbody tr:last-child { border-bottom: none; }
 .falhas-table tbody tr:hover { background: var(--bg3); }
 .falhas-table td { padding: 12px 16px; font-size: 13px; color: var(--text); white-space: nowrap; }
-.falhas-table td.mono { font-family: "IBM Plex Mono", monospace; font-size: 12px; }
+.falhas-table td.mono { font-family: inherit; font-size: 12px; }
 .falha-msg { max-width: 360px; white-space: normal; }
 .falha-msg--red   { color: var(--red); }
 .falha-msg--amber { color: var(--amber); }

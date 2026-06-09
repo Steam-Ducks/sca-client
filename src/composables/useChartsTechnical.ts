@@ -1,5 +1,8 @@
-// src/composables/useChartsTechnical.ts
 import { Chart, registerables } from "chart.js";
+import {
+  FONT, MONO, css, fmtCurrency, groupBy, baseOptions, tooltipBase, COLORS,
+} from "./useChartsBase";
+
 Chart.register(...registerables);
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -21,38 +24,11 @@ export interface TemporalPoint {
   total_custo: number;
 }
 
-// ─── Shared chart config helpers ──────────────────────────────────────────────
-const FONT = "'IBM Plex Sans', sans-serif";
-const MONO = "'IBM Plex Mono', monospace";
-
-const css = (v: string) =>
-  getComputedStyle(document.documentElement).getPropertyValue(v).trim();
-
-const baseOptions = (indexAxis: "x" | "y" = "y") => ({
-  indexAxis,
-  responsive: true,
-  maintainAspectRatio: false,
-  animation: { duration: 500, easing: "easeOutQuart" as const },
-  plugins: {
-    legend: { display: false },
-    tooltip: {
-      backgroundColor: css("--bg3"),
-      borderColor: css("--border"),
-      borderWidth: 1,
-      titleColor: css("--text"),
-      bodyColor: css("--text2"),
-      titleFont: { family: FONT, size: 12 },
-      bodyFont: { family: MONO, size: 12 },
-      padding: 10,
-    },
-  },
-});
-
 // ─── Chart instances ──────────────────────────────────────────────────────────
-let chartHorasProjeto: Chart | null = null;
-let chartCustoProjeto: Chart | null = null;
+let chartHorasProjeto:    Chart | null = null;
+let chartCustoProjeto:    Chart | null = null;
 let chartCustoColaborador: Chart | null = null;
-let chartTemporal: Chart | null = null;
+let chartTemporal:        Chart | null = null;
 
 function destroyAll() {
   [chartHorasProjeto, chartCustoProjeto, chartCustoColaborador, chartTemporal].forEach(
@@ -65,16 +41,7 @@ function destroyAll() {
       null;
 }
 
-// ─── Aggregation helpers ──────────────────────────────────────────────────────
-function groupBy<T>(data: T[], keyFn: (r: T) => string, valFn: (r: T) => number) {
-  const map: Record<string, number> = {};
-  data.forEach((r) => {
-    const k = keyFn(r);
-    map[k] = (map[k] || 0) + valFn(r);
-  });
-  return Object.entries(map).sort((a, b) => b[1] - a[1]);
-}
-
+// ─── Aggregation helper ───────────────────────────────────────────────────────
 function aggregateTemporal(data: HoraRow[], allPeriodos: string[]): TemporalPoint[] {
   const map: Record<string, TemporalPoint> = {};
   for (const row of data) {
@@ -88,18 +55,12 @@ function aggregateTemporal(data: HoraRow[], allPeriodos: string[]): TemporalPoin
   return labels.map((p) => map[p] ?? { periodo: p, total_horas: 0, total_custo: 0 });
 }
 
-function fmtR$(v: number) {
-  if (v >= 1_000_000) return `R$ ${(v / 1_000_000).toFixed(1)}M`;
-  if (v >= 1_000) return `R$ ${(v / 1_000).toFixed(0)}K`;
-  return `R$ ${v.toLocaleString("pt-BR")}`;
-}
-
 // ─── Build charts ─────────────────────────────────────────────────────────────
 function buildCharts(data: HoraRow[], allPeriodos: string[] = []) {
   const temporalData = aggregateTemporal(data, allPeriodos);
   destroyAll();
-  const gridColor = css("--border");
-  const textColor = css("--text3");
+  const gridColor  = css("--border");
+  const textColor  = css("--text3");
   const text2Color = css("--text2");
 
   // 1. Total de Horas por Projeto — horizontal bars, blue
@@ -119,10 +80,10 @@ function buildCharts(data: HoraRow[], allPeriodos: string[] = []) {
         labels: horasProjeto.map(([l]) => l),
         datasets: [
           {
-            data: horasProjeto.map(([, v]) => v),
-            backgroundColor: "rgba(77,143,255,0.85)",
-            borderRadius: 4,
-            borderSkipped: false,
+            data:            horasProjeto.map(([, v]) => v),
+            backgroundColor: COLORS.blue,
+            borderRadius:    4,
+            borderSkipped:   false,
           },
         ],
       },
@@ -130,19 +91,19 @@ function buildCharts(data: HoraRow[], allPeriodos: string[] = []) {
         ...baseOptions("y"),
         scales: {
           x: {
-            grid: { color: gridColor },
+            grid:   { color: gridColor },
             border: { display: false },
-            ticks: { color: textColor, font: { family: MONO, size: 11 } },
+            ticks:  { color: textColor, font: { family: MONO, size: 11 } },
           },
           y: {
-            grid: { display: false },
+            grid:  { display: false },
             ticks: { color: text2Color, font: { family: FONT, size: 11 } },
           },
         },
         plugins: {
           ...baseOptions("y").plugins,
           tooltip: {
-            ...baseOptions("y").plugins.tooltip,
+            ...tooltipBase(),
             callbacks: { label: (ctx) => ` ${ctx.parsed.x}h` },
           },
         },
@@ -167,10 +128,10 @@ function buildCharts(data: HoraRow[], allPeriodos: string[] = []) {
         labels: custoProjeto.map(([l]) => l),
         datasets: [
           {
-            data: custoProjeto.map(([, v]) => v),
-            backgroundColor: "rgba(45,212,160,0.85)",
-            borderRadius: 4,
-            borderSkipped: false,
+            data:            custoProjeto.map(([, v]) => v),
+            backgroundColor: COLORS.green,
+            borderRadius:    4,
+            borderSkipped:   false,
           },
         ],
       },
@@ -178,24 +139,24 @@ function buildCharts(data: HoraRow[], allPeriodos: string[] = []) {
         ...baseOptions("y"),
         scales: {
           x: {
-            grid: { color: gridColor },
+            grid:   { color: gridColor },
             border: { display: false },
             ticks: {
               color: textColor,
-              font: { family: MONO, size: 11 },
-              callback: (v) => fmtR$(v as number),
+              font:  { family: MONO, size: 11 },
+              callback: (v) => fmtCurrency(v as number),
             },
           },
           y: {
-            grid: { display: false },
+            grid:  { display: false },
             ticks: { color: text2Color, font: { family: FONT, size: 11 } },
           },
         },
         plugins: {
           ...baseOptions("y").plugins,
           tooltip: {
-            ...baseOptions("y").plugins.tooltip,
-            callbacks: { label: (ctx) => ` ${fmtR$(ctx.parsed.x ?? 0)}` },
+            ...tooltipBase(),
+            callbacks: { label: (ctx) => ` ${fmtCurrency(ctx.parsed.x ?? 0)}` },
           },
         },
       },
@@ -215,10 +176,10 @@ function buildCharts(data: HoraRow[], allPeriodos: string[] = []) {
         labels: custoColab.map(([l]) => l),
         datasets: [
           {
-            data: custoColab.map(([, v]) => v),
-            backgroundColor: "rgba(245,166,35,0.85)",
-            borderRadius: 4,
-            borderSkipped: false,
+            data:            custoColab.map(([, v]) => v),
+            backgroundColor: COLORS.amber,
+            borderRadius:    4,
+            borderSkipped:   false,
           },
         ],
       },
@@ -226,24 +187,24 @@ function buildCharts(data: HoraRow[], allPeriodos: string[] = []) {
         ...baseOptions("y"),
         scales: {
           x: {
-            grid: { color: gridColor },
+            grid:   { color: gridColor },
             border: { display: false },
             ticks: {
               color: textColor,
-              font: { family: MONO, size: 11 },
-              callback: (v) => fmtR$(v as number),
+              font:  { family: MONO, size: 11 },
+              callback: (v) => fmtCurrency(v as number),
             },
           },
           y: {
-            grid: { display: false },
+            grid:  { display: false },
             ticks: { color: text2Color, font: { family: FONT, size: 11 } },
           },
         },
         plugins: {
           ...baseOptions("y").plugins,
           tooltip: {
-            ...baseOptions("y").plugins.tooltip,
-            callbacks: { label: (ctx) => ` ${fmtR$(ctx.parsed.x ?? 0)}` },
+            ...tooltipBase(),
+            callbacks: { label: (ctx) => ` ${fmtCurrency(ctx.parsed.x ?? 0)}` },
           },
         },
       },
@@ -261,80 +222,80 @@ function buildCharts(data: HoraRow[], allPeriodos: string[] = []) {
         labels: temporalData.map((p) => p.periodo),
         datasets: [
           {
-            label: "Horas",
-            data: temporalData.map((p) => p.total_horas),
-            borderColor: "#9b7fff",
-            backgroundColor: "rgba(155,127,255,0.12)",
-            borderWidth: 2.5,
-            pointBackgroundColor: "#9b7fff",
-            pointBorderColor: "#141720",
-            pointBorderWidth: 0,
-            pointRadius: 5,
-            pointHoverRadius: 7,
-            fill: true,
-            tension: 0.35,
-            yAxisID: "y",
+            label:                "Horas",
+            data:                 temporalData.map((p) => p.total_horas),
+            borderColor:          COLORS.purpleSolid,
+            backgroundColor:      "rgba(155,127,255,0.12)",
+            borderWidth:          2.5,
+            pointBackgroundColor: COLORS.purpleSolid,
+            pointBorderColor:     "#141720",
+            pointBorderWidth:     0,
+            pointRadius:          5,
+            pointHoverRadius:     7,
+            fill:                 true,
+            tension:              0.35,
+            yAxisID:              "y",
           },
           {
-            label: "Custo (R$)",
-            data: temporalData.map((p) => p.total_custo),
-            borderColor: "#4d8fff",
-            backgroundColor: "rgba(77,143,255,0.06)",
-            borderWidth: 2,
-            pointBackgroundColor: "#4d8fff",
-            pointBorderColor: "#141720",
-            pointBorderWidth: 0,
-            pointRadius: 4,
-            pointHoverRadius: 6,
-            fill: false,
-            tension: 0.35,
-            yAxisID: "y1",
+            label:                "Custo (R$)",
+            data:                 temporalData.map((p) => p.total_custo),
+            borderColor:          COLORS.blueSolid,
+            backgroundColor:      "rgba(77,143,255,0.06)",
+            borderWidth:          2,
+            pointBackgroundColor: COLORS.blueSolid,
+            pointBorderColor:     "#141720",
+            pointBorderWidth:     0,
+            pointRadius:          4,
+            pointHoverRadius:     6,
+            fill:                 false,
+            tension:              0.35,
+            yAxisID:              "y1",
           },
         ],
       },
       options: {
-        responsive: true,
+        responsive:          true,
         maintainAspectRatio: false,
-        animation: { duration: 500 },
+        animation:           { duration: 500 },
         plugins: {
           legend: {
             display: true,
-            labels: { color: text2Color, font: { family: FONT, size: 11 }, boxWidth: 12 },
+            labels:  { color: text2Color, font: { family: FONT, size: 11 }, boxWidth: 12 },
           },
           tooltip: {
-            ...baseOptions().plugins.tooltip,
+            ...tooltipBase(),
             callbacks: {
               label: (ctx) =>
                 ctx.datasetIndex === 0
                   ? ` ${(ctx.parsed.y as number).toFixed(2)}h`
-                  : ` ${fmtR$(ctx.parsed.y as number)}`,
+                  : ` ${fmtCurrency(ctx.parsed.y as number)}`,
             },
           },
         },
         scales: {
           x: {
-            grid: { color: gridColor },
+            grid:   { color: gridColor },
             border: { display: false },
-            ticks: { color: text2Color, font: { family: FONT, size: 11 } },
+            ticks:  { color: text2Color, font: { family: FONT, size: 11 } },
           },
           y: {
             position: "left",
-            grid: { color: gridColor },
-            border: { display: false },
+            grid:     { color: gridColor },
+            border:   { display: false },
             ticks: {
               color: textColor,
-              font: { family: MONO, size: 11 },
+              font:  { family: MONO, size: 11 },
               callback: (v) => `${v}h`,
             },
           },
           y1: {
             position: "right",
-            grid: { drawOnChartArea: false },
-            border: { display: false },
+            grid:     { drawOnChartArea: false },
+            border:   { display: false },
             ticks: {
               color: text2Color,
-              font: { family: MONO, size: 11 },
-              callback: (v) => fmtR$(v as number),
+              font:  { family: MONO, size: 11 },
+              callback: (v) => fmtCurrency(v as number),
             },
           },
         },
@@ -352,7 +313,7 @@ function updateCharts(data: HoraRow[], allPeriodos: string[] = []) {
     (r) => r.horas,
   ).slice(0, 8);
   if (chartHorasProjeto) {
-    chartHorasProjeto.data.labels = horasProjeto.map(([l]) => l);
+    chartHorasProjeto.data.labels           = horasProjeto.map(([l]) => l);
     chartHorasProjeto.data.datasets[0].data = horasProjeto.map(([, v]) => v);
     chartHorasProjeto.update();
   }
@@ -363,20 +324,20 @@ function updateCharts(data: HoraRow[], allPeriodos: string[] = []) {
     (r) => r.custoTotal,
   ).slice(0, 8);
   if (chartCustoProjeto) {
-    chartCustoProjeto.data.labels = custoProjeto.map(([l]) => l);
+    chartCustoProjeto.data.labels           = custoProjeto.map(([l]) => l);
     chartCustoProjeto.data.datasets[0].data = custoProjeto.map(([, v]) => v);
     chartCustoProjeto.update();
   }
 
   const custoColab = groupBy(data, (r) => r.colaborador, (r) => r.custoTotal).slice(0, 10);
   if (chartCustoColaborador) {
-    chartCustoColaborador.data.labels = custoColab.map(([l]) => l);
+    chartCustoColaborador.data.labels           = custoColab.map(([l]) => l);
     chartCustoColaborador.data.datasets[0].data = custoColab.map(([, v]) => v);
     chartCustoColaborador.update();
   }
 
   if (chartTemporal) {
-    chartTemporal.data.labels = temporalData.map((p) => p.periodo);
+    chartTemporal.data.labels           = temporalData.map((p) => p.periodo);
     chartTemporal.data.datasets[0].data = temporalData.map((p) => p.total_horas);
     if (chartTemporal.data.datasets[1]) {
       chartTemporal.data.datasets[1].data = temporalData.map((p) => p.total_custo);
