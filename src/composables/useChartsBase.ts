@@ -1,11 +1,11 @@
+import { fmtCurrency } from "@/utils/format";
+export { fmtCurrency };
+
 export const FONT = "Nunito";
 export const MONO = "Nunito";
 
 export const css = (v: string) =>
   getComputedStyle(document.documentElement).getPropertyValue(v).trim();
-
-import { fmtCurrency } from "@/utils/format";
-export { fmtCurrency };
 
 export const shortName = (name: string) => name.split(" ").slice(0, 2).join(" ");
 
