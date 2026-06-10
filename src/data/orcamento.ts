@@ -1,4 +1,4 @@
-export type SaudeStatus = "Saudável" | "Atenção" | "Crítico";
+import type { BudgetHealthStatus } from "@/types/api";
 
 export interface ProjetoFinanceiro {
   id: number;
@@ -9,7 +9,7 @@ export interface ProjetoFinanceiro {
   custoHoras: number;
   custoReal: number;
   desvioPercent: number;
-  saude: SaudeStatus;
+  saude: BudgetHealthStatus;
   projecaoEstouro: number | null;
   periodo: string;
 }

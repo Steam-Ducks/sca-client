@@ -1,22 +1,10 @@
 import { Chart, registerables } from "chart.js";
+import type { HoraRow } from "@/types/api";
 import {
   FONT, MONO, css, fmtCurrency, groupBy, baseOptions, tooltipBase, COLORS,
 } from "./useChartsBase";
 
 Chart.register(...registerables);
-
-// ─── Types ────────────────────────────────────────────────────────────────────
-export interface HoraRow {
-  id: number;
-  colaborador: string;
-  projeto: string;
-  programa: string;
-  horas: number;
-  custoPorHora: number;
-  custoTotal: number;
-  periodo: string;
-  tarefa: string;
-}
 
 export interface TemporalPoint {
   periodo: string;

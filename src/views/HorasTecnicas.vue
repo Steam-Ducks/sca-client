@@ -442,6 +442,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted, nextTick } from "vue";
+import type { HoraRow } from "@/types/api";
 import { useChartsTechnical } from "@/composables/useChartsTechnical";
 import { usePermissions } from "@/composables/usePermissions";
 import { horasTecnicasService } from '@/services/horasTecnicasService'
@@ -449,34 +450,8 @@ import { useExport } from '@/composables/useExport'
 
 const PER_PAGE = 8;
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-interface Row {
-  id: number;
-  colaborador: string;
-  projeto: string;
-  programa: string;
-  horas: number;
-  custoPorHora: number;
-  custoTotal: number;
-  periodo: string;
-  tarefa: string;
-}
-
-// Interface para dados vindos da API
-interface ApiRow {
-  id: number;
-  colaborador: string;
-  projeto: string;
-  programa: string;
-  horas_trabalhadas: number;
-  custo_por_hora: number;
-  custo_total: number;
-  periodo: string | null;
-  tarefa: string;
-}
-
 // ─── State ────────────────────────────────────────────────────────────────────
-const tableData = ref<Row[]>([]);
+const tableData = ref<HoraRow[]>([]);
 const tableLoading = ref(false);
 const tableError = ref("");
 
@@ -487,12 +462,12 @@ const filters = ref({
   colaborador: "",
   tarefa: "",
 });
-const sortKey = ref<keyof Row>("custoTotal");
+const sortKey = ref<keyof HoraRow>("custoTotal");
 const sortDir = ref<1 | -1>(-1);
 const page = ref(1);
 
 // ─── Filter options (derived from tableData) ──────────────────────────────────
-const uniq = (key: keyof Row) =>
+const uniq = (key: keyof HoraRow) =>
   computed(() =>
     [...new Set(tableData.value.map((r) => String(r[key])))].sort(),
   );
@@ -577,30 +552,15 @@ watch(filteredData, (data) => {
 });
 
 // ─── API load ─────────────────────────────────────────────────────────────────
-function mapApiRow(r: ApiRow): Row {
-  return {
-    id: r.id,
-    colaborador: r.colaborador,
-    projeto: r.projeto,
-    programa: r.programa,
-    horas: r.horas_trabalhadas,
-    custoPorHora: r.custo_por_hora,
-    custoTotal: r.custo_total,
-    periodo: r.periodo ?? "",
-    tarefa: r.tarefa,
-  };
-}
-
 async function loadData() {
   tableLoading.value = true
   tableError.value = ''
   try {
-    const raw = await horasTecnicasService.fetchAll({
+    tableData.value = await horasTecnicasService.fetchAll({
       periodo: filters.value.periodo || undefined,
       programa: filters.value.programa || undefined,
       projeto: filters.value.projeto || undefined,
     })
-    tableData.value = raw.map(mapApiRow)
   } catch (err) {
     console.error('Erro ao buscar horas técnicas:', err)
     tableError.value = 'Erro ao carregar dados. Tente novamente.'
@@ -622,14 +582,14 @@ const fmt = (v: number) =>
 
 const fmtH = (v: number) => `${v.toFixed(2)}`;
 
-function sortBy(k: keyof Row) {
+function sortBy(k: keyof HoraRow) {
   if (sortKey.value === k) sortDir.value = (sortDir.value * -1) as 1 | -1;
   else {
     sortKey.value = k;
     sortDir.value = -1;
   }
 }
-const sortIcon = (k: keyof Row) => {
+const sortIcon = (k: keyof HoraRow) => {
   if (sortKey.value === k) return sortDir.value > 0 ? "↑" : "↓";
   return "↕";
 };

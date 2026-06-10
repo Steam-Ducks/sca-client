@@ -204,3 +204,15 @@ export type HorasTecnicasRow = {
   periodo: string | null
   tarefa: string
 }
+
+export interface HoraRow {
+  id: number
+  colaborador: string
+  projeto: string
+  programa: string
+  horas: number
+  custoPorHora: number
+  custoTotal: number
+  periodo: string
+  tarefa: string
+}
