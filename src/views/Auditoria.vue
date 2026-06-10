@@ -745,6 +745,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from "vue";
 import { authService } from "@/services/authService";
+import { fmtISODate as formatDate, fmtDuration as formatDuration } from '@/utils/format'
 
 // ── Services & composables ───────────────────────────────────────────────────
 import {
@@ -797,17 +798,6 @@ const kpis = computed(() => ({
 const pct = (v: number) =>
   falhasRows.value.length > 0 ? ((v / falhasRows.value.length) * 100).toFixed(1) : "0.0";
 
-// ─── Shared formatting helpers ────────────────────────────────────────────────
-function formatDate(iso: string) {
-  return iso ? iso.replace("T", " ").slice(0, 19) : "—";
-}
-
-function formatDuration(seconds: number | null) {
-  if (seconds === null) return "—";
-  if (seconds < 60) return `${seconds}s`;
-  const m = Math.floor(seconds / 60), s = seconds % 60;
-  return `${m}m ${s}s`;
-}
 
 // ─── Falhas e Inconsistências ─────────────────────────────────────────────────
 const FALHAS_PER_PAGE = 10;

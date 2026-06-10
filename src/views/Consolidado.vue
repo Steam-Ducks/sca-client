@@ -429,6 +429,7 @@ import { apiService } from "@/services/apiService";
 import { dashboardService } from "@/services/dashboardService";
 import type { CostEvolutionRow } from "@/types/api";
 import { useExport } from '@/composables/useExport'
+import { fmtBRL, fmtDateTime } from '@/utils/format'
 
 const PER_PAGE = 8;
 
@@ -662,10 +663,7 @@ const visiblePages = computed(() => {
 const formattedLastUpdatedAt = computed(() => {
   if (!lastUpdatedAt.value) return "Não informado";
 
-  return new Intl.DateTimeFormat("pt-BR", {
-    dateStyle: "short",
-    timeStyle: "short",
-  }).format(new Date(lastUpdatedAt.value));
+  return fmtDateTime(lastUpdatedAt.value);
 });
 
 // ─── Watchers ────────────────────────────────────────────────────────────────
@@ -689,8 +687,7 @@ watch(
 );
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
-const fmt = (v: number) =>
-  "R$ " + v.toLocaleString("pt-BR", { minimumFractionDigits: 2 });
+const fmt = fmtBRL
 
 function sortBy(k: keyof ConsolidadoRow) {
   if (sortKey.value === k) sortDir.value = (sortDir.value * -1) as 1 | -1;
