@@ -602,6 +602,7 @@ import { useChartsOrcamento } from "@/composables/useChartsOrcamento";
 import { budgetService } from "@/services/budgetService";
 import type { BudgetHealthStatus, BudgetIndicators, BudgetProjectRow } from "@/types/api";
 import { useExport } from '@/composables/useExport'
+import { fmtBRL, fmtDateTime, fmtPercent } from '@/utils/format'
 
 const { buildChartsOrcamento, updateChartsOrcamento, destroyChartsOrcamento } =
   useChartsOrcamento();
@@ -753,13 +754,7 @@ const kpis = computed(() => ({
 
 const ultimaAtualizacao = computed(() => {
   if (!lastUpdatedAt.value) return "Não informado";
-  return new Date(lastUpdatedAt.value).toLocaleDateString("pt-BR", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  return fmtDateTime(lastUpdatedAt.value);
 });
 
 function sortBy(key: keyof BudgetProjectRow) {
@@ -776,14 +771,6 @@ function sortIcon(key: keyof BudgetProjectRow): string {
   return sortDir.value === 1 ? "↑" : "↓";
 }
 
-function fmtBRL(v: number): string {
-  return new Intl.NumberFormat("pt-BR", {
-    style: "currency",
-    currency: "BRL",
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(v);
-}
 
 function saudeBadgeClass(saude: BudgetHealthStatus): string {
   if (saude === "Saudável") return "badge-green";
@@ -825,7 +812,7 @@ function toExportRows() {
     'Custo Materiais': p.custoMateriais,
     'Custo Horas': p.custoHoras,
     'Custo Real': p.custoReal,
-    'Desvio %': `${p.desvioPercent.toFixed(1)}%`,
+    'Desvio %': fmtPercent(p.desvioPercent),
     Saúde: p.saude,
     'Projeção Estouro': p.projecaoEstouro ?? '-',
     Período: p.periodo,

@@ -23,7 +23,7 @@
             Total de Horas
           </div>
           <div class="metric-value">
-            {{ fmtH(kpis.totalHoras) }}h
+            {{ fmtH(kpis.totalHoras) }}
           </div>
         </div>
         <div
@@ -368,7 +368,7 @@
                   {{ row.programa }}
                 </td>
                 <td class="mono right">
-                  {{ fmtH(row.horas) }}h
+                  {{ fmtH(row.horas) }}
                 </td>
                 <td
                   v-if="!isProjetos"
@@ -446,6 +446,7 @@ import { useChartsTechnical } from "@/composables/useChartsTechnical";
 import { usePermissions } from "@/composables/usePermissions";
 import { horasTecnicasService } from '@/services/horasTecnicasService'
 import { useExport } from '@/composables/useExport'
+import { fmtBRL, fmtHours } from '@/utils/format'
 
 const PER_PAGE = 8;
 
@@ -617,10 +618,8 @@ watch(
 );
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-const fmt = (v: number) =>
-  "R$ " + v.toLocaleString("pt-BR", { minimumFractionDigits: 2 });
-
-const fmtH = (v: number) => `${v.toFixed(2)}`;
+const fmt = fmtBRL
+const fmtH = fmtHours
 
 function sortBy(k: keyof Row) {
   if (sortKey.value === k) sortDir.value = (sortDir.value * -1) as 1 | -1;

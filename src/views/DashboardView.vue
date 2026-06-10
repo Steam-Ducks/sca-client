@@ -495,6 +495,7 @@ import type {
   CostEvolutionRow,
 } from "@/types/api";
 import { useExport } from '@/composables/useExport'
+import { fmtBRL } from '@/utils/format'
 
 const PER_PAGE = 8;
 
@@ -671,8 +672,7 @@ watch(
 
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
-const fmt = (v: number) =>
-  "R$ " + v.toLocaleString("pt-BR", { minimumFractionDigits: 2 });
+const fmt = fmtBRL
 
 function sortBy(k: keyof DashboardRow) {
   if (sortKey.value === k) sortDir.value = (sortDir.value * -1) as 1 | -1;

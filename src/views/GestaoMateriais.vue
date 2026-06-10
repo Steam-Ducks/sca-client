@@ -441,6 +441,7 @@ import type { MaterialsApiRow } from "@/services/materiaisService";
 import type { Filters, SortKey, SortDir, Material, Categoria, Status } from "@/types/materiais";
 import { RAW } from "@/data/materiais";
 import { useExport } from '@/composables/useExport'
+import { fmtBRL } from '@/utils/format'
 
 const PER_PAGE = 8;
 const isMounted = ref(false);
@@ -724,7 +725,7 @@ onMounted(async () => {
 });
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-const fmt = (v: number) => "R$ " + v.toLocaleString("pt-BR", { minimumFractionDigits: 2 });
+const fmt = fmtBRL
 
 function sort(k: SortKey) {
   if (sortKey.value === k) sortDir.value = (sortDir.value * -1) as SortDir;
