@@ -1,5 +1,5 @@
-import { fmtCurrency } from "@/utils/format";
-export { fmtCurrency };
+import { fmtCurrency as _fmtCurrency } from "@/utils/format";
+export const fmtCurrency = _fmtCurrency;
 
 export const FONT = "Nunito";
 export const MONO = "Nunito";
