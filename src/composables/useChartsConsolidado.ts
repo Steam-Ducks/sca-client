@@ -1,23 +1,10 @@
 import { Chart, registerables } from "chart.js";
-import type { CostEvolutionRow } from "@/types/api";
+import type { ConsolidadoRow, CostEvolutionRow } from "@/types/api";
 import {
   FONT, MONO, css, fmtCurrency, groupBy, baseOptions, tooltipBase, COLORS,
 } from "./useChartsBase";
 
 Chart.register(...registerables);
-
-export interface ConsolidadoRow {
-  id: number;
-  projeto: string;
-  programa: string;
-  custoMateriais: number;
-  custoHoras: number;
-  custoTotal: number;
-  qtdMateriais: number;
-  totalHoras: number;
-  periodo: string;
-  status: string;
-}
 
 let chartDistribuicao: Chart | null = null;
 let chartPorPrograma: Chart | null = null;

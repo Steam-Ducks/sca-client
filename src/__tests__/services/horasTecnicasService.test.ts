@@ -6,6 +6,13 @@ vi.mock("@/utils/config", () => ({
   CONFIG: { API_BASE_URL: "http://localhost:8000/api" },
 }));
 
+vi.mock("@/services/authService", () => ({
+  authService: {
+    getToken: vi.fn().mockReturnValue(null),
+    clearSession: vi.fn(),
+  },
+}));
+
 const fetchMock = vi.fn();
 globalThis.fetch = fetchMock;
 
@@ -47,7 +54,7 @@ describe("horasTecnicasService", () => {
       const result = await horasTecnicasService.fetchAll();
       expect(result).toHaveLength(1);
       expect(result[0].colaborador).toBe("João Silva");
-      expect(result[0].custo_total).toBe(6000);
+      expect(result[0].custoTotal).toBe(6000);
     });
 
     it("extracts .data when API responds with an object envelope", async () => {
