@@ -4,7 +4,8 @@ export const MONO = "Nunito";
 export const css = (v: string) =>
   getComputedStyle(document.documentElement).getPropertyValue(v).trim();
 
-export { fmtCurrency } from "@/utils/format";
+import { fmtCurrency } from "@/utils/format";
+export { fmtCurrency };
 
 export const shortName = (name: string) => name.split(" ").slice(0, 2).join(" ");
 
