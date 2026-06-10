@@ -10,15 +10,16 @@ import type {
 } from '@/types/api'
 import { CONFIG } from '@/utils/config'
 import { apiFetch } from '@/utils/apiFetch'
+import { buildQueryString } from '@/utils/queryBuilder'
 
 function buildQuery(filters: DashboardFilters): string {
-  const params = new URLSearchParams()
-  if (filters.start_date) params.append('start_date', filters.start_date)
-  if (filters.end_date) params.append('end_date', filters.end_date)
-  if (filters.program) params.append('program', filters.program)
-  if (filters.project) params.append('project', filters.project)
-  if (filters.status) params.append('status', filters.status)
-  return params.toString() ? `?${params.toString()}` : ''
+  return buildQueryString({
+    start_date: filters.start_date,
+    end_date: filters.end_date,
+    program: filters.program,
+    project: filters.project,
+    status: filters.status,
+  })
 }
 
 async function get<T>(path: string, filters: DashboardFilters = {}): Promise<T> {

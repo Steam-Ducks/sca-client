@@ -1,6 +1,7 @@
 import type { HorasTecnicasRow } from '@/types/api'
 import { CONFIG } from '@/utils/config'
 import { apiFetch } from '@/utils/apiFetch'
+import { buildQueryString } from '@/utils/queryBuilder'
 
 interface HorasTecnicasFilters {
   periodo?: string
@@ -9,11 +10,11 @@ interface HorasTecnicasFilters {
 }
 
 function buildQuery(filters: HorasTecnicasFilters): string {
-  const params = new URLSearchParams()
-  if (filters.periodo) params.append('periodo', filters.periodo)
-  if (filters.programa) params.append('programa', filters.programa)
-  if (filters.projeto) params.append('projeto', filters.projeto)
-  return params.toString() ? `?${params.toString()}` : ''
+  return buildQueryString({
+    periodo: filters.periodo,
+    programa: filters.programa,
+    projeto: filters.projeto,
+  })
 }
 
 export const horasTecnicasService = {
