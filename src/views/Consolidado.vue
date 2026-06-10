@@ -428,7 +428,7 @@ import { usePermissions } from "@/composables/usePermissions";
 import { apiService } from "@/services/apiService";
 import { dashboardService } from "@/services/dashboardService";
 import type { CostEvolutionRow } from "@/types/api";
-import * as XLSX from 'xlsx'
+import { useExport } from '@/composables/useExport'
 
 const PER_PAGE = 8;
 
@@ -714,31 +714,10 @@ function statusClass(s: string) {
   return map[s] ?? "badge badge-hw";
 }
 
-function exportCSV() {
-  const header =
-    "Projeto,Programa,Custo Materiais,Custo Horas,Custo Total,Qtd Materiais,Total Horas,Período,Status";
-  const rows = filteredData.value.map((r) =>
-    [
-      r.projeto,
-      r.programa,
-      r.custoMateriais,
-      r.custoHoras,
-      r.custoTotal,
-      r.qtdMateriais,
-      r.totalHoras,
-      r.periodo,
-      r.status,
-    ].join(","),
-  );
-  const csv = [header, ...rows].join("\n");
-  const a = document.createElement("a");
-  a.href = "data:text/csv;charset=utf-8," + encodeURIComponent(csv);
-  a.download = "consolidado.csv";
-  a.click();
-}
+const { exportCSV: downloadCSV, exportExcel: downloadExcel } = useExport()
 
-function exportExcel() {
-  const rows = filteredData.value.map((r) => ({
+function toExportRows() {
+  return filteredData.value.map((r) => ({
     Projeto: r.projeto,
     Programa: r.programa,
     'Custo Materiais': r.custoMateriais,
@@ -749,12 +728,10 @@ function exportExcel() {
     Período: r.periodo,
     Status: r.status,
   }))
-
-  const ws = XLSX.utils.json_to_sheet(rows)
-  const wb = XLSX.utils.book_new()
-  XLSX.utils.book_append_sheet(wb, ws, 'Consolidado')
-  XLSX.writeFile(wb, 'consolidado.xlsx')
 }
+
+function exportCSV() { downloadCSV(toExportRows(), 'consolidado') }
+function exportExcel() { downloadExcel(toExportRows(), 'consolidado', 'Consolidado') }
 
 function removeFilter(key: string) {
   (filters.value as Record<string, string>)[key] = "";

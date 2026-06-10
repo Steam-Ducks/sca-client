@@ -445,7 +445,7 @@ import { ref, computed, watch, onMounted, onUnmounted, nextTick } from "vue";
 import { useChartsTechnical } from "@/composables/useChartsTechnical";
 import { usePermissions } from "@/composables/usePermissions";
 import { horasTecnicasService } from '@/services/horasTecnicasService'
-import * as XLSX from 'xlsx'
+import { useExport } from '@/composables/useExport'
 
 const PER_PAGE = 8;
 
@@ -648,30 +648,10 @@ function tagClass(t: string) {
   return map[t] ?? "badge badge-hw";
 }
 
-function exportCSV() {
-  const header =
-    "Colaborador,Projeto,Programa,Horas,Custo/Hora,Custo Total,Período,Tarefa";
-  const rows = filteredData.value.map((r) =>
-    [
-      r.colaborador,
-      r.projeto,
-      r.programa,
-      r.horas,
-      r.custoPorHora,
-      r.custoTotal,
-      r.periodo,
-      r.tarefa,
-    ].join(","),
-  );
-  const csv = [header, ...rows].join("\n");
-  const a = document.createElement("a");
-  a.href = "data:text/csv;charset=utf-8," + encodeURIComponent(csv);
-  a.download = "horas-tecnicas.csv";
-  a.click();
-}
+const { exportCSV: downloadCSV, exportExcel: downloadExcel } = useExport()
 
-function exportExcel() {
-  const rows = filteredData.value.map((r) => ({
+function toExportRows() {
+  return filteredData.value.map((r) => ({
     Colaborador: r.colaborador,
     Projeto: r.projeto,
     Programa: r.programa,
@@ -681,12 +661,10 @@ function exportExcel() {
     Período: r.periodo,
     Tarefa: r.tarefa,
   }))
-
-  const ws = XLSX.utils.json_to_sheet(rows)
-  const wb = XLSX.utils.book_new()
-  XLSX.utils.book_append_sheet(wb, ws, 'Horas Técnicas')
-  XLSX.writeFile(wb, 'horas-tecnicas.xlsx')
 }
+
+function exportCSV() { downloadCSV(toExportRows(), 'horas-tecnicas') }
+function exportExcel() { downloadExcel(toExportRows(), 'horas-tecnicas', 'Horas Técnicas') }
 
 function removeFilter(key: string) {
   (filters.value as Record<string, string>)[key] = "";
