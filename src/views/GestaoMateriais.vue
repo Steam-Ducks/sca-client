@@ -440,7 +440,7 @@ import { materiaisService } from "@/services/materiaisService";
 import type { MaterialsApiRow } from "@/services/materiaisService";
 import type { Filters, SortKey, SortDir, Material, Categoria, Status } from "@/types/materiais";
 import { RAW } from "@/data/materiais";
-import * as XLSX from 'xlsx'
+import { useExport } from '@/composables/useExport'
 
 const PER_PAGE = 8;
 const isMounted = ref(false);
@@ -765,31 +765,10 @@ function clearFilters() {
   page.value = 1;
 }
 
-function exportCSV() {
-  const header =
-    "Material,Projeto,Programa,Quantidade,Valor Unitário,Valor Total,Período,Fornecedor,Categoria";
-  const rows = sortedData.value.map((r) =>
-    [
-      r.material,
-      r.projeto,
-      r.programa,
-      r.quantidade,
-      r.valorUnitario,
-      r.valorTotal,
-      r.periodo,
-      r.fornecedor,
-      r.categoria,
-    ].join(","),
-  );
-  const csv = [header, ...rows].join("\n");
-  const a = document.createElement("a");
-  a.href = "data:text/csv;charset=utf-8," + encodeURIComponent(csv);
-  a.download = "materiais.csv";
-  a.click();
-}
+const { exportCSV: downloadCSV, exportExcel: downloadExcel } = useExport()
 
-function exportExcel() {
-  const rows = sortedData.value.map((r) => ({
+function toExportRows() {
+  return sortedData.value.map((r) => ({
     Material: r.material,
     Projeto: r.projeto,
     Programa: r.programa,
@@ -800,12 +779,10 @@ function exportExcel() {
     Fornecedor: r.fornecedor,
     Categoria: r.categoria,
   }))
-
-  const ws = XLSX.utils.json_to_sheet(rows)
-  const wb = XLSX.utils.book_new()
-  XLSX.utils.book_append_sheet(wb, ws, 'Materiais')
-  XLSX.writeFile(wb, 'materiais.xlsx')
 }
+
+function exportCSV() { downloadCSV(toExportRows(), 'materiais') }
+function exportExcel() { downloadExcel(toExportRows(), 'materiais', 'Materiais') }
 
 // ─── Charts ──────────────────────────────────────────────────────────────
 const { buildCharts, updateCharts, destroyCharts } = useCharts();

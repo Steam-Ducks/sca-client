@@ -601,7 +601,7 @@ import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 import { useChartsOrcamento } from "@/composables/useChartsOrcamento";
 import { budgetService } from "@/services/budgetService";
 import type { BudgetHealthStatus, BudgetIndicators, BudgetProjectRow } from "@/types/api";
-import * as XLSX from 'xlsx'
+import { useExport } from '@/composables/useExport'
 
 const { buildChartsOrcamento, updateChartsOrcamento, destroyChartsOrcamento } =
   useChartsOrcamento();
@@ -815,25 +815,10 @@ function clearFilters() {
   filters.value = { periodo: "", programa: "", projeto: "", saude: "" };
 }
 
-function exportCSV() {
-  const headers = [
-    "Programa", "Projeto", "Budget", "Custo Materiais", "Custo Horas",
-    "Custo Real", "Desvio %", "Saude", "Projecao Estouro", "Periodo",
-  ];
-  const rows = sortedData.value.map((p) => [
-    p.programa, p.projeto, p.budget, p.custoMateriais, p.custoHoras,
-    p.custoReal, `${p.desvioPercent.toFixed(1)}%`, p.saude,
-    p.projecaoEstouro ?? "-", p.periodo,
-  ]);
-  const csv = [headers, ...rows].map((r) => r.join(",")).join("\n");
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
-  a.download = "orcamento-saude-financeira.csv";
-  a.click();
-}
+const { exportCSV: downloadCSV, exportExcel: downloadExcel } = useExport()
 
-function exportExcel() {
-  const rows = sortedData.value.map((p) => ({
+function toExportRows() {
+  return sortedData.value.map((p) => ({
     Programa: p.programa,
     Projeto: p.projeto,
     Budget: p.budget,
@@ -845,12 +830,10 @@ function exportExcel() {
     'Projeção Estouro': p.projecaoEstouro ?? '-',
     Período: p.periodo,
   }))
-
-  const ws = XLSX.utils.json_to_sheet(rows)
-  const wb = XLSX.utils.book_new()
-  XLSX.utils.book_append_sheet(wb, ws, 'Orçamento Saúde Financeira')
-  XLSX.writeFile(wb, 'orcamento-saude-financeira.xlsx')
 }
+
+function exportCSV() { downloadCSV(toExportRows(), 'orcamento-saude-financeira') }
+function exportExcel() { downloadExcel(toExportRows(), 'orcamento-saude-financeira', 'Orçamento Saúde Financeira') }
 
 async function loadIndicators() {
   isLoadingIndicators.value = true;
