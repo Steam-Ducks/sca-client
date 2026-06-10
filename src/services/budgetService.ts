@@ -8,6 +8,7 @@ import type {
 } from "@/types/api";
 import { CONFIG } from "@/utils/config";
 import { apiFetch } from "@/utils/apiFetch";
+import { buildQueryString } from "@/utils/queryBuilder";
 
 export type BudgetFilters = {
   periodo?: string;
@@ -73,13 +74,12 @@ function extractLastUpdatedAt(
 
 export const budgetService = {
   async fetchBudgetIndicators(filters: BudgetFilters = {}): Promise<BudgetIndicatorsSnapshot> {
-    const params = new URLSearchParams();
-    if (filters.periodo) params.set("periodo", filters.periodo);
-    if (filters.programa) params.set("programa", filters.programa);
-    if (filters.projeto) params.set("projeto", filters.projeto);
-    if (filters.saude) params.set("saude", filters.saude);
-
-    const query = params.toString() ? `?${params.toString()}` : "";
+    const query = buildQueryString({
+      periodo: filters.periodo,
+      programa: filters.programa,
+      projeto: filters.projeto,
+      saude: filters.saude,
+    });
     const response = await apiFetch(`${CONFIG.API_BASE_URL}/budget/indicators/${query}`);
     if (!response.ok) throw new Error("Erro ao buscar indicadores de orçamento");
 
@@ -99,13 +99,12 @@ export const budgetService = {
   },
 
   async fetchBudgetSnapshot(filters: BudgetFilters = {}): Promise<BudgetSnapshot> {
-    const params = new URLSearchParams();
-    if (filters.periodo) params.set("periodo", filters.periodo);
-    if (filters.programa) params.set("programa", filters.programa);
-    if (filters.projeto) params.set("projeto", filters.projeto);
-    if (filters.saude) params.set("saude", filters.saude);
-
-    const query = params.toString() ? `?${params.toString()}` : "";
+    const query = buildQueryString({
+      periodo: filters.periodo,
+      programa: filters.programa,
+      projeto: filters.projeto,
+      saude: filters.saude,
+    });
     const response = await apiFetch(`${CONFIG.API_BASE_URL}/budget/${query}`);
     if (!response.ok) throw new Error("Erro ao buscar orçamento por projeto");
 

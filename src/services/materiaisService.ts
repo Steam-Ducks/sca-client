@@ -1,6 +1,7 @@
 import type { Filters } from "@/types/materiais";
 import { CONFIG } from "@/utils/config";
 import { apiFetch } from "@/utils/apiFetch";
+import { buildQueryString } from "@/utils/queryBuilder";
 
 export interface FilterOptions {
   periodos: string[];
@@ -34,17 +35,14 @@ export interface CostByProject {
 }
 
 function buildQueryParams(filters: Filters): string {
-  const params = new URLSearchParams();
-
-  if (filters.periodo) params.set("periodo", filters.periodo);
-  if (filters.programa) params.set("programa", filters.programa);
-  if (filters.projeto) params.set("projeto", filters.projeto);
-  if (filters.categoria) params.set("categoria", filters.categoria);
-  if (filters.fornecedor) params.set("fornecedor", filters.fornecedor);
-  if (filters.search) params.set("material", filters.search);
-
-  const qs = params.toString();
-  return qs ? `?${qs}` : "";
+  return buildQueryString({
+    periodo: filters.periodo,
+    programa: filters.programa,
+    projeto: filters.projeto,
+    categoria: filters.categoria,
+    fornecedor: filters.fornecedor,
+    material: filters.search,
+  });
 }
 
 export const materiaisService = {

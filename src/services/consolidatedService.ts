@@ -6,6 +6,7 @@ import type {
 } from "@/types/api";
 import { CONFIG } from "@/utils/config";
 import { apiFetch } from "@/utils/apiFetch";
+import { buildQueryString } from "@/utils/queryBuilder";
 
 const apiBaseUrl = CONFIG.API_BASE_URL;
 
@@ -93,15 +94,12 @@ type ConsolidatedFilters = {
 };
 
 function buildQuery(filters: ConsolidatedFilters = {}): string {
-  const params = new URLSearchParams();
-
-  if (filters.periodo) params.set("periodo", filters.periodo);
-  if (filters.programa) params.set("programa", filters.programa);
-  if (filters.projeto) params.set("projeto", filters.projeto);
-  if (filters.status) params.set("status", filters.status);
-
-  const query = params.toString();
-  return query ? `?${query}` : "";
+  return buildQueryString({
+    periodo: filters.periodo,
+    programa: filters.programa,
+    projeto: filters.projeto,
+    status: filters.status,
+  });
 }
 
 export const consolidatedService = {

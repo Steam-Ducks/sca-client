@@ -1,5 +1,6 @@
 import { CONFIG } from "@/utils/config";
 import { apiFetch } from "@/utils/apiFetch";
+import { buildQueryString } from "@/utils/queryBuilder";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -165,15 +166,13 @@ function buildImportErrorMessage(data: ImportResponse): string {
  * applying optional filters.
  */
 export async function fetchExecucoes(filters: ExecucoesFilters = {}): Promise<ExecucoesResponse> {
-  const params = new URLSearchParams();
-
-  if (filters.status)      params.set("status",      filters.status);
-  if (filters.tabela)      params.set("tabela",      filters.tabela);
-  if (filters.fonte)       params.set("fonte",       filters.fonte);
-  if (filters.data_inicio) params.set("data_inicio", filters.data_inicio);
-  if (filters.data_fim)    params.set("data_fim",    filters.data_fim);
-
-  const query = params.size ? `?${params.toString()}` : "";
+  const query = buildQueryString({
+    status:      filters.status,
+    tabela:      filters.tabela,
+    fonte:       filters.fonte,
+    data_inicio: filters.data_inicio,
+    data_fim:    filters.data_fim,
+  });
   const res = await apiFetch(`${CONFIG.API_BASE_URL}/monitoring/execucoes/${query}`);
 
   if (!res.ok) {
