@@ -7,55 +7,31 @@
       </h1>
       <!-- METRICS -->
       <div class="metrics">
-        <div
+        <MetricCard
           v-if="!isProjetos"
-          class="metric-card"
-        >
-          <div class="metric-label">
-            Custo Total Consolidado
-          </div>
-          <div class="metric-value blue">
-            {{ kpisLoading ? "..." : fmt(kpis.total_consolidated_cost) }}
-          </div>
-        </div>
-        <div
+          label="Custo Total Consolidado"
+          :value="kpisLoading ? '...' : fmt(kpis.total_consolidated_cost)"
+          color="blue"
+        />
+        <MetricCard
           v-if="!isProjetos"
-          class="metric-card"
-        >
-          <div class="metric-label">
-            Custo Total de Materiais
-          </div>
-          <div class="metric-value">
-            {{ kpisLoading ? "..." : fmt(kpis.total_materials_cost) }}
-          </div>
-        </div>
-        <div
+          label="Custo Total de Materiais"
+          :value="kpisLoading ? '...' : fmt(kpis.total_materials_cost)"
+        />
+        <MetricCard
           v-if="!isProjetos"
-          class="metric-card"
-        >
-          <div class="metric-label">
-            Custo Total de Horas Técnicas
-          </div>
-          <div class="metric-value green">
-            {{ kpisLoading ? "..." : fmt(kpis.total_hours_cost) }}
-          </div>
-        </div>
-        <div class="metric-card">
-          <div class="metric-label">
-            Número de Projetos
-          </div>
-          <div class="metric-value">
-            {{ kpisLoading ? "..." : kpis.total_projects }}
-          </div>
-        </div>
-        <div class="metric-card">
-          <div class="metric-label">
-            Número de Programas
-          </div>
-          <div class="metric-value">
-            {{ kpisLoading ? "..." : kpis.total_programs }}
-          </div>
-        </div>
+          label="Custo Total de Horas Técnicas"
+          :value="kpisLoading ? '...' : fmt(kpis.total_hours_cost)"
+          color="green"
+        />
+        <MetricCard
+          label="Número de Projetos"
+          :value="kpisLoading ? '...' : kpis.total_projects"
+        />
+        <MetricCard
+          label="Número de Programas"
+          :value="kpisLoading ? '...' : kpis.total_programs"
+        />
       </div>
       <!-- FILTERS -->
       <div class="filters-card">
@@ -496,6 +472,7 @@ import type {
 } from "@/types/api";
 import { useExport } from '@/composables/useExport'
 import { fmtBRL } from '@/utils/format'
+import MetricCard from "@/components/MetricCard.vue";
 
 const PER_PAGE = 8;
 
@@ -816,14 +793,6 @@ onUnmounted(destroyCharts);
   grid-template-columns: repeat(5, 1fr);
   gap: 14px;
 }
-.metric-card {
-  background: var(--bg2);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 18px 22px;
-  transition: border-color 0.2s;
-  animation: fadeIn 0.35s ease both;
-}
 .metric-card:nth-child(2) {
   animation-delay: 0.06s;
 }
@@ -832,29 +801,6 @@ onUnmounted(destroyCharts);
 }
 .metric-card:nth-child(4) {
   animation-delay: 0.18s;
-}
-.metric-card:hover {
-  border-color: var(--border2);
-}
-.metric-label {
-  font-size: 11px;
-  color: var(--text3);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  margin-bottom: 8px;
-}
-.metric-value {
-  font-size: 26px;
-  font-weight: 600;
-  font-family: inherit;
-  letter-spacing: -0.5px;
-  color: var(--text);
-}
-.metric-value.blue {
-  color: var(--blue);
-}
-.metric-value.green {
-  color: var(--green);
 }
 /* ── Filters ──────────────────────────────────────────────────────────────── */
 .filters-card {

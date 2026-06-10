@@ -29,73 +29,14 @@
         class="metrics"
         data-testid="metrics-section"
       >
-        <div class="metric-card">
-          <div class="metric-label">
-            Budget Total
-          </div>
-          <div class="metric-value blue">
-            {{ fmtBRL(kpis.budgetTotal) }}
-          </div>
-        </div>
-        <div class="metric-card">
-          <div class="metric-label">
-            Custo Real Total
-          </div>
-          <div class="metric-value">
-            {{ fmtBRL(kpis.custoRealTotal) }}
-          </div>
-        </div>
-        <div class="metric-card">
-          <div class="metric-label">
-            Desvio % Médio
-          </div>
-          <div class="metric-value">
-            {{ kpis.desvioMedio.toFixed(1) }}%
-          </div>
-        </div>
-        <div class="metric-card">
-          <div class="metric-label">
-            Projetos Saudáveis
-          </div>
-          <div class="metric-value green">
-            {{ kpis.saudavelCount }}
-          </div>
-        </div>
-        <div class="metric-card">
-          <div class="metric-label">
-            Projetos em Atenção
-          </div>
-          <div class="metric-value amber">
-            {{ kpis.atencaoCount }}
-          </div>
-        </div>
-        <div class="metric-card">
-          <div class="metric-label">
-            Projetos Críticos
-          </div>
-          <div class="metric-value red">
-            {{ kpis.criticoCount }}
-          </div>
-        </div>
-        <div class="metric-card">
-          <div class="metric-label">
-            Projeção de Estouro
-          </div>
-          <div class="metric-value">
-            {{ fmtBRL(kpis.projecaoEstouro) }}
-          </div>
-        </div>
-        <div class="metric-card">
-          <div class="metric-label">
-            Última Atualização
-          </div>
-          <div class="metric-value date">
-            {{ ultimaAtualizacao }}
-          </div>
-          <div class="metric-sub">
-            Snapshot
-          </div>
-        </div>
+        <MetricCard size="sm" label="Budget Total" :value="fmtBRL(kpis.budgetTotal)" color="blue" />
+        <MetricCard size="sm" label="Custo Real Total" :value="fmtBRL(kpis.custoRealTotal)" />
+        <MetricCard size="sm" label="Desvio % Médio" :value="`${kpis.desvioMedio.toFixed(1)}%`" />
+        <MetricCard size="sm" label="Projetos Saudáveis" :value="kpis.saudavelCount" color="green" />
+        <MetricCard size="sm" label="Projetos em Atenção" :value="kpis.atencaoCount" color="amber" />
+        <MetricCard size="sm" label="Projetos Críticos" :value="kpis.criticoCount" color="red" />
+        <MetricCard size="sm" label="Projeção de Estouro" :value="fmtBRL(kpis.projecaoEstouro)" />
+        <MetricCard size="sm" label="Última Atualização" :value="ultimaAtualizacao" color="date" sub="Snapshot" />
       </div>
 
       <div
@@ -603,6 +544,7 @@ import { budgetService } from "@/services/budgetService";
 import type { BudgetHealthStatus, BudgetIndicators, BudgetProjectRow } from "@/types/api";
 import { useExport } from '@/composables/useExport'
 import { fmtBRL, fmtDateTime, fmtPercent } from '@/utils/format'
+import MetricCard from "@/components/MetricCard.vue";
 
 const { buildChartsOrcamento, updateChartsOrcamento, destroyChartsOrcamento } =
   useChartsOrcamento();
@@ -975,60 +917,6 @@ onUnmounted(() => {
   gap: 14px;
 }
 
-.metric-card {
-  background: var(--bg2);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 18px 22px;
-  transition: border-color 0.2s;
-  animation: fadeIn 0.35s ease both;
-}
-
-.metric-card:hover {
-  border-color: var(--border2);
-}
-
-.metric-label {
-  font-size: 11px;
-  color: var(--text3);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  margin-bottom: 8px;
-}
-
-.metric-value {
-  font-size: 22px;
-  font-weight: 600;
-  font-family: inherit;
-  letter-spacing: -0.5px;
-  color: var(--text);
-}
-
-.metric-sub {
-  font-size: 10px;
-  color: var(--text3);
-  margin-top: 4px;
-}
-
-.metric-value.blue {
-  color: var(--blue);
-}
-
-.metric-value.green {
-  color: var(--green);
-}
-
-.metric-value.amber {
-  color: var(--amber);
-}
-
-.metric-value.red {
-  color: var(--red);
-}
-
-.metric-value.date {
-  font-size: 14px;
-}
 
 .chart-title {
   font-size: 13px;
