@@ -72,9 +72,10 @@ jobs:
       DB_HOST: localhost
       DB_PORT: 5432
       SECRET_KEY: ci-secret-key
-      DEBUG: "0"
+      DEBUG: "1"    # ← MUDAR de "0" para "1" (habilita CORS_ALLOW_ALL_ORIGINS)
       ALLOWED_HOSTS: localhost,127.0.0.1
       VITE_API_BASE_URL: http://localhost:8000/api
+      PLAYWRIGHT_BACKEND_AVAILABLE: "true"    # ← ADICIONAR (ativa CT-LOGIN-02/06 e CT-ROLE-08/09)
 
     steps:
       - uses: actions/checkout@v4
