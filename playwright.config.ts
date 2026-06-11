@@ -1,3 +1,12 @@
+/**
+ * playwright.config.ts
+ *
+ * Alteração desta versão:
+ *   - Adicionado reporter "json" no CI para gerar playwright-report/results.json
+ *   - Esse arquivo é lido pelo workflow e2e-report.yml para publicar no GitHub Pages
+ *   - Step Summary atualizado para incluir link direto ao relatório publicado
+ */
+
 import { defineConfig, devices } from "@playwright/test";
 
 export default defineConfig({
@@ -7,10 +16,13 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
 
-  // CI: HTML + anotações inline no GitHub + lista no terminal
-  // Local: HTML abre só se houver falha
   reporter: process.env.CI
-    ? [["html", { open: "never" }], ["github"], ["list"]]
+    ? [
+        ["html", { open: "never", outputFolder: "playwright-report" }],
+        ["json", { outputFile: "playwright-report/results.json" }],
+        ["github"],
+        ["list"],
+      ]
     : [["html", { open: "on-failure" }]],
 
   use: {
@@ -27,8 +39,6 @@ export default defineConfig({
     },
   ],
 
-  // Local: sobe o preview automaticamente
-  // CI: o workflow já faz build + serve antes de rodar playwright
   webServer: process.env.CI
     ? undefined
     : {

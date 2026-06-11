@@ -1,124 +1,132 @@
 /**
  * tests/e2e/role_access.spec.ts
- * PO criteria: "Add role-based access validation tests"
  *
- * Mapa de acesso (router/index.ts + users/permissions.py):
+ * Testa acesso por perfil via router guard (injectSession — sem login real).
+ * CT-ROLE-01..07: router guard — funciona no Docker.
+ * CT-ROLE-08..09: chamada API real — requer PLAYWRIGHT_API_BASE=http://backend:8000/api
+ *                 e login real (disponível apenas do host ou CI com backend exposto).
  *
- *   /materiais   → todos os perfis (sem allowedProfiles no router)
- *   /auditoria   → todos os perfis (sem allowedProfiles no router)
- *   /dashboard   → super_admin, financeiro, projetos
- *   /horas       → super_admin, financeiro, projetos
- *   /consolidado → super_admin, financeiro, projetos
- *   /orcamento   → super_admin, financeiro  (compras/almoxarifado/projetos → /materiais)
- *
- * CT-ROLE-01  super_admin acessa todas as rotas
- * CT-ROLE-02  financeiro acessa dashboard, horas, consolidado, orcamento
- * CT-ROLE-03  projetos acessa dashboard, horas, consolidado — mas NÃO orcamento
- * CT-ROLE-04  compras acessa materiais e auditoria — mas NÃO dashboard
- * CT-ROLE-05  almoxarifado acessa materiais e auditoria — mas NÃO orcamento
- * CT-ROLE-06  compras tenta /orcamento → redirecionado para /materiais
- * CT-ROLE-07  projetos tenta /orcamento → redirecionado para /materiais
- * CT-ROLE-08  API: compras acessa /api/materials/ (200)
- * CT-ROLE-09  API: compras acessa /api/dashboard/kpis/ → 403 (perfil sem permissão)
+ * Router allowedProfiles (router/index.ts):
+ *   /materiais, /auditoria → sem restrição de perfil
+ *   /dashboard, /horas, /consolidado → super_admin, financeiro, projetos
+ *   /orcamento → super_admin, financeiro
+ *   (compras, almoxarifado sem acesso a orcamento → redireciona para /materiais)
  */
 
 import { test, expect } from "@playwright/test";
-import { loginAs, API_BASE } from "./e2e_helpers";
+import { injectSession, loginAs, API_BASE, BACKEND_AVAILABLE } from "./e2e_helpers";
 
-/* ── Helper para testar acesso a uma rota ──────────────────────────────────────
-async function canAccess(page: Parameters<typeof loginAs>[0], user: Parameters<typeof loginAs>[1], route: string): Promise<boolean> {
-  await loginAs(page, user);
-  await page.goto(route);
-  await page.waitForURL(/\//, { timeout: 5_000 });
-  const url = page.url();
-  return url.includes(route);
+// ── Mocks comuns ──────────────────────────────────────────────────────────────
+async function mockAllAPIs(page: Parameters<typeof injectSession>[0]) {
+  await page.route("**/compras/**",        (r) => r.fulfill({ contentType: "application/json", body: "[]" }));
+  await page.route("**/top-materials/**",  (r) => r.fulfill({ contentType: "application/json", body: "[]" }));
+  await page.route("**/cost-by-project/**",(r) => r.fulfill({ contentType: "application/json", body: "[]" }));
+  await page.route("**/filter-options/**", (r) => r.fulfill({ contentType: "application/json", body: JSON.stringify({ periodos: [], programas: [], projetos: [], categorias: [], fornecedores: [] }) }));
+  await page.route("**/dashboard/**",      (r) => r.fulfill({ contentType: "application/json", body: "{}" }));
+  await page.route("**/horas-tecnicas/**", (r) => r.fulfill({ contentType: "application/json", body: "[]" }));
+  await page.route("**/consolidated/**",   (r) => r.fulfill({ contentType: "application/json", body: JSON.stringify({ data: [], last_updated_at: null }) }));
+  await page.route("**/budget/**",         (r) => r.fulfill({ contentType: "application/json", body: JSON.stringify({ data: [], last_updated_at: null }) }));
+  await page.route("**/monitoring/**",     (r) => r.fulfill({ contentType: "application/json", body: JSON.stringify({ count: 0, results: [] }) }));
 }
-  */
 
-// ── super_admin ───────────────────────────────────────────────────────────────
+// ── CT-ROLE-01: super_admin acessa tudo ───────────────────────────────────────
 test.describe("Role access — super_admin", () => {
   test("CT-ROLE-01: super_admin acessa todas as rotas protegidas", async ({ page }) => {
+    await mockAllAPIs(page);
     const routes = ["/materiais", "/dashboard", "/horas", "/consolidado", "/orcamento", "/auditoria"];
     for (const route of routes) {
-      await loginAs(page, "superadmin");
+      await injectSession(page, "superadmin");
       await page.goto(route);
-      await page.waitForURL(/\//, { timeout: 5_000 });
+      await page.waitForLoadState("domcontentloaded");
       await expect(page).toHaveURL(new RegExp(route.replace("/", "\\/")), { timeout: 5_000 });
     }
   });
 });
 
-// ── financeiro ────────────────────────────────────────────────────────────────
+// ── CT-ROLE-02: financeiro ────────────────────────────────────────────────────
 test.describe("Role access — financeiro", () => {
   test("CT-ROLE-02: financeiro acessa dashboard, horas, consolidado e orcamento", async ({ page }) => {
-    await loginAs(page, "financeiro");
+    await mockAllAPIs(page);
     for (const route of ["/dashboard", "/horas", "/consolidado", "/orcamento"]) {
+      await injectSession(page, "financeiro");
       await page.goto(route);
-      await page.waitForURL(/\//, { timeout: 5_000 });
+      await page.waitForLoadState("domcontentloaded");
       await expect(page).toHaveURL(new RegExp(route.replace("/", "\\/")), { timeout: 5_000 });
     }
   });
 });
 
-// ── projetos ──────────────────────────────────────────────────────────────────
+// ── CT-ROLE-03: projetos ──────────────────────────────────────────────────────
 test.describe("Role access — projetos", () => {
   test("CT-ROLE-03: projetos acessa dashboard, horas, consolidado", async ({ page }) => {
-    await loginAs(page, "projetos");
+    await mockAllAPIs(page);
     for (const route of ["/dashboard", "/horas", "/consolidado"]) {
+      await injectSession(page, "projetos");
       await page.goto(route);
-      await page.waitForURL(/\//, { timeout: 5_000 });
+      await page.waitForLoadState("domcontentloaded");
       await expect(page).toHaveURL(new RegExp(route.replace("/", "\\/")), { timeout: 5_000 });
     }
   });
 
   test("CT-ROLE-07: projetos tenta /orcamento → redireciona para /materiais", async ({ page }) => {
-    await loginAs(page, "projetos");
+    await mockAllAPIs(page);
+    await injectSession(page, "projetos");
     await page.goto("/orcamento");
-    // Router guard: allowedProfiles para orcamento = [super_admin, financeiro]
-    // projetos não está na lista → redireciona para /materiais
+    await page.waitForLoadState("domcontentloaded");
     await expect(page).toHaveURL(/\/materiais/, { timeout: 5_000 });
   });
 });
 
-// ── compras ───────────────────────────────────────────────────────────────────
+// ── CT-ROLE-04, CT-ROLE-06: compras ──────────────────────────────────────────
 test.describe("Role access — compras", () => {
   test("CT-ROLE-04: compras acessa materiais e auditoria", async ({ page }) => {
-    await loginAs(page, "compras");
+    await mockAllAPIs(page);
     for (const route of ["/materiais", "/auditoria"]) {
+      await injectSession(page, "compras");
       await page.goto(route);
-      await page.waitForURL(/\//, { timeout: 5_000 });
+      await page.waitForLoadState("domcontentloaded");
       await expect(page).toHaveURL(new RegExp(route.replace("/", "\\/")), { timeout: 5_000 });
     }
   });
 
   test("CT-ROLE-06: compras tenta /orcamento → redireciona para /materiais", async ({ page }) => {
-    await loginAs(page, "compras");
+    await mockAllAPIs(page);
+    await injectSession(page, "compras");
     await page.goto("/orcamento");
+    await page.waitForLoadState("domcontentloaded");
     await expect(page).toHaveURL(/\/materiais/, { timeout: 5_000 });
   });
 });
 
-// ── almoxarifado ──────────────────────────────────────────────────────────────
+// ── CT-ROLE-05: almoxarifado ──────────────────────────────────────────────────
 test.describe("Role access — almoxarifado", () => {
   test("CT-ROLE-05: almoxarifado acessa materiais e auditoria, não orcamento", async ({ page }) => {
-    await loginAs(page, "almoxarifado");
+    await mockAllAPIs(page);
 
-    // Acesso permitido
+    await injectSession(page, "almoxarifado");
     await page.goto("/materiais");
+    await page.waitForLoadState("domcontentloaded");
     await expect(page).toHaveURL(/\/materiais/, { timeout: 5_000 });
 
+    await injectSession(page, "almoxarifado");
     await page.goto("/auditoria");
+    await page.waitForLoadState("domcontentloaded");
     await expect(page).toHaveURL(/\/auditoria/, { timeout: 5_000 });
 
-    // Acesso negado
+    await injectSession(page, "almoxarifado");
     await page.goto("/orcamento");
+    await page.waitForLoadState("domcontentloaded");
     await expect(page).toHaveURL(/\/materiais/, { timeout: 5_000 });
   });
 });
 
-// ── Backend API role check ────────────────────────────────────────────────────
+// ── CT-ROLE-08/09: chamadas API reais ────────────────────────────────────────
 test.describe("Role access — Backend API (real requests)", () => {
   test("CT-ROLE-08: compras recebe 200 de /api/materials/indicators/", async ({ page }) => {
+    if (!BACKEND_AVAILABLE && !process.env.PLAYWRIGHT_API_BASE) {
+      test.skip(true, "Defina PLAYWRIGHT_API_BASE=http://backend:8000/api para rodar no Docker.");
+      return;
+    }
     await loginAs(page, "compras");
     const token = await page.evaluate(() => localStorage.getItem("sca_access_token"));
     const res = await page.request.get(`${API_BASE}/materials/indicators/`, {
@@ -128,12 +136,15 @@ test.describe("Role access — Backend API (real requests)", () => {
   });
 
   test("CT-ROLE-09: compras recebe 403 de /api/dashboard/kpis/ (sem permissão)", async ({ page }) => {
+    if (!BACKEND_AVAILABLE && !process.env.PLAYWRIGHT_API_BASE) {
+      test.skip(true, "Defina PLAYWRIGHT_API_BASE=http://backend:8000/api para rodar no Docker.");
+      return;
+    }
     await loginAs(page, "compras");
     const token = await page.evaluate(() => localStorage.getItem("sca_access_token"));
     const res = await page.request.get(`${API_BASE}/dashboard/kpis/`, {
       headers: { Authorization: `Bearer ${token}` },
     });
-    // CanAccessDashboard exige super_admin | financeiro | projetos → compras = 403
     expect(res.status()).toBe(403);
   });
 });
