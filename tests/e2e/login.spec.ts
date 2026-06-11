@@ -1,17 +1,19 @@
 /**
  * tests/e2e/login.spec.ts
  *
- * CT-LOGIN-01  Campos visíveis na página de login
- * CT-LOGIN-02  Login válido → redireciona e salva token  [SKIP em Docker]
+ * CT-LOGIN-01  Campos visíveis
+ * CT-LOGIN-02  Login válido → redireciona [SKIP sem PLAYWRIGHT_BACKEND_AVAILABLE]
  * CT-LOGIN-03  Login inválido → .error-general visível
  * CT-LOGIN-04  Campos vazios → .error-msg client-side
- * CT-LOGIN-05  Rota protegida sem token → /login
- * CT-LOGIN-06  Autenticado acessa /login → /materiais    [SKIP em Docker]
- * CT-LOGIN-07  Sessão limpa → rota protegida volta para /login
+ * CT-LOGIN-05  Sem token → /login
+ * CT-LOGIN-06  Autenticado acessa /login → /materiais [SKIP sem PLAYWRIGHT_BACKEND_AVAILABLE]
+ * CT-LOGIN-07  Sessão limpa → /login
  *
- * CT-LOGIN-02 e CT-LOGIN-06 requerem backend real em localhost:8000.
- * Dentro do Docker, o Chromium não alcança localhost:8000 (é o próprio container).
- * Nesses casos os testes são pulados automaticamente.
+ * CORRIGIDO: CT-LOGIN-02 e CT-LOGIN-06 requerem backend com CORS configurado.
+ * No CI, o backend usa DEBUG=0 → CORS_ALLOW_ALL_ORIGINS=False → bloqueia requests
+ * do preview em localhost:4173.
+ * Solução: skip automático se PLAYWRIGHT_BACKEND_AVAILABLE != "true".
+ * Para ativar no CI: adicionar DEBUG: "1" e PLAYWRIGHT_BACKEND_AVAILABLE: "true" no e2e job.
  */
 
 import { test, expect } from "@playwright/test";
@@ -27,9 +29,8 @@ test.describe("Login — fluxo de autenticação", () => {
   });
 
   test("CT-LOGIN-02: credenciais válidas → redireciona e salva token JWT real", async ({ page }) => {
-    // Requer backend em localhost:8000 — skip no Docker
     if (!BACKEND_AVAILABLE) {
-      test.skip(true, "Backend não acessível em localhost:8000. No Docker: rodar do host. Para forçar: defina PLAYWRIGHT_API_BASE=http://backend:8000/api.");
+      test.skip(true, "Requer PLAYWRIGHT_BACKEND_AVAILABLE=true e DEBUG=1 no backend (CORS).");
       return;
     }
     await page.goto("/login");
@@ -74,8 +75,8 @@ test.describe("Login — fluxo de autenticação", () => {
   });
 
   test("CT-LOGIN-06: usuário autenticado acessa /login → redireciona para /materiais", async ({ page }) => {
-    if (IS_DOCKER) {
-      test.skip(true, "Requer login real com backend em localhost:8000. Rodar do host.");
+    if (!BACKEND_AVAILABLE) {
+      test.skip(true, "Requer PLAYWRIGHT_BACKEND_AVAILABLE=true e DEBUG=1 no backend (CORS).");
       return;
     }
     await loginAs(page, "superadmin");

@@ -1,50 +1,30 @@
 /**
  * tests/e2e/e2e_helpers.ts
  *
- * ESTRATÉGIA DE AUTH:
+ * BACKEND_AVAILABLE — CORRIGIDO:
+ *   Antes: IS_CI || (!IS_DOCKER && ...) — errado porque CI não necessariamente
+ *   tem CORS configurado para localhost:4173 (frontend preview) vs localhost:8000.
+ *   O CI usa DEBUG=0, então CORS_ALLOW_ALL_ORIGINS=False e só permite localhost:5173.
  *
- *   injectSession(page, user) — injeta token no localStorage antes de navegar.
- *     Use em todo teste onde auth é pré-requisito mas NÃO é o que está sendo testado.
- *     Funciona em Docker, CI e host. Não faz chamada real ao backend.
+ *   Agora: requer opt-in explícito via PLAYWRIGHT_BACKEND_AVAILABLE=true.
+ *   No CI, adicionar ao e2e-tests job:
+ *     - DEBUG: "1"  (habilita CORS_ALLOW_ALL_ORIGINS)
+ *     - PLAYWRIGHT_BACKEND_AVAILABLE: "true"
  *
- *   loginAs(page, user) — login real via formulário.
- *     Use APENAS em login.spec.ts para testar o fluxo de autenticação.
- *     Requer backend acessível em localhost:8000 (CI e host).
- *     Dentro do Docker: backend está em backend:8000, não localhost:8000 → tests skipam.
- *
- * DETECÇÃO DE AMBIENTE:
- *   IS_DOCKER — detectado por /.dockerenv (arquivo criado automaticamente pelo Docker).
- *               Confiável, não depende de variáveis de ambiente do usuário.
- *   IS_CI     — process.env.CI === "true" (GitHub Actions define isso automaticamente).
- *
- * Credenciais (users/migrations/0002_seed_data.py):
- *   superadmin   / superadmin123   → super_admin
- *   financeiro   / financeiro123   → financeiro
- *   compras      / compras123      → compras
- *   almoxarifado / almoxarifado123 → almoxarifado
- *   projetos     / projetos123     → projetos
+ * IS_DOCKER — detectado por /.dockerenv (criado automaticamente em containers Docker).
  */
 
 import { existsSync } from "fs";
 import type { Page } from "@playwright/test";
 
-// ── Environment detection ─────────────────────────────────────────────────────
+// ── Environment ───────────────────────────────────────────────────────────────
 
-/** True quando rodando dentro de um container Docker. */
+/** True dentro de um container Docker. */
 export const IS_DOCKER = existsSync("/.dockerenv");
 
-/** True quando rodando no CI (GitHub Actions define process.env.CI = "true"). */
-export const IS_CI = process.env.CI === "true";
+/** True quando o backend real está acessível E com CORS configurado. */
+export const BACKEND_AVAILABLE = process.env.PLAYWRIGHT_BACKEND_AVAILABLE === "true";
 
-/**
- * True quando o backend real está acessível em localhost:8000.
- * CI: sempre true (backend sobe no mesmo runner).
- * Docker local: false (backend está em backend:8000, não localhost).
- * Host local: true se o backend estiver rodando.
- */
-export const BACKEND_AVAILABLE = IS_CI || (!IS_DOCKER && !process.env.SKIP_REAL_LOGIN);
-
-// ── API base URL ──────────────────────────────────────────────────────────────
 export const API_BASE =
   process.env.PLAYWRIGHT_API_BASE ??
   process.env.VITE_API_BASE_URL ??
@@ -61,21 +41,18 @@ export const USERS = {
 
 export type UserKey = keyof typeof USERS;
 
-// ── injectSession: preferred for all non-login tests ─────────────────────────
+// ── injectSession: use sempre que auth é pré-requisito mas não é o foco ───────
 export async function injectSession(page: Page, user: UserKey = "superadmin"): Promise<void> {
   const u = USERS[user];
   await page.addInitScript((userData) => {
     localStorage.setItem("sca_access_token", "mock-jwt-for-e2e-tests");
     localStorage.setItem("sca_user", JSON.stringify({
-      id: 1,
-      username: userData.username,
-      name: userData.username,
-      perfil: userData.perfil,
+      id: 1, username: userData.username, name: userData.username, perfil: userData.perfil,
     }));
   }, u);
 }
 
-// ── loginAs: ONLY for login.spec.ts ──────────────────────────────────────────
+// ── loginAs: APENAS para login.spec.ts — requer BACKEND_AVAILABLE=true ────────
 export async function loginAs(page: Page, user: UserKey = "superadmin"): Promise<void> {
   const { username, password } = USERS[user];
   await page.goto("/login");

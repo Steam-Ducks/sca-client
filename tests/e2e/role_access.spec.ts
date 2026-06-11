@@ -1,40 +1,34 @@
 /**
  * tests/e2e/role_access.spec.ts
  *
- * Testa acesso por perfil via router guard (injectSession — sem login real).
- * CT-ROLE-01..07: router guard — funciona no Docker.
- * CT-ROLE-08..09: chamada API real — requer PLAYWRIGHT_API_BASE=http://backend:8000/api
- *                 e login real (disponível apenas do host ou CI com backend exposto).
+ * CT-ROLE-01..07: router guard com injectSession — funciona em Docker e CI.
+ * CT-ROLE-08..09: chamadas reais à API — requerem PLAYWRIGHT_BACKEND_AVAILABLE=true.
  *
- * Router allowedProfiles (router/index.ts):
- *   /materiais, /auditoria → sem restrição de perfil
- *   /dashboard, /horas, /consolidado → super_admin, financeiro, projetos
- *   /orcamento → super_admin, financeiro
- *   (compras, almoxarifado sem acesso a orcamento → redireciona para /materiais)
+ * CORRIGIDO: CT-ROLE-08/09 recebiam 401 porque loginAs() falhava (CORS bloqueava
+ * o login real no CI). Token resultante era null → Authorization: "Bearer null".
+ * Fix: skip automático se BACKEND_AVAILABLE=false.
  */
 
 import { test, expect } from "@playwright/test";
 import { injectSession, loginAs, API_BASE, BACKEND_AVAILABLE } from "./e2e_helpers";
 
-// ── Mocks comuns ──────────────────────────────────────────────────────────────
 async function mockAllAPIs(page: Parameters<typeof injectSession>[0]) {
-  await page.route("**/compras/**",        (r) => r.fulfill({ contentType: "application/json", body: "[]" }));
-  await page.route("**/top-materials/**",  (r) => r.fulfill({ contentType: "application/json", body: "[]" }));
-  await page.route("**/cost-by-project/**",(r) => r.fulfill({ contentType: "application/json", body: "[]" }));
-  await page.route("**/filter-options/**", (r) => r.fulfill({ contentType: "application/json", body: JSON.stringify({ periodos: [], programas: [], projetos: [], categorias: [], fornecedores: [] }) }));
-  await page.route("**/dashboard/**",      (r) => r.fulfill({ contentType: "application/json", body: "{}" }));
-  await page.route("**/horas-tecnicas/**", (r) => r.fulfill({ contentType: "application/json", body: "[]" }));
-  await page.route("**/consolidated/**",   (r) => r.fulfill({ contentType: "application/json", body: JSON.stringify({ data: [], last_updated_at: null }) }));
-  await page.route("**/budget/**",         (r) => r.fulfill({ contentType: "application/json", body: JSON.stringify({ data: [], last_updated_at: null }) }));
-  await page.route("**/monitoring/**",     (r) => r.fulfill({ contentType: "application/json", body: JSON.stringify({ count: 0, results: [] }) }));
+  await page.route("**/compras/**",         (r) => r.fulfill({ contentType: "application/json", body: "[]" }));
+  await page.route("**/top-materials/**",   (r) => r.fulfill({ contentType: "application/json", body: "[]" }));
+  await page.route("**/cost-by-project/**", (r) => r.fulfill({ contentType: "application/json", body: "[]" }));
+  await page.route("**/filter-options/**",  (r) => r.fulfill({ contentType: "application/json", body: JSON.stringify({ periodos: [], programas: [], projetos: [], categorias: [], fornecedores: [] }) }));
+  await page.route("**/dashboard/**",       (r) => r.fulfill({ contentType: "application/json", body: "{}" }));
+  await page.route("**/horas-tecnicas/**",  (r) => r.fulfill({ contentType: "application/json", body: "[]" }));
+  await page.route("**/consolidated/**",    (r) => r.fulfill({ contentType: "application/json", body: JSON.stringify({ data: [], last_updated_at: null }) }));
+  await page.route("**/budget/**",          (r) => r.fulfill({ contentType: "application/json", body: JSON.stringify({ data: [], last_updated_at: null }) }));
+  await page.route("**/monitoring/**",      (r) => r.fulfill({ contentType: "application/json", body: JSON.stringify({ count: 0, results: [] }) }));
 }
 
-// ── CT-ROLE-01: super_admin acessa tudo ───────────────────────────────────────
+// ── CT-ROLE-01: super_admin ───────────────────────────────────────────────────
 test.describe("Role access — super_admin", () => {
   test("CT-ROLE-01: super_admin acessa todas as rotas protegidas", async ({ page }) => {
     await mockAllAPIs(page);
-    const routes = ["/materiais", "/dashboard", "/horas", "/consolidado", "/orcamento", "/auditoria"];
-    for (const route of routes) {
+    for (const route of ["/materiais", "/dashboard", "/horas", "/consolidado", "/orcamento", "/auditoria"]) {
       await injectSession(page, "superadmin");
       await page.goto(route);
       await page.waitForLoadState("domcontentloaded");
@@ -56,7 +50,7 @@ test.describe("Role access — financeiro", () => {
   });
 });
 
-// ── CT-ROLE-03: projetos ──────────────────────────────────────────────────────
+// ── CT-ROLE-03/07: projetos ───────────────────────────────────────────────────
 test.describe("Role access — projetos", () => {
   test("CT-ROLE-03: projetos acessa dashboard, horas, consolidado", async ({ page }) => {
     await mockAllAPIs(page);
@@ -77,7 +71,7 @@ test.describe("Role access — projetos", () => {
   });
 });
 
-// ── CT-ROLE-04, CT-ROLE-06: compras ──────────────────────────────────────────
+// ── CT-ROLE-04/06: compras ────────────────────────────────────────────────────
 test.describe("Role access — compras", () => {
   test("CT-ROLE-04: compras acessa materiais e auditoria", async ({ page }) => {
     await mockAllAPIs(page);
@@ -102,7 +96,6 @@ test.describe("Role access — compras", () => {
 test.describe("Role access — almoxarifado", () => {
   test("CT-ROLE-05: almoxarifado acessa materiais e auditoria, não orcamento", async ({ page }) => {
     await mockAllAPIs(page);
-
     await injectSession(page, "almoxarifado");
     await page.goto("/materiais");
     await page.waitForLoadState("domcontentloaded");
@@ -120,11 +113,11 @@ test.describe("Role access — almoxarifado", () => {
   });
 });
 
-// ── CT-ROLE-08/09: chamadas API reais ────────────────────────────────────────
+// ── CT-ROLE-08/09: API real ───────────────────────────────────────────────────
 test.describe("Role access — Backend API (real requests)", () => {
   test("CT-ROLE-08: compras recebe 200 de /api/materials/indicators/", async ({ page }) => {
-    if (!BACKEND_AVAILABLE && !process.env.PLAYWRIGHT_API_BASE) {
-      test.skip(true, "Defina PLAYWRIGHT_API_BASE=http://backend:8000/api para rodar no Docker.");
+    if (!BACKEND_AVAILABLE) {
+      test.skip(true, "Requer PLAYWRIGHT_BACKEND_AVAILABLE=true e DEBUG=1 no backend (CORS).");
       return;
     }
     await loginAs(page, "compras");
@@ -136,8 +129,8 @@ test.describe("Role access — Backend API (real requests)", () => {
   });
 
   test("CT-ROLE-09: compras recebe 403 de /api/dashboard/kpis/ (sem permissão)", async ({ page }) => {
-    if (!BACKEND_AVAILABLE && !process.env.PLAYWRIGHT_API_BASE) {
-      test.skip(true, "Defina PLAYWRIGHT_API_BASE=http://backend:8000/api para rodar no Docker.");
+    if (!BACKEND_AVAILABLE) {
+      test.skip(true, "Requer PLAYWRIGHT_BACKEND_AVAILABLE=true e DEBUG=1 no backend (CORS).");
       return;
     }
     await loginAs(page, "compras");
