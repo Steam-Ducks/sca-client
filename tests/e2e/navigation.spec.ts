@@ -4,7 +4,7 @@
  * Banco vazio → endpoints retornam [] ou {} → páginas renderizam normalmente.
  */
 import { test, expect } from "@playwright/test";
-import { loginAs, API_BASE, BACKEND_AVAILABLE } from "./e2e_helpers";
+import { loginAs, API_BASE } from "./e2e_helpers";
 
 test.describe("Navegação", () => {
   test.beforeEach(async ({ page }) => {
