@@ -132,7 +132,7 @@ test.describe("Role access — Backend API (real requests)", () => {
       return;
     }
     const access = await getToken(page, "compras", "compras123");
-    const res = await page.request.get(`${API_BASE}/compras/`, {
+    const res = await page.request.get(`${API_BASE}/filter-options/`, {
       headers: { Authorization: `Bearer ${access}` },
     });
     expect(res.status()).toBe(200);

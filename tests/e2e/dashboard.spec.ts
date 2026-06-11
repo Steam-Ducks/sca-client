@@ -35,6 +35,7 @@ const MOCK_COMPOSITION = {
 test.describe("Dashboard", () => {
   test.beforeEach(async ({ page }) => {
     await injectSession(page, "superadmin");
+    await page.route("**/filter-options/**", (r) => r.fulfill({ contentType: "application/json", body: JSON.stringify({ periodos: [], programas: [], projetos: [], categorias: [], fornecedores: [] }) }));
     await page.route("**/dashboard/kpis/**",        (r) => r.fulfill({ contentType: "application/json", body: JSON.stringify(MOCK_KPIS) }));
     await page.route("**/dashboard/projects/**",    (r) => r.fulfill({ contentType: "application/json", body: JSON.stringify(MOCK_PROJECTS) }));
     await page.route("**/dashboard/summary/**",     (r) => r.fulfill({ contentType: "application/json", body: JSON.stringify(MOCK_SUMMARY) }));

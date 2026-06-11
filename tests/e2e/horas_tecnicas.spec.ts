@@ -22,7 +22,7 @@ const MOCK_HORAS    = [
 test.describe("Horas Técnicas", () => {
   test.beforeEach(async ({ page }) => {
     await injectSession(page, "superadmin");
-
+    await page.route("**/filter-options/**", (r) => r.fulfill({ contentType: "application/json", body: JSON.stringify({ periodos: [], programas: [], projetos: [], categorias: [], fornecedores: [] }) }));
     // UMA única route com if/else — evita problema de ordem de registro do Playwright
     await page.route("**/horas-tecnicas/**", (route) => {
       const url = route.request().url();

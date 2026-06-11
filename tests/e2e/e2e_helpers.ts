@@ -59,7 +59,7 @@ export async function loginAs(page: Page, user: UserKey = "superadmin"): Promise
   await page.locator("#username").fill(username);
   await page.locator("#password").fill(password);
   await page.locator("button[type='submit']").click();
-  await page.waitForURL(/\/(?!login)/, { timeout: 12_000 });
+  await page.waitForURL((url) => !url.pathname.includes("/login"), { timeout: 12_000 });
 }
 
 export const loginAsSuperAdmin = (page: Page) => loginAs(page, "superadmin");
