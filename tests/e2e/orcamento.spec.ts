@@ -10,7 +10,7 @@
  */
 
 import { test, expect } from "@playwright/test";
-import { injectSession } from "./e2e_helpers";
+import { loginAs } from "./e2e_helpers";
 
 const MOCK_BUDGET = {
   data: [
@@ -24,12 +24,7 @@ const MOCK_BUDGET = {
 
 test.describe("Orçamento e Saúde Financeira", () => {
   test.beforeEach(async ({ page }) => {
-    await injectSession(page, "superadmin");
-    await page.route("**/budget/**", (r) =>
-      r.fulfill({ contentType: "application/json", body: JSON.stringify(MOCK_BUDGET) }));
-    await page.goto("/orcamento");
-    await page.waitForLoadState("domcontentloaded");
-  });
+    await loginAs(page, "superadmin");
 
   test("CT-ORC-01: seção [data-testid='metrics-section'] visível", async ({ page }) => {
     await expect(page.locator("[data-testid='metrics-section']")).toBeVisible({ timeout: 8_000 });

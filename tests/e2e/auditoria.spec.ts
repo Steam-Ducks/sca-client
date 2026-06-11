@@ -1,31 +1,23 @@
 /**
  * tests/e2e/auditoria.spec.ts
- *
- * CT-AUD-01  Página /auditoria carrega (não redireciona para /login)
- * CT-AUD-02  Abas Importação, Histórico e Falhas existem (.tab-btn)
- *
- * Usa injectSession() — funciona dentro do Docker.
+ * Sem mocks — backend retorna {count:0, results:[]} para monitoring.
  */
-
 import { test, expect } from "@playwright/test";
-import { injectSession } from "./e2e_helpers";
+import { loginAs } from "./e2e_helpers";
 
 test.describe("Auditoria", () => {
   test.beforeEach(async ({ page }) => {
-    await injectSession(page, "superadmin");
-    await page.route("**/monitoring/**", (r) =>
-      r.fulfill({ contentType: "application/json", body: JSON.stringify({ count: 0, results: [] }) }));
+    await loginAs(page, "superadmin");
     await page.goto("/auditoria");
-    await page.waitForLoadState("domcontentloaded");
+    await page.waitForLoadState("networkidle");
   });
 
-  test("CT-AUD-01: página /auditoria carrega sem redirecionar para /login", async ({ page }) => {
+  test("CT-AUD-01: pagina /auditoria carrega sem redirecionar para /login", async ({ page }) => {
     await expect(page).toHaveURL(/\/auditoria/);
     await expect(page.locator("body")).toBeVisible();
   });
 
-  test("CT-AUD-02: abas Importação, Histórico e Falhas existem", async ({ page }) => {
-    // Auditoria.vue tem 3 .tab-btn
+  test("CT-AUD-02: abas Importacao, Historico e Falhas existem", async ({ page }) => {
     const tabs = page.locator(".tab-btn");
     await expect(tabs.first()).toBeVisible({ timeout: 8_000 });
     const count = await tabs.count();

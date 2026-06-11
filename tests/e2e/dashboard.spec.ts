@@ -1,60 +1,24 @@
 /**
  * tests/e2e/dashboard.spec.ts
- *
- * CT-DASH-01  KPIs carregam na página
- * CT-DASH-02  Filtros existem (select.filter-select)
- * CT-DASH-03  Tabela de resumo é visível
- *
- * Usa injectSession() + mock API — funciona dentro do Docker.
+ * Sem mocks — usa backend PostgreSQL real do CI.
+ * Banco vazio → KPIs retornam zeros → página renderiza com zeros.
  */
-
 import { test, expect } from "@playwright/test";
-import { injectSession } from "./e2e_helpers";
-
-const MOCK_KPIS = {
-  total_consolidated_cost: 1_500_000,
-  total_materials_cost: 900_000,
-  total_hours_cost: 600_000,
-  total_projects: 12,
-  total_programs: 3,
-};
-
-const MOCK_PROJECTS = [
-  { id: 1, nome_projeto: "Proj A", status: "Em andamento", programa: "MANSUP" },
-];
-
-const MOCK_SUMMARY = [
-  { programa: "MANSUP", qtd_projetos: 5, custo_materiais: 500_000, custo_horas: 200_000, custo_total: 700_000 },
-];
-
-const MOCK_COMPOSITION = {
-  custo_materiais: 900_000, custo_horas: 600_000, custo_total: 1_500_000,
-  pct_materiais: 60.0, pct_horas: 40.0,
-};
+import { loginAs } from "./e2e_helpers";
 
 test.describe("Dashboard", () => {
   test.beforeEach(async ({ page }) => {
-    await injectSession(page, "superadmin");
-    await page.route("**/filter-options/**", (r) => r.fulfill({ contentType: "application/json", body: JSON.stringify({ periodos: [], programas: [], projetos: [], categorias: [], fornecedores: [] }) }));
-    await page.route("**/dashboard/kpis/**",        (r) => r.fulfill({ contentType: "application/json", body: JSON.stringify(MOCK_KPIS) }));
-    await page.route("**/dashboard/projects/**",    (r) => r.fulfill({ contentType: "application/json", body: JSON.stringify(MOCK_PROJECTS) }));
-    await page.route("**/dashboard/summary/**",     (r) => r.fulfill({ contentType: "application/json", body: JSON.stringify(MOCK_SUMMARY) }));
-    await page.route("**/dashboard/composition/**", (r) => r.fulfill({ contentType: "application/json", body: JSON.stringify(MOCK_COMPOSITION) }));
-    await page.route("**/dashboard/top-projects/**",(r) => r.fulfill({ contentType: "application/json", body: "[]" }));
-    await page.route("**/dashboard/cost-evolution/**",(r) => r.fulfill({ contentType: "application/json", body: "[]" }));
+    await loginAs(page, "superadmin");
     await page.goto("/dashboard");
-    await page.waitForLoadState("domcontentloaded");
+    await page.waitForLoadState("networkidle");
   });
 
-  test("CT-DASH-01: página carrega e exibe algum conteúdo de KPI", async ({ page }) => {
+  test("CT-DASH-01: página carrega e exibe conteúdo", async ({ page }) => {
     await expect(page).toHaveURL(/\/dashboard/);
-    // Aguarda qualquer elemento de métricas renderizar
-    await expect(page.locator("body")).toBeVisible();
-    await expect(page.locator("main, .main, [class*='dashboard'], [class*='metric']").first()).toBeVisible({ timeout: 8_000 });
+    await expect(page.locator("main, .main, [class*='dashboard']").first()).toBeVisible({ timeout: 8_000 });
   });
 
   test("CT-DASH-02: filtros existem na página", async ({ page }) => {
-    // DashboardView usa select.filter-select ou input[type=date] para filtros
     await expect(
       page.locator("select, input[type='date']").first()
     ).toBeVisible({ timeout: 8_000 });

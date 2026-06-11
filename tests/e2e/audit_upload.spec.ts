@@ -9,7 +9,7 @@
  */
 
 import { test, expect } from "@playwright/test";
-import { injectSession, INVALID_CSV } from "./e2e_helpers";
+import { loginAs, INVALID_CSV } from "./e2e_helpers";
 
 const PROGRAMAS_COLS =
   "id,codigo_programa,nome_programa,gerente_programa,gerente_tecnico,data_inicio,data_fim_prevista,status";
@@ -26,12 +26,7 @@ const HIST_MOCK = {
 
 test.describe("Auditoria — Upload de dados", () => {
   test.beforeEach(async ({ page }) => {
-    await injectSession(page, "superadmin");
-    await page.route("**/monitoring/**", (r) =>
-      r.fulfill({ contentType: "application/json", body: JSON.stringify(HIST_MOCK) }));
-    await page.goto("/auditoria");
-    await page.waitForLoadState("domcontentloaded");
-  });
+    await loginAs(page, "superadmin");
 
   test("CT-UPLOAD-01: aba Importação exibe cards de upload", async ({ page }) => {
     const tabs = page.locator(".tab-btn");
