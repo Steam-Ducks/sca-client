@@ -10,11 +10,6 @@
 import { test, expect } from "@playwright/test";
 import { injectSession, API_BASE, BACKEND_AVAILABLE } from "./e2e_helpers";
 
-function okJson(body: unknown = []) {
-  return (r: Parameters<Parameters<typeof r["fulfill"]>[0]["body"] extends infer T ? any : any>[0]) =>
-    r.fulfill({ contentType: "application/json", body: JSON.stringify(body) });
-}
-
 async function mockAllEndpoints(page: Parameters<typeof injectSession>[0]) {
   // Dashboard
   await page.route("**/dashboard/kpis/**",          (r) => r.fulfill({ contentType: "application/json", body: JSON.stringify({ total_consolidated_cost: 0, total_materials_cost: 0, total_hours_cost: 0, total_projects: 0, total_programs: 0 }) }));

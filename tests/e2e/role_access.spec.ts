@@ -10,7 +10,7 @@
  */
 
 import { test, expect } from "@playwright/test";
-import { injectSession, loginAs, API_BASE, BACKEND_AVAILABLE } from "./e2e_helpers";
+import { injectSession, API_BASE, BACKEND_AVAILABLE } from "./e2e_helpers";
 
 async function mockAllAPIs(page: Parameters<typeof injectSession>[0]) {
   await page.route("**/compras/**",         (r) => r.fulfill({ contentType: "application/json", body: "[]" }));
