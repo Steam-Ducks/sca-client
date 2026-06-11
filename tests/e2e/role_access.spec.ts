@@ -1,12 +1,12 @@
 /**
  * tests/e2e/role_access.spec.ts
  *
- * CT-ROLE-01..07: router guard com injectSession — funciona em Docker e CI.
- * CT-ROLE-08..09: chamadas reais à API — requerem PLAYWRIGHT_BACKEND_AVAILABLE=true.
+ * CORRIGIDO CT-ROLE-08/09: loginAs() passa pelo browser (sujeito a CORS e
+ * possíveis falhas silenciosas). O token ficava null → "Bearer null" → 401.
  *
- * CORRIGIDO: CT-ROLE-08/09 recebiam 401 porque loginAs() falhava (CORS bloqueava
- * o login real no CI). Token resultante era null → Authorization: "Bearer null".
- * Fix: skip automático se BACKEND_AVAILABLE=false.
+ * Fix: usar page.request.post() para obter o token JWT diretamente —
+ * Playwright's request API é server-side, não passa pelo browser, logo
+ * ignora CORS completamente. Muito mais confiável para testes de API.
  */
 
 import { test, expect } from "@playwright/test";
@@ -18,9 +18,9 @@ async function mockAllAPIs(page: Parameters<typeof injectSession>[0]) {
   await page.route("**/cost-by-project/**", (r) => r.fulfill({ contentType: "application/json", body: "[]" }));
   await page.route("**/filter-options/**",  (r) => r.fulfill({ contentType: "application/json", body: JSON.stringify({ periodos: [], programas: [], projetos: [], categorias: [], fornecedores: [] }) }));
   await page.route("**/dashboard/**",       (r) => r.fulfill({ contentType: "application/json", body: "{}" }));
+  await page.route("**/budget/**",          (r) => r.fulfill({ contentType: "application/json", body: JSON.stringify({ data: [], last_updated_at: null }) }));
   await page.route("**/horas-tecnicas/**",  (r) => r.fulfill({ contentType: "application/json", body: "[]" }));
   await page.route("**/consolidated/**",    (r) => r.fulfill({ contentType: "application/json", body: JSON.stringify({ data: [], last_updated_at: null }) }));
-  await page.route("**/budget/**",          (r) => r.fulfill({ contentType: "application/json", body: JSON.stringify({ data: [], last_updated_at: null }) }));
   await page.route("**/monitoring/**",      (r) => r.fulfill({ contentType: "application/json", body: JSON.stringify({ count: 0, results: [] }) }));
 }
 
@@ -96,6 +96,7 @@ test.describe("Role access — compras", () => {
 test.describe("Role access — almoxarifado", () => {
   test("CT-ROLE-05: almoxarifado acessa materiais e auditoria, não orcamento", async ({ page }) => {
     await mockAllAPIs(page);
+
     await injectSession(page, "almoxarifado");
     await page.goto("/materiais");
     await page.waitForLoadState("domcontentloaded");
@@ -113,31 +114,43 @@ test.describe("Role access — almoxarifado", () => {
   });
 });
 
-// ── CT-ROLE-08/09: API real ───────────────────────────────────────────────────
+// ── CT-ROLE-08/09: chamadas de API reais ──────────────────────────────────────
 test.describe("Role access — Backend API (real requests)", () => {
   test("CT-ROLE-08: compras recebe 200 de /api/materials/indicators/", async ({ page }) => {
     if (!BACKEND_AVAILABLE) {
-      test.skip(true, "Requer PLAYWRIGHT_BACKEND_AVAILABLE=true e DEBUG=1 no backend (CORS).");
+      test.skip(true, "Requer PLAYWRIGHT_BACKEND_AVAILABLE=true.");
       return;
     }
-    await loginAs(page, "compras");
-    const token = await page.evaluate(() => localStorage.getItem("sca_access_token"));
+    // Usa page.request (server-side, sem CORS) para obter token real
+    const loginRes = await page.request.post(`${API_BASE}/auth/login/`, {
+      data: { username: "compras", password: "compras123" },
+    });
+    expect(loginRes.status()).toBe(200);
+    const { access } = await loginRes.json();
+    expect(access).toBeTruthy();
+
     const res = await page.request.get(`${API_BASE}/materials/indicators/`, {
-      headers: { Authorization: `Bearer ${token}` },
+      headers: { Authorization: `Bearer ${access}` },
     });
     expect(res.status()).toBe(200);
   });
 
   test("CT-ROLE-09: compras recebe 403 de /api/dashboard/kpis/ (sem permissão)", async ({ page }) => {
     if (!BACKEND_AVAILABLE) {
-      test.skip(true, "Requer PLAYWRIGHT_BACKEND_AVAILABLE=true e DEBUG=1 no backend (CORS).");
+      test.skip(true, "Requer PLAYWRIGHT_BACKEND_AVAILABLE=true.");
       return;
     }
-    await loginAs(page, "compras");
-    const token = await page.evaluate(() => localStorage.getItem("sca_access_token"));
-    const res = await page.request.get(`${API_BASE}/dashboard/kpis/`, {
-      headers: { Authorization: `Bearer ${token}` },
+    const loginRes = await page.request.post(`${API_BASE}/auth/login/`, {
+      data: { username: "compras", password: "compras123" },
     });
+    expect(loginRes.status()).toBe(200);
+    const { access } = await loginRes.json();
+    expect(access).toBeTruthy();
+
+    const res = await page.request.get(`${API_BASE}/dashboard/kpis/`, {
+      headers: { Authorization: `Bearer ${access}` },
+    });
+    // compras não tem CanAccessDashboard → 403
     expect(res.status()).toBe(403);
   });
 });
