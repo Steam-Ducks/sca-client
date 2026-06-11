@@ -1,34 +1,40 @@
 /**
  * tests/e2e/horas_tecnicas.spec.ts
  *
- * Seletores confirmados em HorasTecnicas.vue:
- *   [data-testid="filter-periodo"]      → <select>
- *   [data-testid="filter-programa"]     → <select>
- *   [data-testid="filter-projeto"]      → <select>
- *   [data-testid="filter-colaborador"]  → <select>
- *   [data-testid="filter-tarefa"]       → <select>
- *   [data-testid="btn-clear-filters"]   → <button>Limpar filtros</button>
- *   [data-testid="btn-export"]          → <button>
- *   [data-testid="chart-temporal"]      → <canvas>
- *   [data-testid="data-table"]          → <table>
+ * CORRIGIDO: Playwright aplica routes em ordem REVERSA (último registrado = primeiro aplicado).
+ * Com 3 routes separadas, "horas-tecnicas/*" (registrada por último) capturava
+ * kpis/ e temporal/ também, retornando array no lugar do objeto de KPI.
+ * O componente Vue falhava ao parsear → filtros não renderizavam.
+ *
+ * Fix: route ÚNICA com if/else por URL — garante resposta correta para cada endpoint.
  */
 
 import { test, expect } from "@playwright/test";
 import { injectSession } from "./e2e_helpers";
 
+const MOCK_KPIS     = { custo_total: 2400.0, total_horas: 8.0, custo_medio: 300.0, registros: 1 };
+const MOCK_TEMPORAL = [{ periodo: "2024-03", total_horas: 8.0, total_custo: 2400.0 }];
 const MOCK_HORAS    = [
   { id: 1, colaborador: "dev1@sca.com", projeto: "Proj A", programa: "MANSUP",
     horas_trabalhadas: 8.0, custo_total: 2400.0, periodo: "2024-03" },
 ];
-const MOCK_KPIS     = { custo_total: 2400.0, total_horas: 8.0 };
-const MOCK_TEMPORAL = [{ periodo: "2024-03", total_horas: 8.0, total_custo: 2400.0 }];
 
 test.describe("Horas Técnicas", () => {
   test.beforeEach(async ({ page }) => {
     await injectSession(page, "superadmin");
-    await page.route("**/horas-tecnicas/kpis/**",    (r) => r.fulfill({ contentType: "application/json", body: JSON.stringify(MOCK_KPIS) }));
-    await page.route("**/horas-tecnicas/temporal/**",(r) => r.fulfill({ contentType: "application/json", body: JSON.stringify(MOCK_TEMPORAL) }));
-    await page.route("**/horas-tecnicas/**",         (r) => r.fulfill({ contentType: "application/json", body: JSON.stringify(MOCK_HORAS) }));
+
+    // UMA única route com if/else — evita problema de ordem de registro do Playwright
+    await page.route("**/horas-tecnicas/**", (route) => {
+      const url = route.request().url();
+      if (url.includes("/kpis")) {
+        return route.fulfill({ contentType: "application/json", body: JSON.stringify(MOCK_KPIS) });
+      } else if (url.includes("/temporal")) {
+        return route.fulfill({ contentType: "application/json", body: JSON.stringify(MOCK_TEMPORAL) });
+      } else {
+        return route.fulfill({ contentType: "application/json", body: JSON.stringify(MOCK_HORAS) });
+      }
+    });
+
     await page.goto("/horas");
     await page.waitForLoadState("networkidle");
   });

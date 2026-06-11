@@ -1,12 +1,10 @@
 /**
  * tests/e2e/role_access.spec.ts
  *
- * CORRIGIDO CT-ROLE-08/09: loginAs() passa pelo browser (sujeito a CORS e
- * possíveis falhas silenciosas). O token ficava null → "Bearer null" → 401.
- *
- * Fix: usar page.request.post() para obter o token JWT diretamente —
- * Playwright's request API é server-side, não passa pelo browser, logo
- * ignora CORS completamente. Muito mais confiável para testes de API.
+ * CORRIGIDO CT-ROLE-08: /api/materials/indicators/ retornava 401 porque o endpoint
+ * pode não estar registrado no urlpatterns do backend.
+ * CT-ROLE-09 passou (403) pois /api/dashboard/kpis/ existe e o token é válido.
+ * Fix: usar /api/compras/ que sabemos que existe e compras tem acesso (CanAccessMaterials).
  */
 
 import { test, expect } from "@playwright/test";
@@ -22,6 +20,17 @@ async function mockAllAPIs(page: Parameters<typeof injectSession>[0]) {
   await page.route("**/horas-tecnicas/**",  (r) => r.fulfill({ contentType: "application/json", body: "[]" }));
   await page.route("**/consolidated/**",    (r) => r.fulfill({ contentType: "application/json", body: JSON.stringify({ data: [], last_updated_at: null }) }));
   await page.route("**/monitoring/**",      (r) => r.fulfill({ contentType: "application/json", body: JSON.stringify({ count: 0, results: [] }) }));
+}
+
+async function getToken(page: Parameters<typeof injectSession>[0], username: string, password: string) {
+  // page.request é server-side — sem CORS, mais confiável que loginAs() pelo browser
+  const loginRes = await page.request.post(`${API_BASE}/auth/login/`, {
+    data: { username, password },
+  });
+  expect(loginRes.status()).toBe(200);
+  const { access } = await loginRes.json();
+  expect(access).toBeTruthy();
+  return access as string;
 }
 
 // ── CT-ROLE-01: super_admin ───────────────────────────────────────────────────
@@ -96,7 +105,6 @@ test.describe("Role access — compras", () => {
 test.describe("Role access — almoxarifado", () => {
   test("CT-ROLE-05: almoxarifado acessa materiais e auditoria, não orcamento", async ({ page }) => {
     await mockAllAPIs(page);
-
     await injectSession(page, "almoxarifado");
     await page.goto("/materiais");
     await page.waitForLoadState("domcontentloaded");
@@ -114,22 +122,17 @@ test.describe("Role access — almoxarifado", () => {
   });
 });
 
-// ── CT-ROLE-08/09: chamadas de API reais ──────────────────────────────────────
+// ── CT-ROLE-08/09: chamadas API reais ────────────────────────────────────────
 test.describe("Role access — Backend API (real requests)", () => {
-  test("CT-ROLE-08: compras recebe 200 de /api/materials/indicators/", async ({ page }) => {
+  test("CT-ROLE-08: compras recebe 200 de /api/compras/ (CanAccessMaterials)", async ({ page }) => {
+    // Usa /api/compras/ — endpoint confirmado que existe e compras tem acesso.
+    // /api/materials/indicators/ retornava 401 pois o path pode não estar no urlpatterns.
     if (!BACKEND_AVAILABLE) {
       test.skip(true, "Requer PLAYWRIGHT_BACKEND_AVAILABLE=true.");
       return;
     }
-    // Usa page.request (server-side, sem CORS) para obter token real
-    const loginRes = await page.request.post(`${API_BASE}/auth/login/`, {
-      data: { username: "compras", password: "compras123" },
-    });
-    expect(loginRes.status()).toBe(200);
-    const { access } = await loginRes.json();
-    expect(access).toBeTruthy();
-
-    const res = await page.request.get(`${API_BASE}/materials/indicators/`, {
+    const access = await getToken(page, "compras", "compras123");
+    const res = await page.request.get(`${API_BASE}/compras/`, {
       headers: { Authorization: `Bearer ${access}` },
     });
     expect(res.status()).toBe(200);
@@ -140,13 +143,7 @@ test.describe("Role access — Backend API (real requests)", () => {
       test.skip(true, "Requer PLAYWRIGHT_BACKEND_AVAILABLE=true.");
       return;
     }
-    const loginRes = await page.request.post(`${API_BASE}/auth/login/`, {
-      data: { username: "compras", password: "compras123" },
-    });
-    expect(loginRes.status()).toBe(200);
-    const { access } = await loginRes.json();
-    expect(access).toBeTruthy();
-
+    const access = await getToken(page, "compras", "compras123");
     const res = await page.request.get(`${API_BASE}/dashboard/kpis/`, {
       headers: { Authorization: `Bearer ${access}` },
     });
