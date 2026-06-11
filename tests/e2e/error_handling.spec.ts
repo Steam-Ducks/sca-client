@@ -19,8 +19,10 @@
 import { test, expect } from "@playwright/test";
 import { injectSession } from "./e2e_helpers";
 
-function mockError(page: Parameters<typeof page.route>[0], pattern: string, status: number, detail: string) {
-  return (page as any).route(pattern, (r: any) =>
+import type { Page, Route } from "@playwright/test";
+
+function mockError(page: Page, pattern: string, status: number, detail: string) {
+  return page.route(pattern, (r: Route) =>
     r.fulfill({ status, contentType: "application/json", body: JSON.stringify({ detail }) })
   );
 }

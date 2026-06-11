@@ -14,7 +14,7 @@
  */
 
 import { test, expect } from "@playwright/test";
-import { injectSession, VALID_PROGRAMAS_CSV, INVALID_CSV } from "./e2e_helpers";
+import { injectSession, INVALID_CSV } from "./e2e_helpers";
 
 const PROGRAMAS_COLS =
   "id,codigo_programa,nome_programa,gerente_programa,gerente_tecnico,data_inicio,data_fim_prevista,status";
