@@ -163,6 +163,35 @@ jobs:
           echo "| Frontend | Vite preview localhost:4173 |" >> $GITHUB_STEP_SUMMARY
           echo "| Browser | Chromium headless |" >> $GITHUB_STEP_SUMMARY
           echo "> Relatório com screenshots: **Actions → playwright-report**" >> $GITHUB_STEP_SUMMARY
+      - name: Notify Slack
+        if: always()
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
+          STATUS: ${{ job.status }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          BRANCH: ${{ github.head_ref }}
+          REPO: ${{ github.repository }}
+        run: |
+          ICON=$([ "$STATUS" = "success" ] && echo ":white_check_mark:" || echo ":x:")
+          COLOR=$([ "$STATUS" = "success" ] && echo "good" || echo "danger")
+          REPORT_URL="https://Steam-Ducks.github.io/sca-client/"
+          curl -s -X POST "$SLACK_WEBHOOK" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"attachments\": [{
+                \"color\": \"$COLOR\",
+                \"title\": \"$ICON E2E Tests — PR #${PR_NUMBER}\",
+                \"title_link\": \"https://github.com/${REPO}/pull/${PR_NUMBER}\",
+                \"fields\": [
+                  {\"title\": \"Status\",    \"value\": \"$STATUS\",  \"short\": true},
+                  {\"title\": \"Branch\",    \"value\": \"$BRANCH\",  \"short\": true},
+                  {\"title\": \"Relatório\", \"value\": \"<${REPORT_URL}|Ver no GitHub Pages>\", \"short\": false}
+                ],
+                \"footer\": \"SCA Frontend CI\",
+                \"ts\": $(date +%s)
+              }]
+            }"
+
 
   # ─── 4. Branch & Commit Policy ──────────────────────────────────────────────
   # Precisam estar neste workflow (não em branch-commit-policy.yml) para que o
