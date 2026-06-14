@@ -37,6 +37,17 @@ export default defineConfig({
       provider: "v8",
       reporter: ["text", "lcov"],
       reportsDirectory: "coverage",
+
+      // Coverage thresholds — CI fails if any metric drops below these values.
+      // Current baseline : statements 92%, branches 89%, functions 57%, lines 92%.
+      // Functions threshold is lower becuse many composable helpers are tested
+      // indirectly via view tests rather than called as standalone functions.
+      thresholds: {
+        statements: 80,
+        branches: 80,
+        functions: 50,
+        lines: 80,
+      },
     },
   },
 });
