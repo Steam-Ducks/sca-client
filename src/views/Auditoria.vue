@@ -28,135 +28,44 @@
 
       <!-- KPI CARDS -->
       <div class="metrics">
-        <div class="metric-card">
-          <div class="metric-icon-wrap blue">
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <ellipse
-                cx="12"
-                cy="5"
-                rx="9"
-                ry="3"
-              />
+        <MetricCard label="Total de Cargas" :value="falhasTotal" color="blue">
+          <template #icon>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <ellipse cx="12" cy="5" rx="9" ry="3" />
               <path d="M3 5v5c0 1.7 4 3 9 3s9-1.3 9-3V5" />
               <path d="M3 10v5c0 1.7 4 3 9 3s9-1.3 9-3v-5" />
             </svg>
-          </div>
-          <p class="metric-label">
-            Total de Cargas
-          </p>
-          <p class="metric-value">
-            {{ falhasTotal }}
-          </p>
-        </div>
+          </template>
+        </MetricCard>
 
-        <div class="metric-card">
-          <div class="metric-icon-wrap green">
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
+        <MetricCard label="Concluídas" :value="kpis.concluidas" color="green" :sub="`${pct(kpis.concluidas)}% do total`">
+          <template #icon>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
               <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
               <polyline points="22 4 12 14.01 9 11.01" />
             </svg>
-          </div>
-          <p class="metric-label">
-            Concluídas
-          </p>
-          <p class="metric-value">
-            {{ kpis.concluidas }}
-          </p>
-          <p class="metric-sub">
-            {{ pct(kpis.concluidas) }}% do total
-          </p>
-        </div>
+          </template>
+        </MetricCard>
 
-        <div class="metric-card">
-          <div class="metric-icon-wrap amber">
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
+        <MetricCard label="Parciais" :value="kpis.parciais" color="amber" :sub="`${pct(kpis.parciais)}% do total`">
+          <template #icon>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
               <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
-              <line
-                x1="12"
-                y1="9"
-                x2="12"
-                y2="13"
-              />
-              <line
-                x1="12"
-                y1="17"
-                x2="12.01"
-                y2="17"
-                stroke-width="2"
-              />
+              <line x1="12" y1="9" x2="12" y2="13" />
+              <line x1="12" y1="17" x2="12.01" y2="17" stroke-width="2" />
             </svg>
-          </div>
-          <p class="metric-label">
-            Parciais
-          </p>
-          <p class="metric-value">
-            {{ kpis.parciais }}
-          </p>
-          <p class="metric-sub">
-            {{ pct(kpis.parciais) }}% do total
-          </p>
-        </div>
+          </template>
+        </MetricCard>
 
-        <div class="metric-card">
-          <div class="metric-icon-wrap red">
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <circle
-                cx="12"
-                cy="12"
-                r="10"
-              />
-              <line
-                x1="15"
-                y1="9"
-                x2="9"
-                y2="15"
-              />
-              <line
-                x1="9"
-                y1="9"
-                x2="15"
-                y2="15"
-              />
+        <MetricCard label="Falhas" :value="kpis.falhas" color="red" :sub="`${pct(kpis.falhas)}% do total`">
+          <template #icon>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10" />
+              <line x1="15" y1="9" x2="9" y2="15" />
+              <line x1="9" y1="9" x2="15" y2="15" />
             </svg>
-          </div>
-          <p class="metric-label">
-            Falhas
-          </p>
-          <p class="metric-value">
-            {{ kpis.falhas }}
-          </p>
-          <p class="metric-sub">
-            {{ pct(kpis.falhas) }}% do total
-          </p>
-        </div>
+          </template>
+        </MetricCard>
       </div>
 
       <!-- TABS CONTAINER -->
@@ -297,7 +206,7 @@
                 <p class="section-desc">
                   Atualização das estruturas organizacionais utilizadas no ambiente analítico
                 </p>
-                <div class="upload-grid">
+                <UploadZone>
                   <UploadCard
                     v-for="file in visibleOrgFiles"
                     :key="file.key"
@@ -308,7 +217,7 @@
                     @trigger="triggerFileInput(file.key)"
                     @change="handleFileChange(file.key, $event)"
                   />
-                </div>
+                </UploadZone>
               </div>
 
               <!-- Importação de Materiais -->
@@ -349,7 +258,7 @@
                 <p class="section-desc">
                   Atualização dos dados relacionados a materiais, compras, estoque e fornecedores
                 </p>
-                <div class="upload-grid">
+                <UploadZone>
                   <UploadCard
                     v-for="file in visibleMateriaisFiles"
                     :key="file.key"
@@ -360,7 +269,7 @@
                     @trigger="triggerFileInput(file.key)"
                     @change="handleFileChange(file.key, $event)"
                   />
-                </div>
+                </UploadZone>
               </div>
 
               <!-- Importação de Horas Técnicas -->
@@ -395,7 +304,7 @@
                 <p class="section-desc">
                   Atualização dos dados relacionados às tarefas executadas e horas técnicas registradas
                 </p>
-                <div class="upload-grid">
+                <UploadZone>
                   <UploadCard
                     v-for="file in visibleHorasFiles"
                     :key="file.key"
@@ -406,7 +315,7 @@
                     @trigger="triggerFileInput(file.key)"
                     @change="handleFileChange(file.key, $event)"
                   />
-                </div>
+                </UploadZone>
               </div>
             </div>
           </div>
@@ -762,6 +671,8 @@ import { useFileUpload } from "@/composables/useFileUpload";
 
 // ── Sub-components ──────────────────────────────────────────────────────────
 import UploadCard        from "@/components/UploadCard.vue";
+import UploadZone        from "@/components/UploadZone.vue";
+import MetricCard        from "@/components/MetricCard.vue";
 import ExecStatusBadge   from "@/components/ExecStatusBadge.vue";
 import PaginationControls from "@/components/PaginationControls.vue";
 
@@ -959,26 +870,9 @@ onMounted(() => { void loadFalhas(); void loadHistorico(); });
 .header-subtitle { font-size: 13px; color: var(--text2); margin: 0; }
 
 .metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
-.metric-card {
-  background: var(--bg2); border: 1px solid var(--border); border-radius: 10px;
-  padding: 20px 22px; transition: border-color 0.2s; animation: fadeIn 0.35s ease both;
-}
 .metric-card:nth-child(2) { animation-delay: 0.06s; }
 .metric-card:nth-child(3) { animation-delay: 0.12s; }
 .metric-card:nth-child(4) { animation-delay: 0.18s; }
-.metric-card:hover { border-color: var(--border2); }
-.metric-icon-wrap {
-  display: inline-flex; align-items: center; justify-content: center;
-  width: 36px; height: 36px; border-radius: 8px; margin-bottom: 14px;
-}
-.metric-icon-wrap svg { width: 18px; height: 18px; }
-.metric-icon-wrap.blue  { background: rgba(77,143,255,0.12); color: var(--blue); }
-.metric-icon-wrap.green { background: rgba(45,212,160,0.12); color: var(--green); }
-.metric-icon-wrap.amber { background: rgba(245,166,35,0.12); color: var(--amber); }
-.metric-icon-wrap.red   { background: rgba(245,90,90,0.12);  color: var(--red); }
-.metric-label  { font-size: 12px; color: var(--text2); margin-bottom: 6px; }
-.metric-value  { font-size: 30px; font-weight: 400; font-family: inherit; color: var(--text); line-height: 1; margin-bottom: 4px; }
-.metric-sub    { font-size: 11px; color: var(--text3); margin: 0; }
 
 .tabs-container {
   background: var(--bg2); border: 1px solid var(--border); border-radius: 10px;
@@ -1010,7 +904,6 @@ onMounted(() => { void loadFalhas(); void loadHistorico(); });
 .section-icon.purple { background: rgba(155,127,255,0.12); color: var(--purple); }
 .section-title { font-size: 15px; font-weight: 500; color: var(--text); margin: 0; }
 .section-desc  { font-size: 12px; color: var(--text2); margin: 0 0 14px 0; }
-.upload-grid   { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
 
 .hist-subtitle  { font-size: 13px; color: var(--text2); margin: 0 0 16px 0; }
 .hist-filters   { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }

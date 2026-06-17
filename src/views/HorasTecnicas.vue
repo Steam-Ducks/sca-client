@@ -7,44 +7,26 @@
 
       <!-- METRICS -->
       <div class="metrics">
-        <div
+        <MetricCard
           v-if="!isProjetos"
-          class="metric-card"
-        >
-          <div class="metric-label">
-            Custo Total - Horas
-          </div>
-          <div class="metric-value blue">
-            {{ fmt(kpis.custoTotal) }}
-          </div>
-        </div>
-        <div class="metric-card">
-          <div class="metric-label">
-            Total de Horas
-          </div>
-          <div class="metric-value">
-            {{ fmtH(kpis.totalHoras) }}
-          </div>
-        </div>
-        <div
+          label="Custo Total - Horas"
+          :value="fmt(kpis.custoTotal)"
+          color="blue"
+        />
+        <MetricCard
+          label="Total de Horas"
+          :value="totalHorasFormatted"
+        />
+        <MetricCard
           v-if="!isProjetos"
-          class="metric-card"
-        >
-          <div class="metric-label">
-            Custo Médio/Hora
-          </div>
-          <div class="metric-value green">
-            {{ fmt(kpis.custoMedio) }}
-          </div>
-        </div>
-        <div class="metric-card">
-          <div class="metric-label">
-            Registros
-          </div>
-          <div class="metric-value">
-            {{ filteredData.length }}
-          </div>
-        </div>
+          label="Custo Médio/Hora"
+          :value="fmt(kpis.custoMedio)"
+          color="green"
+        />
+        <MetricCard
+          label="Registros"
+          :value="filteredData.length"
+        />
       </div>
 
       <!-- FILTERS -->
@@ -448,6 +430,7 @@ import { usePermissions } from "@/composables/usePermissions";
 import { horasTecnicasService } from '@/services/horasTecnicasService'
 import { useExport } from '@/composables/useExport'
 import { fmtBRL, fmtHours } from '@/utils/format'
+import MetricCard from "@/components/MetricCard.vue";
 
 const PER_PAGE = 8;
 
@@ -581,6 +564,8 @@ watch(
 const fmt = fmtBRL
 const fmtH = fmtHours
 
+const totalHorasFormatted = computed(() => `${fmtH(kpis.value.totalHoras)}h`);
+
 function sortBy(k: keyof HoraRow) {
   if (sortKey.value === k) sortDir.value = (sortDir.value * -1) as 1 | -1;
   else {
@@ -688,14 +673,6 @@ onUnmounted(destroyCharts);
   grid-template-columns: repeat(4, 1fr);
   gap: 14px;
 }
-.metric-card {
-  background: var(--bg2);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 18px 22px;
-  transition: border-color 0.2s;
-  animation: fadeIn 0.35s ease both;
-}
 .metric-card:nth-child(2) {
   animation-delay: 0.06s;
 }
@@ -704,29 +681,6 @@ onUnmounted(destroyCharts);
 }
 .metric-card:nth-child(4) {
   animation-delay: 0.18s;
-}
-.metric-card:hover {
-  border-color: var(--border2);
-}
-.metric-label {
-  font-size: 11px;
-  color: var(--text3);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  margin-bottom: 8px;
-}
-.metric-value {
-  font-size: 26px;
-  font-weight: 600;
-  font-family: inherit;
-  letter-spacing: -0.5px;
-  color: var(--text);
-}
-.metric-value.blue {
-  color: var(--blue);
-}
-.metric-value.green {
-  color: var(--green);
 }
 
 /* ── Filters ──────────────────────────────────────────────────────────────── */

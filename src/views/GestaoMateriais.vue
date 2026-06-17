@@ -3,36 +3,19 @@
     <main class="main">
       <!-- METRICS -->
       <div class="metrics">
-        <div
+        <MetricCard
           v-if="!isMaterialsLimitedProfile"
-          class="metric-card"
-        >
-          <div class="metric-label">
-            Custo Total de Materiais
-          </div>
-          <div class="metric-value blue">
-            {{ fmt(totalCusto) }}
-          </div>
-        </div>
-        <div class="metric-card">
-          <div class="metric-label">
-            Total de Itens
-          </div>
-          <div class="metric-value">
-            {{ sortedData.length }}
-          </div>
-        </div>
-        <div
+          label="Custo Total de Materiais"
+          :value="fmt(totalCusto)"
+          color="blue"
+        />
+        <MetricCard label="Total de Itens" :value="sortedData.length" />
+        <MetricCard
           v-if="!isMaterialsLimitedProfile"
-          class="metric-card"
-        >
-          <div class="metric-label">
-            Custo Médio por Item
-          </div>
-          <div class="metric-value green">
-            {{ fmt(custoMedio) }}
-          </div>
-        </div>
+          label="Custo Médio por Item"
+          :value="fmt(custoMedio)"
+          color="green"
+        />
       </div>
 
       <!-- FILTERS -->
@@ -379,7 +362,7 @@
                   {{ row.fornecedor }}
                 </td>
                 <td v-if="!isAlmoxarifado && !isProjetos">
-                  <span :class="badgeClass(row.categoria)">{{ row.categoria }}</span>
+                  <StatusBadge :value="row.categoria" />
                 </td>
               </tr>
             </tbody>
@@ -442,6 +425,8 @@ import type { Filters, SortKey, SortDir, Material, Categoria, Status } from "@/t
 import { RAW } from "@/data/materiais";
 import { useExport } from '@/composables/useExport'
 import { fmtBRL } from '@/utils/format'
+import MetricCard from "@/components/MetricCard.vue";
+import StatusBadge from "@/components/StatusBadge.vue";
 
 const PER_PAGE = 8;
 const isMounted = ref(false);
@@ -740,17 +725,6 @@ const sortIcon = (k: SortKey) => {
   return "↕";
 };
 
-function badgeClass(c: string) {
-  const map: Record<string, string> = {
-    Hardware: "badge badge-hw",
-    Storage: "badge badge-st",
-    Cloud: "badge badge-cl",
-    Segurança: "badge badge-sg",
-    Software: "badge badge-sw",
-    Rede: "badge badge-rd",
-  };
-  return map[c] ?? "badge badge-hw";
-}
 
 function clearFilters() {
   Object.assign(filters, {
@@ -849,42 +823,11 @@ defineExpose({ filters, sortKey, page, costByProject, topMaterials, isMounted })
   grid-template-columns: repeat(3, 1fr);
   gap: 14px;
 }
-.metric-card {
-  background: var(--bg2);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 18px 22px;
-  transition: border-color 0.2s;
-  animation: fadeIn 0.35s ease both;
-}
 .metric-card:nth-child(2) {
   animation-delay: 0.06s;
 }
 .metric-card:nth-child(3) {
   animation-delay: 0.12s;
-}
-.metric-card:hover {
-  border-color: var(--border2);
-}
-.metric-label {
-  font-size: 11px;
-  color: var(--text3);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  margin-bottom: 8px;
-}
-.metric-value {
-  font-size: 26px;
-  font-weight: 600;
-  font-family: inherit;
-  letter-spacing: -0.5px;
-  color: var(--text);
-}
-.metric-value.blue {
-  color: var(--blue);
-}
-.metric-value.green {
-  color: var(--green);
 }
 
 /* ── Filters ──────────────────────────────────────────────────────────────── */
@@ -1128,39 +1071,6 @@ td.total {
   padding: 24px 16px;
 }
 .table-feedback.error {
-  color: var(--red);
-}
-
-/* ── Badges ───────────────────────────────────────────────────────────────── */
-.badge {
-  display: inline-block;
-  padding: 3px 9px;
-  border-radius: 5px;
-  font-size: 11px;
-  font-weight: 500;
-}
-.badge-hw {
-  background: rgba(77, 143, 255, 0.15);
-  color: var(--blue);
-}
-.badge-st {
-  background: rgba(45, 212, 160, 0.12);
-  color: var(--green);
-}
-.badge-cl {
-  background: rgba(155, 127, 255, 0.12);
-  color: var(--purple);
-}
-.badge-sg {
-  background: rgba(245, 166, 35, 0.12);
-  color: var(--amber);
-}
-.badge-sw {
-  background: rgba(245, 166, 35, 0.12);
-  color: var(--amber);
-}
-.badge-rd {
-  background: rgba(245, 90, 90, 0.12);
   color: var(--red);
 }
 

@@ -33,38 +33,10 @@
 
       <!-- METRICS -->
       <div class="metrics">
-        <div class="metric-card">
-          <div class="metric-label">
-            Custo Total Consolidado
-          </div>
-          <div class="metric-value blue">
-            {{ fmt(kpis.custoTotal) }}
-          </div>
-        </div>
-        <div class="metric-card">
-          <div class="metric-label">
-            Custo Materiais
-          </div>
-          <div class="metric-value">
-            {{ fmt(kpis.custoMateriais) }}
-          </div>
-        </div>
-        <div class="metric-card">
-          <div class="metric-label">
-            Custo Horas Técnicas
-          </div>
-          <div class="metric-value green">
-            {{ fmt(kpis.custoHoras) }}
-          </div>
-        </div>
-        <div class="metric-card">
-          <div class="metric-label">
-            Total de Projetos
-          </div>
-          <div class="metric-value">
-            {{ kpis.totalProjetos }}
-          </div>
-        </div>
+        <MetricCard label="Custo Total Consolidado" :value="fmt(kpis.custoTotal)" color="blue" />
+        <MetricCard label="Custo Materiais" :value="fmt(kpis.custoMateriais)" />
+        <MetricCard label="Custo Horas Técnicas" :value="fmt(kpis.custoHoras)" color="green" />
+        <MetricCard label="Total de Projetos" :value="kpis.totalProjetos" />
       </div>
 
       <!-- FILTERS -->
@@ -365,7 +337,7 @@
                   {{ row.periodo }}
                 </td>
                 <td>
-                  <span :class="statusClass(row.status)">{{ row.status }}</span>
+                  <StatusBadge :value="row.status" />
                 </td>
               </tr>
             </tbody>
@@ -430,6 +402,8 @@ import { dashboardService } from "@/services/dashboardService";
 import type { CostEvolutionRow } from "@/types/api";
 import { useExport } from '@/composables/useExport'
 import { fmtBRL, fmtDateTime } from '@/utils/format'
+import MetricCard from "@/components/MetricCard.vue";
+import StatusBadge from "@/components/StatusBadge.vue";
 
 const PER_PAGE = 8;
 
@@ -701,15 +675,6 @@ const sortIcon = (k: keyof ConsolidadoRow) => {
   return "↕";
 };
 
-function statusClass(s: string) {
-  const map: Record<string, string> = {
-    Concluído: "badge badge-st",
-    "Em Andamento": "badge badge-hw",
-    Planejado: "badge badge-sg",
-    Cancelado: "badge badge-rd",
-  };
-  return map[s] ?? "badge badge-hw";
-}
 
 const { exportCSV: downloadCSV, exportExcel: downloadExcel } = useExport()
 
@@ -850,14 +815,6 @@ onUnmounted(destroyCharts);
   grid-template-columns: repeat(4, 1fr);
   gap: 14px;
 }
-.metric-card {
-  background: var(--bg2);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 18px 22px;
-  transition: border-color 0.2s;
-  animation: fadeIn 0.35s ease both;
-}
 .metric-card:nth-child(2) {
   animation-delay: 0.06s;
 }
@@ -866,29 +823,6 @@ onUnmounted(destroyCharts);
 }
 .metric-card:nth-child(4) {
   animation-delay: 0.18s;
-}
-.metric-card:hover {
-  border-color: var(--border2);
-}
-.metric-label {
-  font-size: 11px;
-  color: var(--text3);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  margin-bottom: 8px;
-}
-.metric-value {
-  font-size: 26px;
-  font-weight: 600;
-  font-family: inherit;
-  letter-spacing: -0.5px;
-  color: var(--text);
-}
-.metric-value.blue {
-  color: var(--blue);
-}
-.metric-value.green {
-  color: var(--green);
 }
 
 /* ── Filters ──────────────────────────────────────────────────────────────── */
@@ -1121,39 +1055,6 @@ td.total {
 }
 .table-feedback.muted {
   color: var(--text3);
-}
-
-/* ── Badges ───────────────────────────────────────────────────────────────── */
-.badge {
-  display: inline-block;
-  padding: 3px 9px;
-  border-radius: 5px;
-  font-size: 11px;
-  font-weight: 500;
-}
-.badge-hw {
-  background: rgba(77, 143, 255, 0.15);
-  color: var(--blue);
-}
-.badge-st {
-  background: rgba(45, 212, 160, 0.12);
-  color: var(--green);
-}
-.badge-cl {
-  background: rgba(155, 127, 255, 0.12);
-  color: var(--purple);
-}
-.badge-sg {
-  background: rgba(245, 166, 35, 0.12);
-  color: var(--amber);
-}
-.badge-sw {
-  background: rgba(245, 166, 35, 0.12);
-  color: var(--amber);
-}
-.badge-rd {
-  background: rgba(245, 90, 90, 0.12);
-  color: var(--red);
 }
 
 /* ── Pagination ───────────────────────────────────────────────────────────── */
