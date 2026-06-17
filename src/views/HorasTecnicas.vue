@@ -13,14 +13,20 @@
           :value="fmt(kpis.custoTotal)"
           color="blue"
         />
-        <MetricCard label="Total de Horas" :value="`${fmtH(kpis.totalHoras)}h`" />
+        <MetricCard
+          label="Total de Horas"
+          :value="totalHorasFormatted"
+        />
         <MetricCard
           v-if="!isProjetos"
           label="Custo Médio/Hora"
           :value="fmt(kpis.custoMedio)"
           color="green"
         />
-        <MetricCard label="Registros" :value="filteredData.length" />
+        <MetricCard
+          label="Registros"
+          :value="filteredData.length"
+        />
       </div>
 
       <!-- FILTERS -->
@@ -557,6 +563,8 @@ watch(
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const fmt = fmtBRL
 const fmtH = fmtHours
+
+const totalHorasFormatted = computed(() => `${fmtH(kpis.value.totalHoras)}h`);
 
 function sortBy(k: keyof HoraRow) {
   if (sortKey.value === k) sortDir.value = (sortDir.value * -1) as 1 | -1;

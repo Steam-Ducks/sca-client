@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, useSlots } from "vue";
 
-const props = defineProps<{
+defineProps<{
   label: string;
   value: string | number;
   color?: "blue" | "green" | "amber" | "red" | "date";
@@ -14,15 +14,32 @@ const hasIcon = computed(() => !!slots.icon);
 </script>
 
 <template>
-  <div class="metric-card" :class="{ 'metric-card--icon': hasIcon }">
-    <div v-if="hasIcon" class="metric-icon-wrap" :class="color">
+  <div
+    class="metric-card"
+    :class="{ 'metric-card--icon': hasIcon }"
+  >
+    <div
+      v-if="hasIcon"
+      class="metric-icon-wrap"
+      :class="color"
+    >
       <slot name="icon" />
     </div>
-    <div class="metric-label">{{ label }}</div>
-    <div class="metric-value" :class="[color, size === 'sm' ? 'size-sm' : '']">
+    <div class="metric-label">
+      {{ label }}
+    </div>
+    <div
+      class="metric-value"
+      :class="[color, size === 'sm' ? 'size-sm' : '']"
+    >
       {{ value }}
     </div>
-    <div v-if="sub" class="metric-sub">{{ sub }}</div>
+    <div
+      v-if="sub"
+      class="metric-sub"
+    >
+      {{ sub }}
+    </div>
   </div>
 </template>
 
